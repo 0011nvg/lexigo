@@ -171,7 +171,7 @@ async function main(){
  assert.equal(cardRead.data[0]?.verified_correct,null);
  assert.equal(cardRead.data[0]?.verification_source,'client_unverified');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
- r=await edge('submit-answer',pupil.jwt,{...event,index:1});assert.equal(r.status,403,'Event after finish accepted');
+ r=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,403,'Challenge after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');
  const parentRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
  assert.equal(parentRead.status,200,'Parent read '+JSON.stringify(parentRead));

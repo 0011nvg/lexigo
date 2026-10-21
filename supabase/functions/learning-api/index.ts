@@ -3,7 +3,7 @@
 // All identities are derived from auth.getUser(accessToken), never request body.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
+const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','hint-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LOCAL_ORIGINS=new Set(['http://127.0.0.1:3000','http://localhost:3000']);
 const reply=(status:number,data:unknown,origin='')=>new Response(JSON.stringify(data),{
@@ -84,6 +84,11 @@ Deno.serve(async(req:Request)=>{
    if(!UUID.test(String(body.attemptId||'')))return respond(400,{error:'invalid attempt'});
    fn='next_challenge';args={p_actor:user.id,p_attempt:body.attemptId};break;
   }
+  case 'hint-question':{
+   if(!UUID.test(String(body.attemptId||''))||!UUID.test(String(body.challengeId||'')))
+    return respond(400,{error:'invalid challenge'});
+   fn='request_challenge_hint';args={p_actor:user.id,p_attempt:body.attemptId,p_challenge:body.challengeId};break;
+  }
   case 'answer-question':{
    if(!UUID.test(String(body.attemptId||''))||!UUID.test(String(body.challengeId||''))||
     typeof body.wordId!=='string'||typeof body.answer!=='string'||body.answer.length>250||
@@ -133,5 +138,5 @@ Deno.serve(async(req:Request)=>{
  }
  const {data,error}=await server.schema('lexigo').rpc(fn,args);
  if(error)return respond(error.code==='42501'?403:error.code==='23505'?409:400,{error:'request rejected'});
- return respond(200,fn==='next_challenge'||fn==='answer_challenge'?data:{id:data});
+ return respond(200,fn==='next_challenge'||fn==='answer_challenge'||fn==='request_challenge_hint'?data:{id:data});
 });

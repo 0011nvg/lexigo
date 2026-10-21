@@ -32,7 +32,9 @@ try{
  assert.match(await page.locator('.pair-leaderboard').innerText(),/Тестовый игрок/,'Leaderboard did not survive reload');
  await page.locator('#back').click();
  await page.locator('#roleSwitch').click();
+ await page.locator('#unit').selectOption('__all');
  await page.locator('#all').click();
+ assert.ok(await page.evaluate(()=>uniquePairs(selectedWords()).length)>=20,'Fixture needs at least 20 distinct words for 20-question print');
  for(const count of [5,10,20]){
   await page.locator('#testCount').selectOption(String(count));
   await page.evaluate(()=>{window.print=()=>{};printTeacherTest()});

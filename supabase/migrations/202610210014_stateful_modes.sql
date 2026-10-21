@@ -261,8 +261,8 @@ begin
  values(p_challenge,p_request,p_actor,digest,result);
  return result;
 end $$;
-revoke all on function lexigo.gem_matches(jsonb),
- lexigo.play_challenge(uuid,uuid,uuid,uuid,text,jsonb) from public,anon,authenticated;
+revoke all on function lexigo.gem_matches(jsonb), lexigo.gem_possible(jsonb),
+ lexigo.make_gem_board(), lexigo.play_challenge(uuid,uuid,uuid,uuid,text,jsonb) from public,anon,authenticated;
 grant execute on function lexigo.play_challenge(uuid,uuid,uuid,uuid,text,jsonb) to service_role;
 create or replace function lexigo.next_challenge(p_actor uuid,p_attempt uuid)
 returns jsonb language plpgsql security definer set search_path='' as $$

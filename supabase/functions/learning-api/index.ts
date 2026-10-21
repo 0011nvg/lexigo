@@ -3,7 +3,7 @@
 // All identities are derived from auth.getUser(accessToken), never request body.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const ALLOWED = new Set(['create-assignment','start-attempt','append-event','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
+const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{
  status,headers:{'content-type':'application/json','cache-control':'no-store'}
@@ -52,12 +52,25 @@ Deno.serve(async(req:Request)=>{
   }
   case 'append-event':{
    if(!UUID.test(String(body.attemptId||''))||typeof body.wordId!=='string'||
+    body.kind!=='card_self_rating'||body.correct!=null||
     !Number.isInteger(body.index)||Number(body.index)<0||Number(body.index)>499)
     return reply(400,{error:'invalid event'});
    fn='append_event_atomic';
    args={p_actor:user.id,p_attempt:body.attemptId,p_index:body.index,
     p_word:body.wordId,p_kind:body.kind,p_correct:body.correct??null,
     p_hinted:body.hinted,p_retry:body.retry,p_rating:body.rating??null};break;
+  }
+  case 'submit-answer':{
+   if(!UUID.test(String(body.attemptId||''))||typeof body.wordId!=='string'||
+    typeof body.answer!=='string'||body.answer.length>250||
+    !Number.isInteger(body.index)||Number(body.index)<0||Number(body.index)>499||
+    typeof body.hinted!=='boolean'||typeof body.retry!=='boolean'||
+    Object.hasOwn(body,'correct')||Object.hasOwn(body,'verifiedCorrect')||
+    Object.hasOwn(body,'verificationSource'))
+    return reply(400,{error:'invalid answer'});
+   fn='append_verified_answer';
+   args={p_actor:user.id,p_attempt:body.attemptId,p_index:body.index,
+    p_word:body.wordId,p_answer:body.answer,p_hinted:body.hinted,p_retry:body.retry};break;
   }
   case 'issue-invitation':{
    if(!UUID.test(String(body.classId||''))||!['pupil','parent'].includes(String(body.role))||

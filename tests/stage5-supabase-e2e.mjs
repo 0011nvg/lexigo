@@ -163,6 +163,13 @@ async function main(){
   assert.equal(scored.status,200,'Grade '+mode+' '+JSON.stringify(scored));
   assert.equal(scored.data.correct,true,'Wrong grading for '+mode);
  }
+ // Challenge secrets must never be exposed through client PostgREST.
+ const hiddenChallenges=await api('/rest/v1/attempt_challenges?select=expected,private_state',
+ {token:pupil.jwt,schema:'lexigo'});
+ assert.equal(hiddenChallenges.status,403,'Pupil read server challenge answers');
+ const hiddenActions=await api('/rest/v1/challenge_actions?select=*',
+ {token:teacher.jwt,schema:'lexigo'});
+ assert.equal(hiddenActions.status,403,'Teacher read private replay journal');
  // Stateful pair matching: server checks both sides and tile ownership.
  const pairAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
  sectionId:'fixture-section',mode:'pairs',dueAt:'2030-01-01T00:00:00Z',
@@ -293,6 +300,24 @@ async function main(){
  {token:teacher.jwt,schema:'lexigo'});
  assert.equal(cardRead.data[0]?.verified_correct,null);
  assert.equal(cardRead.data[0]?.verification_source,'client_unverified');
+ const dailyAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
+ sectionId:'fixture-section',mode:'daily',dueAt:'2030-01-01T00:00:00Z',
+ audience:'individual',recipients:[pupil.id]});
+ assert.equal(dailyAssignment.status,200,'Daily assignment '+JSON.stringify(dailyAssignment));
+ const dailyAttempt=await edge('start-attempt',pupil.jwt,{assignmentId:dailyAssignment.data.id,
+ sessionId:'00000000-0000-4000-8000-000000000304'});
+ assert.equal(dailyAttempt.status,200);
+ const dailyEvent=await edge('append-event',pupil.jwt,{attemptId:dailyAttempt.data.id,
+ index:0,wordId:'fixture-word',kind:'card_self_rating',correct:null,
+ hinted:false,retry:false,rating:'unknown'});
+ assert.equal(dailyEvent.status,200,'Daily self rating '+JSON.stringify(dailyEvent));
+ const dailyRead=await api('/rest/v1/attempt_events?select=verified_correct,verification_source,self_rating&id=eq.'+dailyEvent.data.id,
+ {token:teacher.jwt,schema:'lexigo'});
+ assert.equal(dailyRead.data[0]?.verified_correct,null);
+ assert.equal(dailyRead.data[0]?.self_rating,'unknown');
+ const forbiddenBossHint=await edge('hint-question',pupil.jwt,{attemptId:bossAttempt.data.id,
+ challengeId:bossQuestion.data.challengeId});
+ assert.equal(forbiddenBossHint.status,403,'Generic hint bypassed boss state');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
  r=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,403,'Challenge after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');
@@ -303,7 +328,7 @@ async function main(){
  await insert('parent_pupils',[{parent_user_id:parent.id,pupil_user_id:pupil.id,verified_by:teacher.id}]);
  const linked=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
  assert.equal(linked.status,200,'Linked parent read '+JSON.stringify(linked));
- assert.equal(linked.data.length,12,'Verified parent cannot see linked pupil attempts');
+ assert.equal(linked.data.length,13,'Verified parent cannot see linked pupil attempts');
  const revoke=await api('/rest/v1/parent_pupils?parent_user_id=eq.'+parent.id+'&pupil_user_id=eq.'+pupil.id,
  {method:'PATCH',key:service,body:{revoked_at:new Date().toISOString()},schema:'lexigo'});
  assert.equal(revoke.status,204,'Parent link revoke '+JSON.stringify(revoke));
@@ -312,7 +337,7 @@ async function main(){
  assert.equal(afterRevoke.data.length,0,'Revoked parent still sees pupil attempts');
  const pupilRead=await api('/rest/v1/attempts?select=id',{token:pupil.jwt,schema:'lexigo'});
  assert.equal(pupilRead.status,200,'Pupil read '+JSON.stringify(pupilRead));
- assert.equal(pupilRead.data.length,12,'Pupil cannot see own attempts');
+ assert.equal(pupilRead.data.length,13,'Pupil cannot see own attempts');
  const foreignRead=await api('/rest/v1/attempts?select=id',{token:foreign.jwt,schema:'lexigo'});
  assert.equal(foreignRead.status,200,'Foreign read '+JSON.stringify(foreignRead));
  assert.equal(foreignRead.data.length,0,'Foreign pupil saw attempt');
@@ -365,7 +390,7 @@ async function main(){
  const verified=await edge('verify-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
  assert.equal(verified.status,200,'Teacher parent verification '+JSON.stringify(verified));
  const linkedAgain=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
- assert.equal(linkedAgain.data.length,12,'Verified parent still denied');
+ assert.equal(linkedAgain.data.length,13,'Verified parent still denied');
  const unlinked=await edge('revoke-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
  assert.equal(unlinked.status,200,'Teacher parent revocation');
  const unlinkedRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});

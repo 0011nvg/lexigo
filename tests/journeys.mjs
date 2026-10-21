@@ -9,15 +9,23 @@ async function scenario(viewport){
  await page.goto(base,{waitUntil:'load'});
  await page.locator('#book').waitFor({state:'attached'});
  assert.ok(await page.locator('#words input[type=checkbox]').count()>0,'Vocabulary loaded');
- await page.locator('#journeyStart').click();
+ await page.locator('#quickStart').click();
  await page.locator('#game:not(.hidden)').waitFor();
  assert.ok(await page.locator('#play .question').count()>0,'Daily practice starts');
  await page.locator('#back').click();
  await page.locator('#launcher:not(.hidden)').waitFor();
- await page.locator('#journeyCrystals').click();
- await page.locator('.crystal-arena').waitFor();
- await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/выкл/);await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/вкл/);for(let i=0;i<4;i++)await page.locator('.gem:not([disabled])').first().click();
- assert.match(await page.locator('#crystalScore').innerText(),/4 \/ 4/);assert.equal(await page.locator('.gem[disabled]').count(),4);
+ await page.locator('[data-mode="crystals"]').click();
+ await page.locator('#crystalBoard .crystal-tile').first().waitFor();
+ await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/выкл/);
+ await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/вкл/);
+ for(let i=0;i<3;i++){
+  const move=await page.evaluate(()=>gemPossible([...game.gemBoard]));
+  assert.ok(move,'Playable match-three move exists');
+  await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
+  await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
+ }
+ assert.match(await page.locator('#crystalScore').innerText(),/3 \/ 3/);
+ assert.ok(await page.evaluate(()=>game.crystals>=9));
  await page.locator('.crystal-continue').click();
  for(let n=0;n<4;n++){
   const state=await page.evaluate(()=>({w:game.words[game.index],mode:game.mode,index:game.index}));
@@ -44,8 +52,7 @@ async function scenario(viewport){
  const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexigo.*csv/);
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
- await page.locator('#changeLesson').click();
- assert.equal(await page.locator('#catalogToggle').getAttribute('aria-expanded'),'true');
+ if(viewport.width<=760){await page.locator('#catalogToggle').click();assert.equal(await page.locator('#catalogToggle').getAttribute('aria-expanded'),'true')}
  await page.locator('#book').waitFor({state:'visible'});
  await page.locator('#book').selectOption('3');
  assert.ok((await page.locator('#currentLesson').innerText()).includes('3'));
@@ -55,5 +62,5 @@ try{
  await scenario({width:1280,height:800});
  await scenario({width:390,height:844});
  assert.deepEqual(errors,[],'Browser runtime errors');
- console.log('PASS: desktop/mobile: daily training, crystal loop, teacher report/CSV, catalog and grade switch');
+ console.log('PASS: desktop/mobile: daily training, match-three crystals, teacher report/CSV, catalog and grade switch');
 }finally{await browser.close()}

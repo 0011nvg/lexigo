@@ -168,7 +168,6 @@ function printTeacherTest(){
  if(!words.length){alert('Сначала отметь слова для теста в библиотеке.');return}
  if(!types.length){alert('Выбери хотя бы один тип письменного задания.');return}
  const amount=$('testCount').value,requested=amount==='all'?words.length:Number(amount);
- ответы печатаются отдельно.');
  const items=shuffle(words).slice(0,requested);
  const questions=[],answers=[];const safe=x=>escapeHTML(String(x));const scramble=w=>{const letters=[...w.en],alphabet='abcdefghijklmnopqrstuvwxyz';const index=letters.findIndex(c=>/[a-z]/i.test(c));if(index<0)return null;const old=letters[index],replacement=alphabet[(alphabet.indexOf(old.toLowerCase())+7)%26];letters[index]=old===old.toUpperCase()?replacement.toUpperCase():replacement;return letters.join('')};
  items.forEach((w,i)=>{let kind=types[i%types.length],body='',answer=w.en+' — '+w.ru;

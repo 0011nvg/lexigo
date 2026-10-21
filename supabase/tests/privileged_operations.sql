@@ -118,7 +118,34 @@ begin
  review_id:=lexigo.review_attempt('00000000-0000-4000-8000-000000000101','40000000-0000-4000-8000-000000000001');
  if not exists(select 1 from lexigo.teacher_reviews where id=review_id and revoked_at is null) then
   raise exception 'Review not persisted'; end if;
-end $$;
+ begin
+  perform lexigo.revoke_teacher_review('00000000-0000-4000-8000-000000000102',
+   '40000000-0000-4000-8000-000000000001');
+  raise exception 'Foreign teacher revoked review';
+ exception when insufficient_privilege then null; end;
+ perform lexigo.revoke_teacher_review('00000000-0000-4000-8000-000000000101',
+  '40000000-0000-4000-8000-000000000001');
+ if not exists(select 1 from lexigo.teacher_reviews where id=review_id and revoked_at is not null) then
+  raise exception 'Review revocation not persisted'; end if;
+
+ -- A redeemed invitation cannot be replayed to restore access after enrollment revocation.
+ begin
+  perform lexigo.revoke_enrollment('00000000-0000-4000-8000-000000000102',
+   '20000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000103');
+  raise exception 'Foreign teacher revoked enrollment';
+ exception when insufficient_privilege then null; end;
+ perform lexigo.revoke_enrollment('00000000-0000-4000-8000-000000000101',
+  '20000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000103');
+ if lexigo.is_active_pupil('20000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000103') then
+  raise exception 'Revoked enrollment still active'; end if;
+ if lexigo.can_see_assignment('30000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000103') then
+  raise exception 'Revoked pupil still sees assignment'; end if;
+ if exists(select 1 from lexigo.invitations where class_id='20000000-0000-4000-8000-000000000001'
+  and target_role='pupil' and redeemed_at is null and revoked_at is null) then
+  raise exception 'Outstanding class pupil invitation survived revocation'; end if;
+end $;
 
 -- A client cannot call privileged invitation/review functions or write audit records.
 set local role authenticated;

@@ -69,6 +69,17 @@ async function run(viewport){
  assert.equal(await page.evaluate(()=>game.matched),0,'New round starts with zero matches');
  await page.locator('#back').click();
  assert.equal(await page.locator('#play .pair').count(),0,'Pair tiles cleared when leaving');
+ // Completing a full round must replace, not duplicate, the leaderboard.
+ await page.evaluate(()=>start('pairs'));
+ const pairs=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));
+ for(const word of pairs){
+  await page.getByRole('button',{name:'Английское слово: '+word.en,exact:true}).click();
+  await page.getByRole('button',{name:'Перевод: '+word.ru,exact:true}).click();
+ }
+ assert.equal(await page.evaluate(()=>game.matched),pairs.length,'All pairs matched');
+ assert.equal(await page.locator('#play .pair-leaderboard').count(),1,'One leaderboard after completion');
+ assert.equal(await page.locator('#play .pair-finish').count(),1,'One completion panel');
+ await page.locator('#back').click();
 
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});

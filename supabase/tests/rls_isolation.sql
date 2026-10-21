@@ -82,4 +82,63 @@ do $$ begin
  if (select count(*) from lexigo.attempts)<>0 then raise exception 'Revoked parent still sees attempts'; end if;
  if (select count(*) from lexigo.assignments)<>0 then raise exception 'Revoked parent still sees assignments'; end if;
 end $$;
+
+-- Same-class isolation: an individual assignment is not a class-wide assignment.
+reset role;
+insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at)
+values('00000000-0000-4000-8000-000000000107','00000000-0000-0000-0000-000000000000',
+'authenticated','authenticated','stage5-pupil-c@example.invalid','',now(),now(),now());
+insert into lexigo.profiles(user_id,organization_id,role,display_name)
+values('00000000-0000-4000-8000-000000000107','10000000-0000-4000-8000-000000000001','pupil','Pupil C');
+insert into lexigo.enrollments(class_id,pupil_user_id)
+values('20000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000107');
+insert into lexigo.assignments(id,class_id,created_by,section_id,mode,due_at,audience_type)
+values('30000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-000000000001',
+'00000000-0000-4000-8000-000000000101','fixture-section','spell',now()+interval '1 day','individual');
+insert into lexigo.assignment_recipients(assignment_id,pupil_user_id)
+values('30000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000103');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000107',true);
+do $$ begin
+ if (select count(*) from lexigo.assignments)<>1 then
+  raise exception 'Same-class pupil C sees individual assignment for A'; end if;
+ if (select count(*) from lexigo.assignment_recipients)<>0 then
+  raise exception 'Same-class pupil C sees recipient A'; end if;
+end $$;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000103',true);
+do $$ begin
+ if (select count(*) from lexigo.assignments)<>2 then
+  raise exception 'Pupil A cannot see their own individual assignment'; end if;
+end $$;
+
+-- A legitimate pupil can start a class attempt, but not append after finishing.
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000107',true);
+insert into lexigo.attempts(id,assignment_id,pupil_user_id,client_session_id)
+values('40000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000001',
+'00000000-0000-4000-8000-000000000107','50000000-0000-4000-8000-000000000003');
+insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct)
+values('40000000-0000-4000-8000-000000000003','fixture-word',0,'answer',true);
+update lexigo.attempts set status='finished',finished_at=now()
+where id='40000000-0000-4000-8000-000000000003';
+do $$ begin
+ begin
+  insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct)
+  values('40000000-0000-4000-8000-000000000003','fixture-word',1,'answer',true);
+  raise exception 'Finished attempt accepted new event';
+ exception when insufficient_privilege then null; end;
+ begin
+  insert into lexigo.attempts(assignment_id,pupil_user_id,client_session_id)
+  values('30000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000107',
+  '50000000-0000-4000-8000-000000000003');
+  raise exception 'Duplicate client session was accepted';
+ exception when unique_violation then null; end;
+end $$;
+reset role;
+set local role anon;
+do $$ begin
+ begin
+  perform 1 from lexigo.attempts;
+  raise exception 'Anonymous caller read private attempts';
+ exception when insufficient_privilege then null; end;
+end $$;
 rollback;

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LEXIGO · закрытый локальный пилот</title>
-<style>body{font:16px system-ui;max-width:900px;margin:auto;padding:24px;background:#f5f8fc;color:#19314b}main,section{background:white;border-radius:18px;padding:22px;margin:14px 0}label{display:block;margin:12px 0}input,button{font:inherit;padding:11px;border-radius:10px}input{width:100%;box-sizing:border-box;border:1px solid #bbc8d8}button{border:0;background:#305bd5;color:white;cursor:pointer;margin:4px}button:disabled{opacity:.5}.muted{color:#576b82}.error{color:#a02132}li{padding:7px}code{overflow-wrap:anywhere}</style></head>
+<style>body{font:16px system-ui;max-width:900px;margin:auto;padding:24px;background:#f5f8fc;color:#19314b}main,section{background:white;border-radius:18px;padding:22px;margin:14px 0}label{display:block;margin:12px 0}input,button{font:inherit;padding:11px;border-radius:10px}input{width:100%;box-sizing:border-box;border:1px solid #bbc8d8}button{border:0;background:#305bd5;color:white;cursor:pointer;margin:4px}button:disabled{opacity:.5}.muted{color:#576b82}.error{color:#a02132}li{padding:7px}code{overflow-wrap:anywhere} .lesson-progress{padding:12px;margin:10px 0;border:1px solid #dbe4ef;border-radius:12px;background:#f8fbff}.lesson-progress h4{margin:0 0 8px}.lesson-progress ol{padding-left:22px}</style></head>
 <body><main><h1>LEXIGO · закрытый локальный пилот</h1><p id="linkHint" class="muted" hidden></p>
 <p class="muted">Только фиктивные тестовые аккаунты. Этот интерфейс работает исключительно на localhost и не предназначен для настоящих учеников.</p>
 <p id="status" role="status"></p>
@@ -27,6 +27,30 @@ function clear(){access='';userId='';$('password').value='';$('cabinet').hidden=
 function config(){const u=new URL($('url').value);if(!['localhost','127.0.0.1'].includes(u.hostname)||u.protocol!=='http:')throw Error('Разрешён только локальный Supabase');api=u.origin;anon=$('key').value.trim();if(!anon)throw Error('Введите локальный anon key')}
 async function request(path,options={}){const headers={'apikey':anon,...(access?{'authorization':'Bearer '+access}:{}),...(options.body?{'content-type':'application/json'}:{}),...(path.startsWith('/rest/v1/')?{'Accept-Profile':'lexigo'}:{})};const response=await fetch(api+path,{...options,headers,cache:'no-store'});const data=await response.json().catch(()=>null);if(!response.ok)throw Error('HTTP '+response.status+': '+(data?.msg||data?.message||data?.error||'доступ запрещён'));return data}
 async function rows(table,params){return request('/rest/v1/'+table+'?'+params,{headers:{}})}
+async function renderLessonProgress(root,profile,classes=[]){
+ const records=await rows('lesson_attempt_progress','select=attempt_id,assignment_id,pupil_user_id,section_id,mode,total_words,covered_words,lesson_completed,ranking_eligible,accuracy_pct,duration_seconds,status');
+ heading(root,profile.role==='teacher'?'Прогресс и рейтинг моих учеников':'Мои галочки и рейтинг уроков');
+ const visible=records.filter(r=>r.total_words>0);
+ if(!visible.length){root.append(el('p','Завершённых занятий пока нет'));return}
+ const bySection=new Map();
+ for(const r of visible){const k=r.section_id+' · '+r.mode;if(!bySection.has(k))bySection.set(k,[]);bySection.get(k).push(r)}
+ for(const [key,attempts] of bySection){
+  const panel=el('div');panel.className='lesson-progress';
+  const headingNode=el('h4',key);panel.append(headingNode);
+  const ranking=attempts.filter(x=>x.ranking_eligible).sort((a,b)=>{
+   const ap=a.accuracy_pct??-1,bp=b.accuracy_pct??-1;
+   return bp-ap||(a.duration_seconds??1e9)-(b.duration_seconds??1e9)
+  });
+  const list=el('ol');for(const a of attempts){
+   const row=el('li',(a.lesson_completed?'✓ Пройдено':'○ В процессе')+' · '+a.covered_words+'/'+a.total_words+' слов'+(a.accuracy_pct==null?' · самооценка':' · точность '+a.accuracy_pct+'%')+(profile.role==='teacher'?' · ученик '+a.pupil_user_id.slice(0,8):''));
+   list.append(row)
+  }panel.append(list);
+  const label=el('p',ranking.length?'Рейтинг (только полный урок):':'В рейтинг пока никто не попал: нужно выполнить все слова урока.');panel.append(label);
+  const leaderboard=el('ol');for(const a of ranking.slice(0,10)){
+   leaderboard.append(el('li',(profile.role==='teacher'?'Ученик '+a.pupil_user_id.slice(0,8):'Мой результат')+' · '+(a.accuracy_pct==null?'самооценка':a.accuracy_pct+'%')+' · '+(a.duration_seconds??0)+' сек.'))
+  }panel.append(leaderboard);root.append(panel)
+ }
+}
 function heading(root,text){const h=document.createElement('h4');h.textContent=text;root.append(h)}
 function showRows(root,items,fields){const ul=document.createElement('ul');if(!items.length){const li=document.createElement('li');li.textContent='Пока нет данных';ul.append(li)}
 for(const item of items){const li=document.createElement('li');li.textContent=fields.map(f=>String(item[f]??'')).join(' · ');ul.append(li)}root.append(ul)}
@@ -40,12 +64,12 @@ heading(root,'Мои классы');showRows(root,classes,['title','grade']);
 const assignments=await rows('assignments','select=id,section_id,mode,class_id&created_by=eq.'+encodeURIComponent(userId));
 heading(root,'Созданные задания');
 for(const assignment of assignments){const line=el('div');line.append(el('span',assignment.mode+' · '+assignment.section_id+' '));const copy=el('button','Скопировать ссылку');copy.type='button';copy.dataset.assignmentId=assignment.id;const status=el('span');status.setAttribute('role','status');copy.onclick=()=>copyAssignmentLink(assignment.id,status);line.append(copy,status);root.append(line)}
-await teacherControls(root,classes,assignments);
+await teacherControls(root,classes,assignments);await renderLessonProgress(root,profile,classes);
 }else{
 const recipients=await rows('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+encodeURIComponent(userId));
 heading(root,'Мои назначения');showRows(root,recipients,['assignment_id']);await pupilControls(root,recipients);
 const attempts=await rows('attempts','select=id,assignment_id,status,started_at&pupil_user_id=eq.'+encodeURIComponent(userId));
-heading(root,'Мои попытки');showRows(root,attempts,['assignment_id','status','started_at']);
+heading(root,'Мои попытки');showRows(root,attempts,['assignment_id','status','started_at']);await renderLessonProgress(root,profile);
 }
 $('login').hidden=true;$('cabinet').hidden=false;say('Данные загружены с сервера; браузерное демо-хранилище не используется')}
 

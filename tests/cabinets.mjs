@@ -112,6 +112,17 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.equal(synthetic.retries,1);
  assert.equal(synthetic.hints,1);
 
+ // Audit: legacy class-wide completion must not leak from one child to another.
+ await page.evaluate(()=>{const key='lexigo_cabinet_demo_v1',t=JSON.parse(localStorage.getItem(key));t[0].done=true;localStorage.setItem(key,JSON.stringify(t));localStorage.removeItem('lexigo_cabinet_completed_by_pupil_v1')});
+ await page.reload();
+ await page.getByRole('tab',{name:/ученик/i}).click();
+ assert.equal(await page.locator('#studentTasks .task').first().locator('.tag').innerText(),'В работе');
+ await page.getByRole('tab',{name:/учитель/i}).click();
+ await page.locator('#filterPupil').selectOption('sasha-2a');
+ assert.equal(await page.locator('#teacherHistory .history-entry').count(),0);
+ await page.locator('#filterPupil').selectOption('masha-2a');
+ assert.equal(await page.locator('#teacherHistory .history-entry').count(),3);
+ await page.locator('#filterPupil').selectOption('all');
  // Pupil isolation: Masha's attempts must never appear under Sasha, Dima or Anya.
  await page.getByRole('tab',{name:/ученик/i}).click();
  assert.equal(await page.locator('#activePupil').inputValue(),'masha-2a');

@@ -156,6 +156,11 @@ async function main(){
   const challenge=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
   assert.equal(challenge.status,200,'Issue '+mode+' '+JSON.stringify(challenge));
   assert.equal(challenge.data.mode,mode);
+  if(['crystals','boss'].includes(mode)){
+   assert.equal(challenge.data.question.phase,0,'Encounter must start at phase zero');
+   assert.equal(challenge.data.question.phaseCount,3);
+  }
+  if(mode==='pairs')assert.equal(challenge.data.question.responseType,'pair');
   const prompt=challenge.data.question;
   const en=challenge.data.wordId==='fixture-word'?'hello':'world';
   const ru=challenge.data.wordId==='fixture-word'?'привет':'мир';
@@ -166,6 +171,18 @@ async function main(){
    wordId:challenge.data.wordId,answer});
   assert.equal(scored.status,200,'Grade '+mode+' '+JSON.stringify(scored));
   assert.equal(scored.data.correct,true,'Correct answer not accepted for '+mode);
+  if(['crystals','boss'].includes(mode)){
+   for(let phase=1;phase<3;phase++){
+    const follow=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
+    assert.equal(follow.status,200,'Encounter next phase missing');
+    assert.equal(follow.data.question.phase,phase,'Encounter phase out of order');
+    const english=follow.data.wordId==='fixture-word'?'hello':'world';
+    const result=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
+     challengeId:follow.data.challengeId,index:follow.data.index,wordId:follow.data.wordId,answer:english});
+    assert.equal(result.status,200,'Encounter phase failed');
+    assert.equal(result.data.correct,true,'Encounter phase incorrectly graded');
+   }
+  }
  }
  // Self-rating is independent of server-graded answers.
  const cards=await edge('create-assignment',teacher.jwt,{classId:ids.classA,

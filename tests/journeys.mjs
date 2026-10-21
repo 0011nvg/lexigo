@@ -18,14 +18,15 @@ async function scenario(viewport){
  await page.locator('#crystalBoard .crystal-tile').first().waitFor();
  await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/выкл/);
  await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/вкл/);
- for(let i=0;i<3;i++){
+ for(let i=0;i<7;i++){
   const move=await page.evaluate(()=>gemPossible([...game.gemBoard]));
   assert.ok(move,'Playable match-three move exists');
   await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
   await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
  }
- assert.match(await page.locator('#crystalScore').innerText(),/3 \/ 3/);
- assert.ok(await page.evaluate(()=>game.crystals>=9));
+ assert.match(await page.locator('#crystalScore').innerText(),/7 \/ 7/);
+ assert.ok(await page.evaluate(()=>game.crystals>=21));
+ assert.ok(await page.evaluate(()=>game.crystalPoints>=210));
  await page.locator('.crystal-continue').click();
  for(let n=0;n<4;n++){
   const state=await page.evaluate(()=>({w:game.words[game.index],mode:game.mode,index:game.index}));

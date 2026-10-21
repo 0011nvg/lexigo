@@ -3,7 +3,7 @@
 // All identities are derived from auth.getUser(accessToken), never request body.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','hint-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
+const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','play-round','hint-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LOCAL_ORIGINS=new Set(['http://127.0.0.1:3000','http://localhost:3000']);
 const reply=(status:number,data:unknown,origin='')=>new Response(JSON.stringify(data),{
@@ -98,6 +98,19 @@ Deno.serve(async(req:Request)=>{
    fn='answer_challenge';args={p_actor:user.id,p_attempt:body.attemptId,
     p_challenge:body.challengeId,p_index:body.index,p_word:body.wordId,p_answer:body.answer};break;
   }
+  case 'play-round':{
+   if(!UUID.test(String(body.attemptId||''))||
+    !UUID.test(String(body.challengeId||''))||
+    !UUID.test(String(body.requestId||''))||
+    !['pair','swap','answer','hint','retry'].includes(String(body.action))||
+    !body.payload||typeof body.payload!=='object'||Array.isArray(body.payload)||
+    JSON.stringify(body.payload).length>2048||
+    ['correct','actor','pupilId','wordId','expected','score'].some(k=>Object.hasOwn(body.payload,k)))
+    return respond(400,{error:'invalid round action'});
+   fn='play_challenge';args={p_actor:user.id,p_attempt:body.attemptId,
+    p_challenge:body.challengeId,p_request:body.requestId,
+    p_action:body.action,p_payload:body.payload};break;
+  }
   case 'issue-invitation':{
    if(!UUID.test(String(body.classId||''))||!['pupil','parent'].includes(String(body.role))||
     !Number.isInteger(body.ttlHours)||Number(body.ttlHours)<1||Number(body.ttlHours)>168)
@@ -138,5 +151,5 @@ Deno.serve(async(req:Request)=>{
  }
  const {data,error}=await server.schema('lexigo').rpc(fn,args);
  if(error)return respond(error.code==='42501'?403:error.code==='23505'?409:400,{error:'request rejected'});
- return respond(200,fn==='next_challenge'||fn==='answer_challenge'||fn==='request_challenge_hint'?data:{id:data});
+ return respond(200,fn==='next_challenge'||fn==='answer_challenge'||fn==='play_challenge'||fn==='request_challenge_hint'?data:{id:data});
 });

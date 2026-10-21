@@ -157,6 +157,7 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  await page.locator('#assignDate').fill('2026-12-15');
  await page.locator('#assignMode').selectOption('spell');
  await page.getByRole('button',{name:'Назначить тренировку'}).click();
+ await page.locator('#filterClass').selectOption('2А');
  assert.equal(await page.locator('#teacherTasks .task').count(),3);
  await page.locator('#filterPupil').selectOption('sasha-2a');
  assert.equal(await page.locator('#teacherTasks .task').count(),3);

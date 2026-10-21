@@ -3,7 +3,7 @@
 // All identities are derived from auth.getUser(accessToken), never request body.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const ALLOWED = new Set(['create-assignment','start-attempt','append-event','finish-attempt']);
+const ALLOWED = new Set(['create-assignment','start-attempt','append-event','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{
  status,headers:{'content-type':'application/json','cache-control':'no-store'}
@@ -58,6 +58,39 @@ Deno.serve(async(req:Request)=>{
    args={p_actor:user.id,p_attempt:body.attemptId,p_index:body.index,
     p_word:body.wordId,p_kind:body.kind,p_correct:body.correct??null,
     p_hinted:body.hinted,p_retry:body.retry,p_rating:body.rating??null};break;
+  }
+  case 'issue-invitation':{
+   if(!UUID.test(String(body.classId||''))||!['pupil','parent'].includes(String(body.role))||
+    !Number.isInteger(body.ttlHours)||Number(body.ttlHours)<1||Number(body.ttlHours)>168)
+    return reply(400,{error:'invalid invitation'});
+   fn='issue_invitation';args={p_actor:user.id,p_class:body.classId,p_role:body.role,p_ttl_hours:body.ttlHours};break;
+  }
+  case 'redeem-invitation':{
+   if(typeof body.token!=='string'||!/^[0-9a-f]{64}$/.test(body.token))
+    return reply(400,{error:'invalid invitation'});
+   fn='redeem_invitation';args={p_user:user.id,p_token:body.token};break;
+  }
+  case 'revoke-invitation':{
+   if(!UUID.test(String(body.invitationId||'')))return reply(400,{error:'invalid invitation'});
+   fn='revoke_invitation';args={p_actor:user.id,p_invitation:body.invitationId};break;
+  }
+  case 'verify-parent-link':
+  case 'revoke-parent-link':{
+   if(!UUID.test(String(body.parentUserId||''))||!UUID.test(String(body.childUserId||'')))
+    return reply(400,{error:'invalid parent link'});
+   fn=route==='verify-parent-link'?'verify_parent_link':'revoke_parent_link';
+   args={p_actor:user.id,p_parent:body.parentUserId,p_pupil:body.childUserId};break;
+  }
+  case 'review-attempt':
+  case 'revoke-review':{
+   if(!UUID.test(String(body.attemptId||'')))return reply(400,{error:'invalid attempt'});
+   fn=route==='review-attempt'?'review_attempt':'revoke_teacher_review';
+   args={p_actor:user.id,p_attempt:body.attemptId};break;
+  }
+  case 'revoke-enrollment':{
+   if(!UUID.test(String(body.classId||''))||!UUID.test(String(body.childUserId||'')))
+    return reply(400,{error:'invalid enrollment'});
+   fn='revoke_enrollment';args={p_actor:user.id,p_class:body.classId,p_pupil:body.childUserId};break;
   }
   default:{
    if(!UUID.test(String(body.attemptId||'')))return reply(400,{error:'invalid attempt'});

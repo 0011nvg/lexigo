@@ -18,7 +18,8 @@ try{
   await page.getByRole('button',{name:'Английское слово: '+w.en,exact:true}).click();
   await page.getByRole('button',{name:'Перевод: '+w.ru,exact:true}).click();
  }
- await page.locator('.pair-name-form input').waitFor();
+ console.log('Pairs completed:',await page.evaluate(()=>({matched:game.matched,total:game.words.length,errors:game.pairMistakes})));
+ await page.locator('.pair-name-form input').waitFor({timeout:5000});
  await page.locator('.pair-name-form input').fill('Тестовый игрок');
  await page.locator('.pair-name-form button').click();
  assert.match(await page.locator('.pair-leaderboard').innerText(),/Тестовый игрок/);

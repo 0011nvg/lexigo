@@ -8,7 +8,7 @@ try{
  await page.goto(process.env.LEXIGO_URL||'http://127.0.0.1:4173/');
  await page.locator('#book').waitFor();
  const lesson=await page.evaluate(()=>{
-  const b=DB.books.find(b=>b.sections.some(s=>s.words.length>=3&&s.words.every(w=>isSingleVocabularyWord(w.en))));
+  const b=DB.books.find(b=>b.sections.some(s=>s.words.length>=3&&s.words.every(w=>isSingleVocabularyWord(w.en))&&uniquePairs(s.words).length===s.words.length&&uniquePairs(s.words).length===s.words.length));
   const index=b?.sections.findIndex(s=>s.words.length>=3&&s.words.every(w=>isSingleVocabularyWord(w.en)));
   return b&&index>=0?{grade:String(b.grade),module:b.sections[index].module,index:String(index)}:null;
  });

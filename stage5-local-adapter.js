@@ -58,6 +58,15 @@ function renderQuestion(){const root=content(),q=question.question;
    const b=actionBtn(grid,['🔴','🟢','🔵','🟡','🟣','🟠'][Number(color)]||'💎',async()=>{
     if(first===null){first=i;return}const a=first;first=null;
     const r=await play('swap',{from:a,to:i});if(r.board){board=r.board;draw()}
+    if(r.boardComplete){
+     grid.remove();const label=document.createElement('p');
+     label.textContent='Кристаллы собраны. Теперь напиши слово: '+r.vocabQuestion.prompt;
+     root.append(label);const input=document.createElement('input');input.type='text';
+     input.setAttribute('aria-label','Слово после кристаллов');root.append(input);
+     actionBtn(root,'Проверить слово',async()=>{const response=await play('answer',{answer:input.value});
+      if(response.complete)input.disabled=true;else input.value=''});
+     actionBtn(root,'Подсказка',()=>play('hint'));
+    }
    });b.setAttribute('aria-label','Кристалл '+(i+1))})};
   draw();root.append(grid);return;
  }

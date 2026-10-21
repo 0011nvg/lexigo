@@ -69,7 +69,7 @@ begin
   raise exception 'not authorized' using errcode='42501'; end if;
  select * into ch from lexigo.attempt_challenges
  where id=p_challenge and attempt_id=p_attempt for update;
- if not found or ch.expires_at<=now() or ch.answered_at is not null
+ if not found or ch.expires_at<=now()
  or ch.mode not in ('pairs','crystals','boss') then
   raise exception 'challenge unavailable' using errcode='42501'; end if;
  if (select coalesce(max(event_index),-1)+1 from lexigo.attempt_events
@@ -83,6 +83,7 @@ begin
    raise exception 'conflicting request replay' using errcode='23505'; end if;
   return old.response;
  end if;
+ if ch.answered_at is not null then raise exception 'challenge completed' using errcode='42501'; end if;
  state:=ch.private_state; mode:=ch.mode;
  if state is null then raise exception 'missing server state' using errcode='22023'; end if;
  result:=pg_catalog.jsonb_build_object('complete',false);
@@ -130,19 +131,19 @@ begin
    raise exception 'nonadjacent swap' using errcode='42501'; end if;
   board:=state->'board';
   temp:=board->>i;
-  board:=pg_catalog.jsonb_set(board,pg_catalog.array[i::text],pg_catalog.to_jsonb(board->>j));
-  board:=pg_catalog.jsonb_set(board,pg_catalog.array[j::text],pg_catalog.to_jsonb(temp));
+  board:=pg_catalog.jsonb_set(board,ARRAY[i::text],pg_catalog.to_jsonb(board->>j));
+  board:=pg_catalog.jsonb_set(board,ARRAY[j::text],pg_catalog.to_jsonb(temp));
   matched:=lexigo.gem_matches(board);
-  good:=pg_catalog.coalesce(pg_catalog.array_length(matched,1),0)>=3;
+  good:=coalesce(pg_catalog.array_length(matched,1),0)>=3;
   if not good then
    -- Invalid move does not change the board.
    board:=state->'board';
   else
    -- Bounded cascades, server-generated replacement gems.
    for k in 1..8 loop
-    exit when pg_catalog.coalesce(pg_catalog.array_length(matched,1),0)<3;
+    exit when coalesce(pg_catalog.array_length(matched,1),0)<3;
     foreach i in array matched loop
-     board:=pg_catalog.jsonb_set(board,pg_catalog.array[i::text],
+     board:=pg_catalog.jsonb_set(board,ARRAY[i::text],
       pg_catalog.to_jsonb((pg_catalog.floor(random()*5))::integer::text));
     end loop;
     hits:=coalesce((state->>'hits')::integer,0)+pg_catalog.array_length(matched,1);
@@ -165,6 +166,7 @@ begin
   if p_action='retry' then
    if retry<>1 then raise exception 'retry unavailable' using errcode='42501'; end if;
    state:=pg_catalog.jsonb_set(state,'{retry}','0'::jsonb);
+   update lexigo.attempt_challenges set retry_uses=retry_uses+1 where id=ch.id;
    result:=result||pg_catalog.jsonb_build_object('retry',true,'phase',phase);
   elsif p_action='answer' then
    if pg_catalog.jsonb_typeof(p_payload->'answer')<>'string'
@@ -184,6 +186,9 @@ begin
     result:=result||pg_catalog.jsonb_build_object('correct',false);
    end if;
    result:=result||pg_catalog.jsonb_build_object('lives',lives,'phase',phase);
+   if good and phase<pg_catalog.jsonb_array_length(state->'stages') then
+    result:=result||pg_catalog.jsonb_build_object('nextQuestion',state->'stages'->phase->'question');
+   end if;
    if phase>=pg_catalog.jsonb_array_length(state->'stages') or lives<=0 then
     result:=result||pg_catalog.jsonb_build_object('complete',true,'passed',lives>0);
    end if;

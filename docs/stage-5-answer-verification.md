@@ -24,3 +24,12 @@ Each verified event records the server-computed `verified_correct`, a `server_ev
 4. Perform privacy, safeguarding, retention and independent security review before any real pupil is enrolled.
 
 The source `data.json`, `data.js` and game modes are not modified by this stage.
+
+
+## Challenge-bound local prototype (migration 009)
+
+The new `next-question` endpoint issues a random server-owned challenge tied to an authenticated pupil's active attempt and event index; `answer-question` validates the challenge UUID, word ID, actor, sequence, expiry and the server-stored expected answer. Concurrent duplicate answers return the same event only when the answer digest matches. The former predictable `submit-answer` HTTP route returns 410 and its RPC is no longer granted to `service_role`. Challenge rows and expected answers are not readable by `authenticated`.
+
+The separate `stage5-local-demo.html` is a localhost-only interface for synthetic accounts. It does not modify the original game code, persist JWTs or connect to production. The challenge question payload supports a two-choice quiz and pair-identification exercise when there are multiple words, a true/false translation prompt, spelling, typo correction, audio dictation via browser TTS, and word challenges inside crystals and boss modes. **These are deliberately simplified server-backed exercises, not full server validation of the existing drag-and-drop pairs board, gem match-three board or boss round orchestration.** The test vocabulary fixture currently contains one word, so multi-choice distractors are not exercised in the HTTP suite. The existing browser games remain unchanged and their local results must not be represented as server-verified.
+
+**Important:** An attacker who knows the published vocabulary can still derive a correct answer from a revealed word or prompt. Random server issuance prevents choosing a different `wordId` or event index but cannot guarantee the learner answered without help. Server-side grading is not an anti-cheat guarantee; challenge limits, answer exposure, assessment policy, accessibility and privacy require further design.

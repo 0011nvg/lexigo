@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {signFixtureJwt,verifyFixtureJwt,authorizeLocalRequest} from '../supabase/local-api/jwt-gateway.mjs';
 const secret=randomBytes(32).toString('hex'); // ephemeral CI-only, never persisted
 const users=[
@@ -23,3 +24,11 @@ for(const actor of users){
 }
 assert.throws(()=>authorizeLocalRequest('bad',secret,{},'finish-attempt'),/unauthorized/);
 console.log('Local cryptographic JWT signature, expiry and actor/pupil spoofing tests passed (fixture JWT, not Supabase Auth).');
+
+const edge=readFileSync(new URL('../supabase/functions/learning-api/index.ts',import.meta.url),'utf8');
+assert.match(edge,/auth\.auth\.getUser\(bearer\[1\]\)/);
+assert.match(edge,/p_actor:user\.id/);
+assert.match(edge,/SUPABASE_SERVICE_ROLE_KEY/);
+assert.doesNotMatch(edge,/jwt\.decode|atob\(/);
+assert.match(edge,/identity fields forbidden/);
+console.log('Edge Function identity-binding static checks passed; real Supabase Auth HTTP integration remains pending.');

@@ -61,6 +61,27 @@ async function main(){
  {id:'fixture-second',section_id:'fixture-section',en:'world',ru:'мир',order_index:1}]);
  let r=await edge('create-assignment',teacher.jwt,{classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'individual',recipients:[pupil.id]});
  assert.equal(r.status,200,'Teacher assignment '+JSON.stringify(r));ids.assignment=r.data.id;
+ // Stage 7 cabinet contract: real Auth JWT + PostgREST lexigo schema, no client-side role authority.
+ const cabinetRead=(table,query,jwt)=>api('/rest/v1/'+table+'?'+query,{token:jwt,schema:'lexigo'});
+ let view=await cabinetRead('profiles','select=user_id,role,display_name&user_id=eq.'+teacher.id,teacher.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,1);assert.equal(view.data[0].role,'teacher');
+ view=await cabinetRead('classes','select=id,title,grade&teacher_user_id=eq.'+teacher.id,teacher.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,1);
+ view=await cabinetRead('assignments','select=id,section_id,mode,class_id&created_by=eq.'+teacher.id,teacher.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,1);
+ view=await cabinetRead('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+pupil.id,pupil.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,1);
+ view=await cabinetRead('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+pupil.id,foreign.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read assignment recipient');
+ view=await cabinetRead('profiles','select=user_id,role,display_name&user_id=eq.'+teacher.id,pupil.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,0,'Pupil read teacher profile');
+ view=await cabinetRead('classes','select=id,title,grade&teacher_user_id=eq.'+teacher.id,foreign.jwt);
+ assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read teacher class');
+ const impersonate=await edge('create-assignment',pupil.jwt,{classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'individual',recipients:[pupil.id]});
+ assert.equal(impersonate.status,403,'Pupil forged teacher assignment');
+ const spoof=await edge('create-assignment',pupil.jwt,{actorId:teacher.id,classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'individual',recipients:[pupil.id]});
+ assert.equal(spoof.status,400,'Client-supplied teacher identity accepted');
+
  // Direct PostgREST writes must fail even for a legitimate teacher.
  for(const table of ['assignments','assignment_recipients','attempts','attempt_events']){
   const direct=await api('/rest/v1/'+table,{method:'POST',token:teacher.jwt,

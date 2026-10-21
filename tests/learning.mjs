@@ -94,6 +94,35 @@ async function run(viewport){
   if(scores.length!==100||scores.some(x=>x.seconds===999)||!scores.some(x=>x.seconds===1))throw Error('Fastest records were lost');
   localStorage.removeItem('lexigo_pair_scores');
  });
+ // Recognition must never shorten a future interval earned by unaided recall.
+ await page.evaluate(()=>{
+  const w=scope[0],saved=progress[w.id],oldGame=game;
+  try{
+   game={score:0,misses:0};
+   const now=Date.now();
+   progress[w.id]={right:2,wrong:0,recall:2,reviewStreak:3,reviewDay:'2020-01-01',due:now+7*86400000,last:now};
+   record(w,true,'recognition');
+   if(progress[w.id].due<now+6*86400000)throw Error('Recognition shortened spaced recall interval');
+   record(w,false,'recognition');
+   if(progress[w.id].due> Date.now()+10000||progress[w.id].reviewStreak!==0)throw Error('Wrong answer did not reset due date');
+  }finally{if(saved)progress[w.id]=saved;else delete progress[w.id];game=oldGame;save();updateStats()}
+ });
+ // Final test cannot be passed using only a visible typo as proof of unaided spelling.
+ await page.evaluate(()=>{
+  const singles=scope.filter(w=>/^[a-zA-Z]+(?:[-'][a-zA-Z]+)*$/.test(w.en.trim())).slice(0,4);
+  if(singles.length<3)throw Error('Insufficient single words');
+  selected=new Set(singles.map(w=>w.id));
+  const original=[...document.querySelectorAll('#taskTypes input')].map(x=>[x,x.checked]);
+  try{
+   document.querySelectorAll('#taskTypes input').forEach(x=>x.checked=x.value==='fix');
+   const previous=game;start('boss');
+   if(game!==previous)throw Error('Boss accepted typo correction as independent recall');
+   document.querySelectorAll('#taskTypes input').forEach(x=>x.checked=x.value==='spell');
+   start('boss');
+   if(!game||game.mode!=='boss'||!['spell','audio'].includes(game.activeQuestionMode))throw Error('Boss lacks unaided recall');
+   stop();
+  }finally{original.forEach(([x,v])=>x.checked=v)}
+ });
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});
  assert.equal(await page.evaluate(()=>game.words.length),Math.min(15,await page.evaluate(()=>scope.length)));

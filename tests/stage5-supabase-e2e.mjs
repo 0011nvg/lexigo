@@ -1,4 +1,5 @@
 // Real local Supabase Auth -> PostgREST -> Edge Runtime -> PostgreSQL RPC.
+// Server-owned challenges, synthetic vocabulary and localhost-only demo are CI tested.
 // Uses only synthetic users and CLI-generated ephemeral local keys.
 import assert from 'node:assert/strict';
 import {setTimeout as sleep} from 'node:timers/promises';

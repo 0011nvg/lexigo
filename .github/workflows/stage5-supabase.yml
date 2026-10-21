@@ -24,6 +24,10 @@ jobs:
         run: supabase start -x studio,imgproxy,inbucket,storage-api,realtime,analytics,vector,edge-runtime
       - name: Apply migrations
         run: supabase db reset --local
+      - name: Cache Edge Runtime image via Docker Hub mirror
+        run: |
+          docker pull supabase/edge-runtime:v1.77.4
+          docker tag supabase/edge-runtime:v1.77.4 public.ecr.aws/supabase/edge-runtime:v1.77.4
       - name: Start Edge Function locally
         run: |
           supabase functions serve learning-api --no-verify-jwt > /tmp/lexigo-edge.log 2>&1 &

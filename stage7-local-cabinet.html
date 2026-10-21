@@ -44,6 +44,21 @@ heading(root,'Мои попытки');showRows(root,attempts,['assignment_id','s
 $('login').hidden=true;$('cabinet').hidden=false;say('Данные загружены с сервера; браузерное демо-хранилище не используется')}
 
 
+
+async function selfRating(root,assignment,attemptId){
+ const words=await rows('vocabulary_words','select=id,en,ru&section_id=eq.'+encodeURIComponent(assignment.section_id)+'&order=order_index.asc');
+ if(!words.length)throw Error('Нет слов для самооценки');
+ let index=0;
+ const title=el('p');const reveal=el('button','Показать перевод');
+ const translation=el('p');const known=el('button','Знаю');const unknown=el('button','Пока учу');
+ root.append(title,reveal,translation,known,unknown);
+ function display(){const w=words[index];if(!w){title.textContent='Все карточки пройдены';reveal.remove();known.remove();unknown.remove();translation.remove();return}
+ title.textContent=(index+1)+' / '+words.length+' · '+w.en;translation.textContent='';}
+ reveal.onclick=()=>{translation.textContent=words[index]?.ru||''};
+ async function rate(rating){known.disabled=unknown.disabled=true;try{const w=words[index];await edge('append-event',{attemptId,wordId:w.id,index,kind:'card_self_rating',hinted:false,retry:false,rating});index++;display();say('Самооценка сохранена сервером — это не проверенный игровой балл')}catch(err){say(err.message,true)}finally{known.disabled=unknown.disabled=false}}
+ known.onclick=()=>rate('known');unknown.onclick=()=>rate('unknown');display();
+}
+
 async function statefulRound(root,c,attemptId,mode){
  const q=c.question||{};
  const status=el('p','Все ходы и ответы проверяются сервером');root.append(status);
@@ -83,7 +98,7 @@ async function statefulRound(root,c,attemptId,mode){
     const from=selected;selected=null;try{const result=await action('swap',{from,to:i});
      if(Array.isArray(result.board)&&result.board.length===36){current=result.board;cells.forEach((cell,j)=>cell.textContent=String(current[j]))}
      if(result.moves!=null)moves=Number(result.moves);else if(result.correct)moves++;
-     if(result.questionReady||moves>=7){done=true;cells.forEach(cell=>cell.disabled=true);root.append(el('p',String(q.prompt||'Переведите слово')));answerField()}
+     if(result.boardComplete){done=true;cells.forEach(cell=>cell.disabled=true);root.append(el('p',String(result.vocabQuestion?.prompt||q.prompt||'Переведите слово')));answerField()}
     }catch(err){say(err.message,true)}
    };
   }
@@ -135,7 +150,7 @@ async function play(root,assignment,attemptId){
  const finish=el('button','Завершить попытку');box.append(finish);
  finish.onclick=async()=>{try{await edge('finish-attempt',{attemptId});say('Попытка завершена на сервере');await load()}catch(err){say(err.message,true)}};
  next.onclick=async()=>{next.disabled=true;question.replaceChildren();try{
-  if(['cards','daily'].includes(assignment.mode)){question.append(el('p','Самооценка cards/daily сохраняется отдельно; в этом пилотном интерфейсе пока недоступна.'));return}
+  if(['cards','daily'].includes(assignment.mode)){await selfRating(question,assignment,attemptId);return}
   const c=await edge('next-question',{attemptId});
   if(['pairs','crystals','boss'].includes(assignment.mode)){
    await statefulRound(question,c,attemptId,assignment.mode);return;

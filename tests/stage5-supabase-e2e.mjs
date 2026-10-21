@@ -3,6 +3,7 @@
 // Uses only synthetic users and CLI-generated ephemeral local keys.
 import assert from 'node:assert/strict';
 import {setTimeout as sleep} from 'node:timers/promises';
+import {randomUUID} from 'node:crypto';
 const base='http://127.0.0.1:54321';
 const anon=process.env.SUPABASE_ANON_KEY;
 const service=process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -184,6 +185,120 @@ async function main(){
    }
   }
  }
+ // Stateful pair matching: server checks both sides and tile ownership.
+ const pairAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
+ sectionId:'fixture-section',mode:'pairs',dueAt:'2030-01-01T00:00:00Z',
+ audience:'individual',recipients:[pupil.id]});
+ assert.equal(pairAssignment.status,200);
+ const pairAttempt=await edge('start-attempt',pupil.jwt,{assignmentId:pairAssignment.data.id,
+ sessionId:'00000000-0000-4000-8000-000000000301'});
+ assert.equal(pairAttempt.status,200);
+ const pairQuestion=await edge('next-question',pupil.jwt,{attemptId:pairAttempt.data.id});
+ assert.equal(pairQuestion.status,200,'Pair challenge '+JSON.stringify(pairQuestion));
+ assert.equal(pairQuestion.data.question.responseType,'pairs');
+ const tiles=pairQuestion.data.question.tiles;
+ assert.equal(tiles.length,4);
+ assert.ok(tiles.every(t=>!Object.hasOwn(t,'word')),'Private pair IDs leaked');
+ const pairAction=(action,payload,requestId=randomUUID(),jwt=pupil.jwt)=>
+ edge('play-round',jwt,{attemptId:pairAttempt.data.id,challengeId:pairQuestion.data.challengeId,
+ requestId,action,payload});
+ let pairBad=await pairAction('pair',{first:tiles[0].id,second:'00000000-0000-4000-8000-000000000099'});
+ assert.equal(pairBad.status,403,'Invented tile accepted');
+ const wrongPair=tiles.find(t=>t.side!==tiles[0].side&&
+ ((tiles[0].text==='hello'&&t.text!=='привет')||
+ (tiles[0].text==='world'&&t.text!=='мир')||
+ (tiles[0].text==='привет'&&t.text!=='hello')||
+ (tiles[0].text==='мир'&&t.text!=='world')));
+ assert.ok(wrongPair);
+ const incorrectPair=await pairAction('pair',{first:tiles[0].id,second:wrongPair.id});
+ assert.equal(incorrectPair.status,200);
+ assert.equal(incorrectPair.data.correct,false);
+ const groups=[['hello','привет'],['world','мир']];
+ for(const [en,ru] of groups){
+  const t1=tiles.find(t=>t.text===en),t2=tiles.find(t=>t.text===ru);
+  const payload={first:t1.id,second:t2.id},requestId=randomUUID();
+  const parallel=await Promise.all(Array.from({length:5},()=>pairAction('pair',payload,requestId)));
+  assert.ok(parallel.every(x=>x.status===200),'Concurrent pair mismatch '+JSON.stringify(parallel));
+  assert.ok(parallel.every(x=>x.data.correct===true),'Valid pair rejected');
+  const changed=await pairAction('pair',{first:t2.id,second:t1.id},requestId);
+  assert.equal(changed.status,409,'Replayed request ID with altered pair accepted');
+ }
+ const afterPair=await pairAction('pair',{first:tiles[0].id,second:tiles[1].id});
+ assert.equal(afterPair.status,403,'Completed pair challenge reopened');
+ const bypassPair=await edge('answer-question',pupil.jwt,{attemptId:pairAttempt.data.id,
+ challengeId:pairQuestion.data.challengeId,index:0,wordId:pairQuestion.data.wordId,answer:'hello'});
+ assert.equal(bypassPair.status,403,'Text API bypassed pair state');
+ const unauthorizedPair=await pairAction('hint',{},randomUUID(),parent.jwt);
+ assert.equal(unauthorizedPair.status,403,'Parent manipulated pair state');
+
+ // Crystals: server validates adjacent swaps, move limits, board and replay.
+ const crystalAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
+ sectionId:'fixture-section',mode:'crystals',dueAt:'2030-01-01T00:00:00Z',
+ audience:'individual',recipients:[pupil.id]});
+ assert.equal(crystalAssignment.status,200);
+ const crystalAttempt=await edge('start-attempt',pupil.jwt,{assignmentId:crystalAssignment.data.id,
+ sessionId:'00000000-0000-4000-8000-000000000302'});
+ assert.equal(crystalAttempt.status,200);
+ const crystalQuestion=await edge('next-question',pupil.jwt,{attemptId:crystalAttempt.data.id});
+ assert.equal(crystalQuestion.status,200);
+ assert.equal(crystalQuestion.data.question.board.length,16);
+ const crystalAction=(payload,requestId=randomUUID())=>edge('play-round',pupil.jwt,{
+ attemptId:crystalAttempt.data.id,challengeId:crystalQuestion.data.challengeId,
+ requestId,action:'swap',payload});
+ const far=await crystalAction({from:0,to:15});
+ assert.equal(far.status,403,'Nonadjacent crystal swap accepted');
+ const firstSwapId=randomUUID();
+ const simultaneousSwaps=await Promise.all(Array.from({length:5},()=>crystalAction({from:0,to:1},firstSwapId)));
+ assert.ok(simultaneousSwaps.every(x=>x.status===200),'Crystal concurrency '+JSON.stringify(simultaneousSwaps));
+ assert.deepEqual(simultaneousSwaps.map(x=>x.data),Array(5).fill(simultaneousSwaps[0].data));
+ let crystalLast=simultaneousSwaps[0];
+ for(let i=1;i<20&&!crystalLast.data.complete;i++){
+  crystalLast=await crystalAction({from:0,to:1});
+  assert.equal(crystalLast.status,200,'Crystal move '+i+' '+JSON.stringify(crystalLast));
+ }
+ assert.equal(crystalLast.data.complete,true,'Crystal round never finished');
+ assert.ok(crystalLast.data.hits>=0);
+ const extraCrystal=await crystalAction({from:0,to:1});
+ assert.equal(extraCrystal.status,403,'Completed crystal round reopened');
+
+ // Boss: 3 server-owned phases, hint and retry cannot be spoofed.
+ const bossAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
+ sectionId:'fixture-section',mode:'boss',dueAt:'2030-01-01T00:00:00Z',
+ audience:'individual',recipients:[pupil.id]});
+ assert.equal(bossAssignment.status,200);
+ const bossAttempt=await edge('start-attempt',pupil.jwt,{assignmentId:bossAssignment.data.id,
+ sessionId:'00000000-0000-4000-8000-000000000303'});
+ assert.equal(bossAttempt.status,200);
+ const bossQuestion=await edge('next-question',pupil.jwt,{attemptId:bossAttempt.data.id});
+ assert.equal(bossQuestion.status,200);
+ assert.equal(bossQuestion.data.question.responseType,'boss');
+ const bossAction=(action,payload={})=>edge('play-round',pupil.jwt,{
+ attemptId:bossAttempt.data.id,challengeId:bossQuestion.data.challengeId,
+ requestId:randomUUID(),action,payload});
+ const hint=await bossAction('hint');
+ assert.equal(hint.status,200,'Boss hint denied');
+ const secondHint=await bossAction('hint');
+ assert.equal(secondHint.status,403,'Unlimited boss hints accepted');
+ const miss=await bossAction('answer',{answer:'wrong'});
+ assert.equal(miss.status,200);assert.equal(miss.data.correct,false);
+ const blocked=await bossAction('answer',{answer:'wrong'});
+ assert.equal(blocked.status,400,'Boss retry gate bypassed');
+ const retry=await bossAction('retry');
+ assert.equal(retry.status,200,'Boss retry denied');
+ const q0=bossQuestion.data.question.question;
+ const bossFirst=await bossAction('answer',{answer:q0.prompt.endsWith('hello')?'привет':'мир'});
+ assert.equal(bossFirst.status,200,'Boss quiz '+JSON.stringify(bossFirst));
+ assert.equal(bossFirst.data.correct,true);
+ const q1=bossFirst.data.nextQuestion;
+ const bossSecond=await bossAction('answer',{answer:q1.prompt==='привет'?'hello':'world'});
+ assert.equal(bossSecond.status,200,'Boss spell '+JSON.stringify(bossSecond));
+ assert.equal(bossSecond.data.correct,true);
+ const bossThird=await bossAction('answer',{answer:'true'});
+ assert.equal(bossThird.status,200,'Boss truefalse '+JSON.stringify(bossThird));
+ assert.equal(bossThird.data.complete,true);
+ assert.equal(bossThird.data.passed,true);
+ const bossReplay=await bossAction('answer',{answer:'true'});
+ assert.equal(bossReplay.status,403,'Completed boss reopened');
  // Self-rating is independent of server-graded answers.
  const cards=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
  sectionId:'fixture-section',mode:'cards',dueAt:'2030-01-01T00:00:00Z',
@@ -210,7 +325,7 @@ async function main(){
  await insert('parent_pupils',[{parent_user_id:parent.id,pupil_user_id:pupil.id,verified_by:teacher.id}]);
  const linked=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
  assert.equal(linked.status,200,'Linked parent read '+JSON.stringify(linked));
- assert.equal(linked.data.length,9,'Verified parent cannot see linked pupil attempts');
+ assert.equal(linked.data.length,12,'Verified parent cannot see linked pupil attempts');
  const revoke=await api('/rest/v1/parent_pupils?parent_user_id=eq.'+parent.id+'&pupil_user_id=eq.'+pupil.id,
  {method:'PATCH',key:service,body:{revoked_at:new Date().toISOString()},schema:'lexigo'});
  assert.equal(revoke.status,204,'Parent link revoke '+JSON.stringify(revoke));
@@ -219,7 +334,7 @@ async function main(){
  assert.equal(afterRevoke.data.length,0,'Revoked parent still sees pupil attempts');
  const pupilRead=await api('/rest/v1/attempts?select=id',{token:pupil.jwt,schema:'lexigo'});
  assert.equal(pupilRead.status,200,'Pupil read '+JSON.stringify(pupilRead));
- assert.equal(pupilRead.data.length,9,'Pupil cannot see own attempts');
+ assert.equal(pupilRead.data.length,12,'Pupil cannot see own attempts');
  const foreignRead=await api('/rest/v1/attempts?select=id',{token:foreign.jwt,schema:'lexigo'});
  assert.equal(foreignRead.status,200,'Foreign read '+JSON.stringify(foreignRead));
  assert.equal(foreignRead.data.length,0,'Foreign pupil saw attempt');
@@ -272,7 +387,7 @@ async function main(){
  const verified=await edge('verify-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
  assert.equal(verified.status,200,'Teacher parent verification '+JSON.stringify(verified));
  const linkedAgain=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
- assert.equal(linkedAgain.data.length,9,'Verified parent still denied');
+ assert.equal(linkedAgain.data.length,12,'Verified parent still denied');
  const unlinked=await edge('revoke-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
  assert.equal(unlinked.status,200,'Teacher parent revocation');
  const unlinkedRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});

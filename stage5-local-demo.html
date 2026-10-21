@@ -24,6 +24,31 @@ async function call(route,body){const res=await fetch(API+route,{method:'POST',h
  'authorization':'Bearer '+$('jwt').value.trim(),'content-type':'application/json'
 },body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error('HTTP '+res.status+': '+(data.error||'запрос отклонён'));return data}
 function message(s){$('message').textContent=s}
+async function play(action,payload){if(busy||!question)return;busy=true;try{
+ const result=await call('play-round',{attemptId:attempt,challengeId:question.challengeId,
+ requestId:crypto.randomUUID(),action,payload});
+ if(result.hint)message(result.hint);
+ else if(action==='pair'){message(result.correct?'✓ Пара найдена':'✕ Это разные слова');for(const id of selected){}selected=[];
+  if(result.correct){for(const id of payloadIds){const el=document.getElementById('tile-'+id);if(el)el.disabled=true}}
+  $('crystals').textContent='🔗 Найдено пар: '+(result.matched??0)}
+ else if(action==='swap'){message(result.correct?'💎 Комбинация собрана':'Попробуй другую перестановку');
+  renderBoard(result.board);$('crystals').textContent='💎 Кристаллов: '+result.hits+' · Ходов: '+result.moves}
+ else if(action==='answer'){message(result.correct?'⚔️ Удар нанесён':'❤️ Осталось жизней: '+result.lives);
+  if(result.nextQuestion)renderBoss(result.nextQuestion);
+  else if(!result.correct&&!result.complete){$('submit').disabled=true;const retry=document.createElement('button');retry.textContent='Повторить фазу';retry.onclick=async()=>{retry.remove();await play('retry',{});$('submit').disabled=false};$('choices').append(retry)}}
+ if(result.complete){$('next').hidden=false;$('submit').disabled=true;$('hint').disabled=true;
+  message('Раунд завершён. '+(result.passed===false?'Босс победил.':'Результат сохранён сервером.'))}
+ }catch(e){message(e.message)}finally{busy=false}}
+let selected=[],payloadIds=[];
+function renderBoard(board){$('choices').replaceChildren();if(!Array.isArray(board))return;
+ board.forEach((gem,i)=>{const b=document.createElement('button');b.textContent=['💎','🔷','🔶','🟣','🟢'][Number(gem)]||'◆';
+ b.onclick=()=>{if(selected.length===0){selected=[i];b.classList.add('selected');return}
+ const from=selected[0];selected=[];play('swap',{from,to:i})};$('choices').append(b)})}
+function renderBoss(q){$('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'');
+ $('textLabel').hidden=q.responseType==='boolean';$('answer').value='';
+ $('choices').replaceChildren();if(q.responseType==='boolean'){for(const value of ['true','false']){
+ const b=document.createElement('button');b.textContent=value==='true'?'Верно':'Неверно';b.onclick=()=>play('answer',{answer:value});$('choices').append(b)}}}
+
 $('start').onclick=async()=>{try{const session=crypto.randomUUID();
  const result=await call('start-attempt',{assignmentId:$('assignment').value.trim(),sessionId:session});
  attempt=result.id;$('round').hidden=false;await nextQuestion()}catch(e){alert(e.message)}};
@@ -40,7 +65,16 @@ async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
  }
  $('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'')+(q.instruction?' · '+q.instruction:'');
  $('choices').replaceChildren();$('answer').value='';$('next').hidden=true;$('submit').disabled=false;$('hint').disabled=Boolean(question.hinted);
- $('textLabel').hidden=['choice','pair','boolean'].includes(q.responseType);
+ $('textLabel').hidden=['choice','pair','pairs','crystals','boolean'].includes(q.responseType);
+ if(q.responseType==='pairs'){selected=[];const tiles=q.tiles;$('choices').replaceChildren();
+ for(const tile of tiles){const b=document.createElement('button');b.id='tile-'+tile.id;b.textContent=tile.text;
+ b.onclick=()=>{if(selected.includes(tile.id))return;selected.push(tile.id);b.classList.add('selected');
+ if(selected.length===2){payloadIds=[...selected];play('pair',{first:selected[0],second:selected[1]});
+ for(const el of $('choices').children)el.classList.remove('selected')}};$('choices').append(b)}
+ $('submit').hidden=true;return}
+ if(q.responseType==='crystals'){$('submit').hidden=true;renderBoard(q.board);return}
+ if(q.responseType==='boss'){$('submit').hidden=false;renderBoss(q.question);return}
+ $('submit').hidden=false;
  if(['choice','pair'].includes(q.responseType)){for(const value of q.choices){const btn=document.createElement('button');btn.textContent=value;btn.onclick=()=>{for(const el of $('choices').children)el.classList.remove('selected');btn.classList.add('selected');submit(value)};$('choices').append(btn)}}
  if(q.responseType==='boolean'){for(const [label,value] of [['Верно','true'],['Неверно','false']]){const btn=document.createElement('button');btn.textContent=label;btn.onclick=()=>submit(value);$('choices').append(btn)}}
  if(q.responseType==='audio'){const btn=document.createElement('button');btn.textContent='🔊 Прослушать';
@@ -49,7 +83,7 @@ async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
  $('choices').append(btn)}
  message('Ответ проверит сервер, а не браузер.');
  }catch(e){message(e.message)}finally{busy=false}}
-async function submit(answer){if(busy||!question)return;busy=true;try{
+async function submit(answer){if(question?.mode==='boss')return play('answer',{answer});if(busy||!question)return;busy=true;try{
  const result=await call('answer-question',{attemptId:attempt,challengeId:question.challengeId,
  index:question.index,wordId:question.wordId,answer});
  message(result.correct?'✓ Сервер подтвердил правильный ответ':result.complete?'✕ Попытки исчерпаны':'✕ Попробуй ещё. Осталось: '+result.remaining);
@@ -60,7 +94,7 @@ async function submit(answer){if(busy||!question)return;busy=true;try{
  $('hearts').textContent='Результат раунда записан сервером. Следующий ход обновит состояние.';
  }}
  }catch(e){message(e.message)}finally{busy=false}}
-$('hint').onclick=async()=>{if(busy||!question)return;busy=true;try{const r=await call('hint-question',{attemptId:attempt,challengeId:question.challengeId});message(r.hint);$('hint').disabled=true}catch(e){message(e.message)}finally{busy=false}};
+$('hint').onclick=async()=>{if(['pairs','boss'].includes(question?.mode))return play('hint',{});if(busy||!question)return;busy=true;try{const r=await call('hint-question',{attemptId:attempt,challengeId:question.challengeId});message(r.hint);$('hint').disabled=true}catch(e){message(e.message)}finally{busy=false}};
 $('submit').onclick=()=>submit($('answer').value);
 $('answer').onkeydown=e=>{if(e.key==='Enter')$('submit').click()};
 $('next').onclick=nextQuestion;

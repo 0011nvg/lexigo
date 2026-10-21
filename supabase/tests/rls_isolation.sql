@@ -111,28 +111,37 @@ do $$ begin
   raise exception 'Pupil A cannot see their own individual assignment'; end if;
 end $$;
 
--- A legitimate pupil can start a class attempt, but not append after finishing.
+-- Authenticated users have NO direct write grants, including valid own rows.
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000107',true);
-insert into lexigo.attempts(id,assignment_id,pupil_user_id,client_session_id)
-values('40000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000001',
-'00000000-0000-4000-8000-000000000107','50000000-0000-4000-8000-000000000003');
-insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct)
-values('40000000-0000-4000-8000-000000000003','fixture-word',0,'answer',true);
-update lexigo.attempts set status='finished',finished_at=now()
-where id='40000000-0000-4000-8000-000000000003';
-do $$ begin
- begin
-  insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct)
-  values('40000000-0000-4000-8000-000000000003','fixture-word',1,'answer',true);
-  raise exception 'Finished attempt accepted new event';
- exception when insufficient_privilege then null; end;
+do $ begin
  begin
   insert into lexigo.attempts(assignment_id,pupil_user_id,client_session_id)
   values('30000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000107',
   '50000000-0000-4000-8000-000000000003');
-  raise exception 'Duplicate client session was accepted';
- exception when unique_violation then null; end;
-end $$;
+  raise exception 'Direct own attempt insert accepted';
+ exception when insufficient_privilege then null; end;
+ begin
+  insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct)
+  values('40000000-0000-4000-8000-000000000001','fixture-word',1,'answer',true);
+  raise exception 'Direct event insert accepted';
+ exception when insufficient_privilege then null; end;
+ begin
+  update lexigo.attempts set status='finished',finished_at=now()
+  where id='40000000-0000-4000-8000-000000000001';
+  raise exception 'Direct attempt update accepted';
+ exception when insufficient_privilege then null; end;
+ begin
+  insert into lexigo.assignments(class_id,created_by,section_id,mode,due_at,audience_type)
+  values('20000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000101','fixture-section','quiz',now()+interval '1 day','class');
+  raise exception 'Direct assignment insert accepted';
+ exception when insufficient_privilege then null; end;
+ begin
+  insert into lexigo.assignment_recipients(assignment_id,pupil_user_id)
+  values('30000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000107');
+  raise exception 'Direct recipient insert accepted';
+ exception when insufficient_privilege then null; end;
+end $;
 reset role;
 set local role anon;
 do $$ begin

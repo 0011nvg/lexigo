@@ -65,6 +65,7 @@ try{
   await page.evaluate(()=>{window.print=()=>{};printTeacherTest()});
   assert.equal(await page.locator('#lexigoPrint .print-question').count(),count);
   assert.equal(await page.locator('#lexigoPrint .print-key li').count(),count);
+  assert.deepEqual(await page.locator('#lexigoPrint .print-questions > div').evaluateAll(cols=>cols.map(c=>c.querySelectorAll('.print-question').length)),[Math.ceil(count/2),Math.floor(count/2)],'Questions must be balanced into two columns');
   const pdf=await page.pdf({format:'A4',printBackground:true,preferCSSPageSize:true});
   const doc=await PDFDocument.load(pdf);
   const pages=doc.getPageCount();

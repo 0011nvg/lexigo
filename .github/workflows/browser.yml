@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-save playwright
+      - run: npm install --no-save playwright pdf-lib
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
@@ -22,6 +22,7 @@ jobs:
       - run: node tests/learning.mjs
       - run: node tests/cabinets.mjs
       - run: node tests/visual-smoke.mjs
+      - run: node tests/pairs-print.mjs
       - name: Upload browser screenshots and failures
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,6 +1,7 @@
 // Real local Supabase Auth -> PostgREST -> Edge Runtime -> PostgreSQL RPC.
 // Uses only synthetic users and CLI-generated ephemeral local keys.
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {setTimeout as sleep} from 'node:timers/promises';
 const base='http://127.0.0.1:54321';
 const anon=process.env.SUPABASE_ANON_KEY;
@@ -35,13 +36,14 @@ async function edge(route,jwt,body){
 }
 async function main(){
  for(let n=0;n<40;n++){try{const r=await fetch(base+'/auth/v1/health');if(r.ok)break}catch{}await sleep(1000)}
- const [teacher,pupil,parent,foreign]=await Promise.all(['teacher','pupil','parent','foreign'].map(signup));
+ const [teacher,pupil,parent,foreign,newPupil]=await Promise.all(['teacher','pupil','parent','foreign','newpupil'].map(signup));
  await insert('organizations',[{id:ids.org,name:'Fixture school A'},{id:ids.teacher2,name:'Fixture school B'}]);
  await insert('profiles',[
  {user_id:teacher.id,organization_id:ids.org,role:'teacher',display_name:'Teacher'},
  {user_id:pupil.id,organization_id:ids.org,role:'pupil',display_name:'Pupil'},
  {user_id:parent.id,organization_id:ids.org,role:'parent',display_name:'Parent'},
- {user_id:foreign.id,organization_id:ids.teacher2,role:'pupil',display_name:'Foreign pupil'}
+ {user_id:foreign.id,organization_id:ids.teacher2,role:'pupil',display_name:'Foreign pupil'},
+ {user_id:newPupil.id,organization_id:ids.org,role:'pupil',display_name:'New pupil'}
  ]);
  await insert('classes',[{id:ids.classA,organization_id:ids.org,teacher_user_id:teacher.id,grade:2,title:'2A'}]);
  await insert('enrollments',[{class_id:ids.classA,pupil_user_id:pupil.id}]);
@@ -102,6 +104,62 @@ async function main(){
  const foreignRead=await api('/rest/v1/attempts?select=id',{token:foreign.jwt,schema:'lexigo'});
  assert.equal(foreignRead.status,200,'Foreign read '+JSON.stringify(foreignRead));
  assert.equal(foreignRead.data.length,0,'Foreign pupil saw attempt');
+ // Invitation lifecycle over real Auth-issued JWT and Edge HTTP, with no token in logs.
+ let inv=await edge('issue-invitation',parent.jwt,{classId:ids.classA,role:'pupil',ttlHours:24});
+ assert.equal(inv.status,403,'Parent issued invitation');
+ inv=await edge('issue-invitation',teacher.jwt,{classId:ids.classA,role:'pupil',ttlHours:24});
+ assert.equal(inv.status,200,'Teacher issue '+JSON.stringify(inv));
+ const firstToken=inv.data.id;
+ assert.match(firstToken,/^[0-9a-f]{64}$/);
+ let redeem=await edge('redeem-invitation',newPupil.jwt,{token:firstToken});
+ assert.equal(redeem.status,200,'Pupil redeem '+JSON.stringify(redeem));
+ const redeemedId=redeem.data.id;
+ redeem=await edge('redeem-invitation',newPupil.jwt,{token:firstToken});
+ assert.equal(redeem.status,403,'Invitation replay accepted');
+ const enrollment=await api('/rest/v1/enrollments?select=status&class_id=eq.'+ids.classA+
+ '&pupil_user_id=eq.'+newPupil.id,{key:service,schema:'lexigo'});
+ assert.equal(enrollment.data[0]?.status,'active','Redeemed invitation did not enroll user');
+ let revokeEnrollment=await edge('revoke-enrollment',teacher.jwt,{classId:ids.classA,childUserId:newPupil.id});
+ assert.equal(revokeEnrollment.status,200,'Teacher revoke enrollment');
+ const afterEnrollment=await api('/rest/v1/enrollments?select=status&class_id=eq.'+ids.classA+
+ '&pupil_user_id=eq.'+newPupil.id,{key:service,schema:'lexigo'});
+ assert.equal(afterEnrollment.data[0]?.status,'revoked','Enrollment revocation not applied');
+ inv=await edge('issue-invitation',teacher.jwt,{classId:ids.classA,role:'pupil',ttlHours:24});
+ assert.equal(inv.status,200);
+ const revokedToken=inv.data.id;
+ const digest=Array.from(createHash('sha256').update(revokedToken).digest()).map(x=>x.toString(16).padStart(2,'0')).join('');
+ const lookup=await api('/rest/v1/invitations?select=id&token_digest=eq.\\x'+digest,{key:service,schema:'lexigo'});
+ assert.equal(lookup.status,200,'Invite digest lookup '+JSON.stringify(lookup));
+ assert.equal(lookup.data.length,1,'Token digest lookup failed');
+ let rev=await edge('revoke-invitation',teacher.jwt,{invitationId:lookup.data[0].id});
+ assert.equal(rev.status,200,'Revoke invitation '+JSON.stringify(rev));
+ redeem=await edge('redeem-invitation',newPupil.jwt,{token:revokedToken});
+ assert.equal(redeem.status,403,'Revoked invitation redeemed');
+ inv=await edge('issue-invitation',teacher.jwt,{classId:ids.classA,role:'pupil',ttlHours:1});
+ assert.equal(inv.status,200);
+ const expiredToken=inv.data.id;
+ const expiredDigest='\\x'+createHash('sha256').update(expiredToken).digest('hex');
+ const expired=await api('/rest/v1/invitations?token_digest=eq.'+expiredDigest,
+ {method:'PATCH',key:service,schema:'lexigo',body:{expires_at:new Date(Date.now()-1000).toISOString()}});
+ assert.equal(expired.status,204,'Fixture expiry update '+JSON.stringify(expired));
+ redeem=await edge('redeem-invitation',newPupil.jwt,{token:expiredToken});
+ assert.equal(redeem.status,403,'Expired invitation redeemed');
+ const invalidParent=await edge('verify-parent-link',parent.jwt,{parentUserId:parent.id,childUserId:pupil.id});
+ assert.equal(invalidParent.status,403,'Parent self-verified relationship');
+ const verified=await edge('verify-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
+ assert.equal(verified.status,200,'Teacher parent verification '+JSON.stringify(verified));
+ const linkedAgain=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
+ assert.equal(linkedAgain.data.length,1,'Verified parent still denied');
+ const unlinked=await edge('revoke-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
+ assert.equal(unlinked.status,200,'Teacher parent revocation');
+ const unlinkedRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
+ assert.equal(unlinkedRead.data.length,0,'Revoked parent read persisted');
+ const reviewed=await edge('review-attempt',teacher.jwt,{attemptId:ids.attempt});
+ assert.equal(reviewed.status,200,'Teacher review '+JSON.stringify(reviewed));
+ const fakeReview=await edge('review-attempt',parent.jwt,{attemptId:ids.attempt});
+ assert.equal(fakeReview.status,403,'Parent forged teacher review');
+ const revokedReview=await edge('revoke-review',teacher.jwt,{attemptId:ids.attempt});
+ assert.equal(revokedReview.status,200,'Teacher review revocation');
  console.log('Real Supabase Auth JWT, Edge HTTP, RLS, assignment and event idempotency passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

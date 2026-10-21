@@ -10,6 +10,7 @@ try{
  await page.locator('#book').waitFor();
  // Use every word of the selected lesson: partial sets are intentionally ineligible.
  // Complete every pair using real DOM clicks, not by calling the scoring function.
+ await page.locator('#unit').selectOption({index:1});
  await page.locator('[data-mode="pairs"]').click();
  await page.locator('#play .pair-grid button').first().waitFor();
  const pairs=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));
@@ -17,7 +18,7 @@ try{
   await page.getByRole('button',{name:'Английское слово: '+w.en,exact:true}).click();
   await page.getByRole('button',{name:'Перевод: '+w.ru,exact:true}).click();
  }
- console.log('Pairs completed:',await page.evaluate(()=>({matched:game.matched,total:game.words.length,errors:game.pairMistakes})));
+ console.log('Pairs completed:',await page.evaluate(()=>({matched:game.matched,total:game.words.length,errors:game.pairMistakes,eligible:lessonRankingEligible(game),unit,sectionWords:book.sections[Number(unit)]?.words.length})));
  await page.locator('.pair-name-form input').waitFor({timeout:5000});
  await page.locator('.pair-name-form input').fill('Тестовый игрок');
  await page.locator('.pair-name-form button').click();

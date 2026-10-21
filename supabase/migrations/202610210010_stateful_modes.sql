@@ -19,32 +19,59 @@ grant all on lexigo.challenge_actions to service_role;
 alter table lexigo.challenge_actions enable row level security;
 
 -- A match is any horizontal or vertical run of 3+ equal gems in a 4x4 board.
-create function lexigo.gem_matches(p_board jsonb)
+create or replace function lexigo.gem_matches(p_board jsonb)
 returns integer[] language plpgsql immutable set search_path='' as $$
-declare r integer; c integer; k integer; result integer[]:='{}';
+declare r integer; c integer; k integer; result integer[]:='{}'; v text;
 begin
- if pg_catalog.jsonb_array_length(p_board)<>16 then return result; end if;
- for r in 0..3 loop
-  for c in 0..1 loop
-   if p_board->>(r*4+c)=p_board->>(r*4+c+1)
-    and p_board->>(r*4+c)=p_board->>(r*4+c+2) then
-    for k in c..c+2 loop
-     if not (r*4+k)=any(result) then result:=pg_catalog.array_append(result,r*4+k); end if;
+ if pg_catalog.jsonb_array_length(p_board)<>36 then return result; end if;
+ for r in 0..5 loop
+  for c in 0..5 loop
+   v:=p_board->>(r*6+c);
+   if c<=3 and v=p_board->>(r*6+c+1) and v=p_board->>(r*6+c+2) then
+    k:=c;
+    while k<=5 and p_board->>(r*6+k)=v loop
+     if not (r*6+k)=any(result) then result:=pg_catalog.array_append(result,r*6+k); end if;
+     k:=k+1;
     end loop;
    end if;
-  end loop;
- end loop;
- for c in 0..3 loop
-  for r in 0..1 loop
-   if p_board->>(r*4+c)=p_board->>((r+1)*4+c)
-    and p_board->>(r*4+c)=p_board->>((r+2)*4+c) then
-    for k in r..r+2 loop
-     if not (k*4+c)=any(result) then result:=pg_catalog.array_append(result,k*4+c); end if;
+   if r<=3 and v=p_board->>((r+1)*6+c) and v=p_board->>((r+2)*6+c) then
+    k:=r;
+    while k<=5 and p_board->>(k*6+c)=v loop
+     if not (k*6+c)=any(result) then result:=pg_catalog.array_append(result,k*6+c); end if;
+     k:=k+1;
     end loop;
    end if;
   end loop;
  end loop;
  return result;
+end $$;
+create function lexigo.gem_possible(p_board jsonb)
+returns boolean language plpgsql immutable set search_path='' as $$
+declare i integer; j integer; candidate jsonb; v text;
+begin
+ if pg_catalog.jsonb_array_length(p_board)<>36 then return false; end if;
+ for i in 0..35 loop
+  for j in i+1..35 loop
+   if not ((i/6=j/6 and abs(i-j)=1) or abs(i-j)=6) then continue; end if;
+   candidate:=p_board;v:=candidate->>i;
+   candidate:=pg_catalog.jsonb_set(candidate,ARRAY[i::text],pg_catalog.to_jsonb(candidate->>j));
+   candidate:=pg_catalog.jsonb_set(candidate,ARRAY[j::text],pg_catalog.to_jsonb(v));
+   if coalesce(pg_catalog.array_length(lexigo.gem_matches(candidate),1),0)>=3 then return true; end if;
+  end loop;
+ end loop;
+ return false;
+end $$;
+create function lexigo.make_gem_board()
+returns jsonb language plpgsql volatile set search_path='' as $$
+declare board jsonb; tries integer;
+begin
+ for tries in 1..250 loop
+  select pg_catalog.jsonb_agg(((pg_catalog.floor(random()*6))::integer)::text order by n)
+   into board from pg_catalog.generate_series(1,36) n;
+  if coalesce(pg_catalog.array_length(lexigo.gem_matches(board),1),0)=0
+   and lexigo.gem_possible(board) then return board; end if;
+ end loop;
+ raise exception 'cannot generate gem board' using errcode='22023';
 end $$;
 
 -- An action is an atomic state transition; request IDs are replay-protected.
@@ -55,7 +82,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare a lexigo.attempts%rowtype; ch lexigo.attempt_challenges%rowtype;
  old lexigo.challenge_actions%rowtype; digest bytea; result jsonb;
  state jsonb; board jsonb; temp text; i integer; j integer; k integer;
- matched integer[]; hits integer; moves integer; good boolean; expected text;
+ matched integer[]; hits integer; moves integer; good boolean; expected text; v_new jsonb; v_col jsonb; v_row integer; v_x integer; v_pos integer; v_chain integer; v_points integer;
  tiles jsonb; t1 jsonb; t2 jsonb; completed jsonb; phase integer;
  lives integer; retry integer; mode text; answer text; event_id uuid;
 begin
@@ -126,8 +153,8 @@ begin
   begin i:=(p_payload->>'from')::integer;j:=(p_payload->>'to')::integer;
   exception when invalid_text_representation or numeric_value_out_of_range then
    raise exception 'invalid swap' using errcode='22023'; end;
-  if i<0 or i>15 or j<0 or j>15
-   or not ((i/4=j/4 and abs(i-j)=1) or abs(i-j)=4) then
+  if i<0 or i>35 or j<0 or j>35
+   or not ((i/6=j/6 and abs(i-j)=1) or abs(i-j)=6) then
    raise exception 'nonadjacent swap' using errcode='42501'; end if;
   board:=state->'board';
   temp:=board->>i;
@@ -139,24 +166,46 @@ begin
    -- Invalid move does not change the board.
    board:=state->'board';
   else
-   -- Bounded cascades, server-generated replacement gems.
-   for k in 1..8 loop
-    exit when coalesce(pg_catalog.array_length(matched,1),0)<3;
-    foreach i in array matched loop
-     board:=pg_catalog.jsonb_set(board,ARRAY[i::text],
-      pg_catalog.to_jsonb((pg_catalog.floor(random()*5))::integer::text));
-    end loop;
+   -- Match-3 cascades: clear runs, apply gravity per column and refill server-side.
+   v_chain:=0;v_points:=coalesce((state->>'points')::integer,0);
+   while coalesce(pg_catalog.array_length(matched,1),0)>=3 and v_chain<30 loop
+    v_chain:=v_chain+1;
     hits:=coalesce((state->>'hits')::integer,0)+pg_catalog.array_length(matched,1);
     state:=pg_catalog.jsonb_set(state,'{hits}',pg_catalog.to_jsonb(hits));
-    matched:=lexigo.gem_matches(board);
+    v_points:=v_points+(case when pg_catalog.array_length(matched,1)=3 then 30
+     when pg_catalog.array_length(matched,1)=4 then 60
+     when pg_catalog.array_length(matched,1)=5 then 100
+     else 100+(pg_catalog.array_length(matched,1)-5)*40 end)*v_chain;
+    v_new:=board;
+    foreach k in array matched loop
+     v_new:=pg_catalog.jsonb_set(v_new,ARRAY[k::text],'null'::jsonb);
+    end loop;
+    for v_x in 0..5 loop
+     v_col:='[]'::jsonb;
+     for v_row in reverse 5..0 loop
+      if v_new->(v_row*6+v_x)<>'null'::jsonb then
+       v_col:=v_col||pg_catalog.jsonb_build_array(v_new->(v_row*6+v_x));
+      end if;
+     end loop;
+     while pg_catalog.jsonb_array_length(v_col)<6 loop
+      v_col:=v_col||pg_catalog.jsonb_build_array(((pg_catalog.floor(random()*6))::integer)::text);
+     end loop;
+     for v_row in 0..5 loop
+      v_new:=pg_catalog.jsonb_set(v_new,ARRAY[((5-v_row)*6+v_x)::text],v_col->v_row);
+     end loop;
+    end loop;
+    board:=v_new;matched:=lexigo.gem_matches(board);
    end loop;
+   state:=pg_catalog.jsonb_set(state,'{points}',pg_catalog.to_jsonb(v_points));
+   if not lexigo.gem_possible(board) then board:=lexigo.make_gem_board(); end if;
+
   end if;
   moves:=coalesce((state->>'moves')::integer,0)+1;
   state:=pg_catalog.jsonb_set(pg_catalog.jsonb_set(state,'{board}',board),
    '{moves}',pg_catalog.to_jsonb(moves));
   result:=result||pg_catalog.jsonb_build_object('correct',good,'board',board,
-   'hits',coalesce((state->>'hits')::integer,0),'moves',moves);
-  if coalesce((state->>'hits')::integer,0)>=7 or moves>=20 then
+   'hits',coalesce((state->>'hits')::integer,0),'points',coalesce((state->>'points')::integer,0),'moves',moves);
+  if moves>=7 then
    result:=result||pg_catalog.jsonb_build_object('complete',true);
   end if;
  elsif mode='boss' then
@@ -200,7 +249,7 @@ begin
    correct,hinted,retry,verified_correct,verification_source,answer_digest)
   values(p_attempt,ch.word_id,ch.event_index,'answer',
    case when mode='pairs' then true when mode='crystals' then
-    coalesce((state->>'hits')::integer,0)>=7 else coalesce((state->>'lives')::integer,0)>0 end,
+    true else coalesce((state->>'lives')::integer,0)>0 end,
    ch.hint_uses>0,ch.retry_uses>0,
    case when mode='pairs' then true when mode='crystals' then
     coalesce((state->>'hits')::integer,0)>=7 else coalesce((state->>'lives')::integer,0)>0 end,
@@ -282,14 +331,10 @@ begin
   v_payload:=pg_catalog.jsonb_build_object('prompt','Listen and type the word',
    'responseType','audio','speechText',v_word.en);
  elsif v_mode='crystals' then
-  for v_i in 1..20 loop
-   select pg_catalog.jsonb_agg(((pg_catalog.floor(random()*5))::integer)::text order by n)
-    into v_board from pg_catalog.generate_series(1,16) n;
-   exit when coalesce(pg_catalog.array_length(lexigo.gem_matches(v_board),1),0)=0;
-  end loop;
+  v_board:=lexigo.make_gem_board();
   v_payload:=pg_catalog.jsonb_build_object('responseType','crystals','board',v_board,
-   'target',7,'maxMoves',20);
-  v_state:=pg_catalog.jsonb_build_object('board',v_board,'hits',0,'moves',0);
+   'target',7,'maxMoves',7);
+  v_state:=pg_catalog.jsonb_build_object('board',v_board,'hits',0,'points',0,'moves',0);
  elsif v_mode='boss' then
   select * into v_other from lexigo.vocabulary_words where section_id=v_section
    and id<>v_word.id order by random() limit 1;

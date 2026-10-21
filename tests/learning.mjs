@@ -159,6 +159,15 @@ async function run(viewport){
   const original=window.SpeechSynthesisUtterance;
   try{window.SpeechSynthesisUtterance=undefined;if(audioAvailable())throw Error('Audio incorrectly marked available')}finally{window.SpeechSynthesisUtterance=original}
  });
+ // Final assessment must not be passed by a high score without independent recall.
+ await page.evaluate(()=>{
+  const base={words:[{},{},{},{},{}],retries:0,firstCorrect:5,recallTotal:0,recallScore:0,retryQueue:[]};
+  if(finalTestPassed(base))throw Error('No independent recall accepted');
+  if(finalTestPassed({...base,recallTotal:2,recallScore:1}))throw Error('Less than 70% recall accepted');
+  if(!finalTestPassed({...base,recallTotal:2,recallScore:2}))throw Error('Valid result rejected');
+  if(finalTestPassed({...base,recallTotal:2,recallScore:2,retryQueue:[{}]}))throw Error('Pending retry accepted');
+  if(finalTestPassed({...base,firstCorrect:3,recallTotal:2,recallScore:2}))throw Error('Below 80% first attempts accepted');
+ });
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});
  assert.equal(await page.evaluate(()=>game.words.length),Math.min(15,await page.evaluate(()=>scope.length)));

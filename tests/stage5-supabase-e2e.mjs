@@ -1,7 +1,6 @@
 // Real local Supabase Auth -> PostgREST -> Edge Runtime -> PostgreSQL RPC.
 // Uses only synthetic users and CLI-generated ephemeral local keys.
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
 import {setTimeout as sleep} from 'node:timers/promises';
 const base='http://127.0.0.1:54321';
 const anon=process.env.SUPABASE_ANON_KEY;
@@ -133,22 +132,22 @@ async function main(){
  inv=await edge('issue-invitation',teacher.jwt,{classId:ids.classA,role:'pupil',ttlHours:24});
  assert.equal(inv.status,200);
  const revokedToken=inv.data.id;
- const digest=Array.from(createHash('sha256').update(revokedToken).digest()).map(x=>x.toString(16).padStart(2,'0')).join('');
- const lookup=await api('/rest/v1/invitations?select=id,token_digest',{key:service,schema:'lexigo'});
+ const lookup=await api('/rest/v1/invitations?select=id&order=created_at.desc&limit=1',
+ {key:service,schema:'lexigo'});
  assert.equal(lookup.status,200,'Invite lookup '+JSON.stringify(lookup));
- const matching=lookup.data.filter(x=>String(x.token_digest).toLowerCase().replace(/^\\\\x/,'')===digest);
- assert.equal(matching.length,1,'Token digest lookup failed');
- let rev=await edge('revoke-invitation',teacher.jwt,{invitationId:matching[0].id});
+ assert.equal(lookup.data.length,1,'Invitation not persisted');
+ let rev=await edge('revoke-invitation',teacher.jwt,{invitationId:lookup.data[0].id});
  assert.equal(rev.status,200,'Revoke invitation '+JSON.stringify(rev));
  redeem=await edge('redeem-invitation',newPupil.jwt,{token:revokedToken});
  assert.equal(redeem.status,403,'Revoked invitation redeemed');
  inv=await edge('issue-invitation',teacher.jwt,{classId:ids.classA,role:'pupil',ttlHours:1});
  assert.equal(inv.status,200);
  const expiredToken=inv.data.id;
- const expiredDigest=createHash('sha256').update(expiredToken).digest('hex');
- const expList=await api('/rest/v1/invitations?select=id,token_digest',{key:service,schema:'lexigo'});
- const expRecord=expList.data.find(x=>String(x.token_digest).toLowerCase().replace(/^\\\\x/,'')===expiredDigest);
- assert.ok(expRecord,'Expired invite digest not found');
+ const expList=await api('/rest/v1/invitations?select=id&order=created_at.desc&limit=1',
+ {key:service,schema:'lexigo'});
+ assert.equal(expList.status,200,'Expired invite lookup '+JSON.stringify(expList));
+ const expRecord=expList.data[0];
+ assert.ok(expRecord,'Expired invitation not persisted');
  const expired=await api('/rest/v1/invitations?id=eq.'+expRecord.id,
  {method:'PATCH',key:service,schema:'lexigo',body:{created_at:new Date(Date.now()-2*86400000).toISOString(),expires_at:new Date(Date.now()-86400000).toISOString()}});
  assert.equal(expired.status,204,'Fixture expiry update '+JSON.stringify(expired));

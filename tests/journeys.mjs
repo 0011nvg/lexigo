@@ -16,8 +16,8 @@ async function scenario(viewport){
  await page.locator('#launcher:not(.hidden)').waitFor();
  await page.locator('#journeyCrystals').click();
  await page.locator('.crystal-arena').waitFor();
- for(let i=0;i<4;i++)await page.locator('.gem:not([disabled])').first().click();
- assert.match(await page.locator('#crystalScore').innerText(),/4 \/ 4/);
+ await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/выкл/);await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/вкл/);for(let i=0;i<4;i++)await page.locator('.gem:not([disabled])').first().click();
+ assert.match(await page.locator('#crystalScore').innerText(),/4 \/ 4/);assert.equal(await page.locator('.gem[disabled]').count(),4);
  await page.locator('.crystal-continue').click();
  for(let n=0;n<4;n++){
   const state=await page.evaluate(()=>({w:game.words[game.index],mode:game.mode,index:game.index}));

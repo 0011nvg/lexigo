@@ -316,4 +316,38 @@ begin
  return pg_catalog.jsonb_build_object('challengeId',v_id,'index',v_idx,
  'wordId',v_word.id,'mode',v_mode,'question',v_payload);
 end $;
+create or replace function lexigo.answer_challenge(
+ p_actor uuid,p_attempt uuid,p_challenge uuid,p_index integer,p_word text,p_answer text)
+returns jsonb language plpgsql security definer set search_path='' as $
+declare v_attempt lexigo.attempts%rowtype; v_ch lexigo.attempt_challenges%rowtype;
+ v_event lexigo.attempt_events%rowtype; v_correct boolean; v_digest bytea; v_id uuid;
+begin
+ select * into v_attempt from lexigo.attempts where id=p_attempt for update;
+ if not found or v_attempt.pupil_user_id<>p_actor or v_attempt.status<>'started'
+ or not lexigo.can_see_assignment(v_attempt.assignment_id,p_actor) then
+  raise exception 'not authorized' using errcode='42501'; end if;
+ select * into v_ch from lexigo.attempt_challenges where id=p_challenge
+ and attempt_id=p_attempt and event_index=p_index for update;
+ if not found or v_ch.mode in ('pairs','crystals','boss') or v_ch.word_id is distinct from p_word then
+  raise exception 'challenge mismatch' using errcode='42501'; end if;
+ if v_ch.expires_at<=now() then raise exception 'challenge expired' using errcode='42501'; end if;
+ if p_answer is null or length(p_answer)>250 then raise exception 'invalid answer' using errcode='22023'; end if;
+ v_digest:=pg_catalog.sha256(pg_catalog.convert_to(p_answer,'UTF8'));
+ v_correct:=lower(btrim(p_answer))=lower(btrim(v_ch.expected));
+ select * into v_event from lexigo.attempt_events where attempt_id=p_attempt and event_index=p_index;
+ if found then
+  if v_event.word_id is distinct from p_word or v_event.answer_digest is distinct from v_digest
+   or v_event.verification_source<>'server_evaluated' then
+   raise exception 'conflicting replay' using errcode='23505'; end if;
+  return pg_catalog.jsonb_build_object('id',v_event.id,'correct',v_event.verified_correct);
+ end if;
+ if (select coalesce(max(event_index),-1)+1 from lexigo.attempt_events where attempt_id=p_attempt)<>p_index
+ then raise exception 'out of order' using errcode='42501'; end if;
+ insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct,
+ hinted,retry,verified_correct,verification_source,answer_digest)
+ values(p_attempt,p_word,p_index,'answer',v_correct,false,false,v_correct,'server_evaluated',v_digest)
+ returning id into v_id;
+ update lexigo.attempt_challenges set answered_at=now() where id=p_challenge;
+ return pg_catalog.jsonb_build_object('id',v_id,'correct',v_correct);
+end $;
 commit;

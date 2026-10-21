@@ -367,8 +367,8 @@ async function main(){
  assert.equal(progress.ranking_eligible,progress.covered_words===2,'Partial attempt must not enter ranking');
  const progressTeacher=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:teacher.jwt,schema:'lexigo'});
  assert.equal(progressTeacher.status,200);assert.equal(progressTeacher.data.length,1,'Teacher must see enrolled pupil progress');
- const progressOther=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:teacher2.jwt,schema:'lexigo'});
- assert.equal(progressOther.status,200);assert.equal(progressOther.data.length,0,'Other-class teacher must not see ranking');
+ const progressOther=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:foreign.jwt,schema:'lexigo'});
+ assert.equal(progressOther.status,200);assert.equal(progressOther.data.length,0,'Unassigned pupil must not see another pupil ranking');
  r=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,403,'Challenge after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');
  const parentRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});

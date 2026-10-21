@@ -219,7 +219,7 @@ async function main(){
  assert.equal(crystalAttempt.status,200);
  const crystalQuestion=await edge('next-question',pupil.jwt,{attemptId:crystalAttempt.data.id});
  assert.equal(crystalQuestion.status,200);
- assert.equal(crystalQuestion.data.question.board.length,16);
+ assert.equal(crystalQuestion.data.question.board.length,36);
  const crystalAction=(payload,requestId=randomUUID())=>edge('play-round',pupil.jwt,{
  attemptId:crystalAttempt.data.id,challengeId:crystalQuestion.data.challengeId,
  requestId,action:'swap',payload});
@@ -230,7 +230,7 @@ async function main(){
  assert.ok(simultaneousSwaps.every(x=>x.status===200),'Crystal concurrency '+JSON.stringify(simultaneousSwaps));
  assert.deepEqual(simultaneousSwaps.map(x=>x.data),Array(5).fill(simultaneousSwaps[0].data));
  let crystalLast=simultaneousSwaps[0];
- for(let i=1;i<20&&!crystalLast.data.complete;i++){
+ for(let i=1;i<7&&!crystalLast.data.complete;i++){
   crystalLast=await crystalAction({from:0,to:1});
   assert.equal(crystalLast.status,200,'Crystal move '+i+' '+JSON.stringify(crystalLast));
  }

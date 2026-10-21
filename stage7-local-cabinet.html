@@ -43,6 +43,59 @@ heading(root,'Мои попытки');showRows(root,attempts,['assignment_id','s
 }
 $('login').hidden=true;$('cabinet').hidden=false;say('Данные загружены с сервера; браузерное демо-хранилище не используется')}
 
+
+async function statefulRound(root,c,attemptId,mode){
+ const q=c.question||{};
+ const status=el('p','Все ходы и ответы проверяются сервером');root.append(status);
+ const action=async(kind,payload)=>{
+  const data=await edge('play-round',{attemptId,challengeId:c.challengeId,requestId:uuid(),action:kind,payload});
+  status.textContent=data.complete?'Раунд завершён':data.correct===true?'Верно':data.correct===false?'Пока не получилось':'Ход сохранён';
+  if(data.complete){root.append(el('p','Раунд сохранён сервером. Выберите следующий вопрос.'))}
+  return data;
+ };
+ const answerField=()=>{const field=el('input');field.placeholder='Введите ответ';root.append(field);
+ const button=el('button','Ответить');root.append(button);
+ button.onclick=async()=>{button.disabled=true;try{const result=await action('answer',{answer:field.value});if(result.nextQuestion){field.value='';root.prepend(el('p',String(result.nextQuestion.prompt||'')));button.disabled=false}
+ else if(result.retry===true||result.remaining!=null){button.disabled=false}
+ else if(result.complete){button.remove();field.disabled=true}
+ else{button.disabled=false}}catch(err){say(err.message,true);button.disabled=false}};
+ return {field,button};
+ };
+ if(mode==='pairs'){
+  const tiles=Array.isArray(q.tiles)?q.tiles:[];if(!tiles.length)throw Error('Сервер не выдал пары');
+  let first=null;const matched=new Set();const buttons=[];
+  for(const tile of tiles){const b=el('button',String(tile.text));b.type='button';root.append(b);buttons.push([tile,b]);b.onclick=async()=>{
+   if(matched.has(tile.id))return;
+   if(!first){first=tile;status.textContent='Выберите вторую карточку';return}
+   const selected=first;first=null;if(selected.id===tile.id)return;
+   b.disabled=true;try{const result=await action('pair',{first:selected.id,second:tile.id});
+    if(result.correct){matched.add(selected.id);matched.add(tile.id);for(const [t,btn] of buttons)if(matched.has(t.id))btn.disabled=true}
+    if(result.complete)for(const [,btn] of buttons)btn.disabled=true;
+   }catch(err){say(err.message,true)}finally{if(!matched.has(tile.id))b.disabled=false}
+  }}
+ }else if(mode==='crystals'){
+  const board=Array.isArray(q.board)?q.board:[];if(board.length!==36)throw Error('Сервер не выдал поле');
+  let current=board.slice();const cells=[];let selected=null,moves=0,done=false;
+  const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:420px';
+  root.append(grid);
+  for(let i=0;i<36;i++){const b=el('button',String(current[i]));b.style.margin='0';grid.append(b);cells.push(b);
+   b.onclick=async()=>{if(done)return;if(selected==null){selected=i;status.textContent='Выберите соседний кристалл';return}
+    const from=selected;selected=null;try{const result=await action('swap',{from,to:i});
+     if(Array.isArray(result.board)&&result.board.length===36){current=result.board;cells.forEach((cell,j)=>cell.textContent=String(current[j]))}
+     if(result.moves!=null)moves=Number(result.moves);else if(result.correct)moves++;
+     if(result.questionReady||moves>=7){done=true;cells.forEach(cell=>cell.disabled=true);root.append(el('p',String(q.prompt||'Переведите слово')));answerField()}
+    }catch(err){say(err.message,true)}
+   };
+  }
+ }else if(mode==='boss'){
+  root.append(el('p',String(q.question?.prompt||'Ответьте на вопрос босса')));
+  const {field,button}=answerField();
+  const original=button.onclick;button.onclick=async()=>{const before=root.querySelectorAll('p').length;await original();if(root.querySelectorAll('p').length>before)field.focus()};
+  const retry=el('button','Повторить этап');retry.onclick=async()=>{retry.disabled=true;try{await action('retry',{});retry.disabled=false}catch(err){say(err.message,true);retry.disabled=false}};
+  root.append(retry);
+ }
+}
+
 const uuid=()=>crypto.randomUUID();
 async function edge(route,payload){if(!access)throw Error('Войдите снова');return request('/functions/v1/learning-api/'+route,{method:'POST',body:JSON.stringify(payload)})}
 function el(tag,text){const n=document.createElement(tag);if(text!=null)n.textContent=text;return n}
@@ -83,7 +136,11 @@ async function play(root,assignment,attemptId){
  finish.onclick=async()=>{try{await edge('finish-attempt',{attemptId});say('Попытка завершена на сервере');await load()}catch(err){say(err.message,true)}};
  next.onclick=async()=>{next.disabled=true;question.replaceChildren();try{
   if(['cards','daily'].includes(assignment.mode)){question.append(el('p','Самооценка cards/daily сохраняется отдельно; в этом пилотном интерфейсе пока недоступна.'));return}
-  const c=await edge('next-question',{attemptId});question.append(el('p',String(c.question?.prompt??'Вопрос')));
+  const c=await edge('next-question',{attemptId});
+  if(['pairs','crystals','boss'].includes(assignment.mode)){
+   await statefulRound(question,c,attemptId,assignment.mode);return;
+  }
+  question.append(el('p',String(c.question?.prompt??'Вопрос')));
   if(c.question?.proposed!=null)question.append(el('p','Вариант: '+String(c.question.proposed)));
   const answer=el('input');answer.placeholder='Ответ';question.append(answer);
   if(Array.isArray(c.question?.choices)){for(const v of c.question.choices){const b=el('button',String(v));b.onclick=()=>{answer.value=String(v)};question.append(b)}}

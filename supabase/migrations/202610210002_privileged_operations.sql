@@ -69,8 +69,8 @@ declare v_ok boolean;
 begin
  select exists(select 1 from lexigo.enrollments e where e.pupil_user_id=p_pupil
  and e.status='active' and lexigo.is_teacher_of(e.class_id,p_actor)) into v_ok;
- if not v_ok or not exists(select 1 from lexigo.profiles p where p.user_id=p_parent and p.role='parent')
- or not exists(select 1 from lexigo.profiles p where p.user_id=p_pupil and p.role='pupil') then
+ if not v_ok or not exists(select 1 from lexigo.profiles p join lexigo.profiles child on child.user_id=p_pupil
+ where p.user_id=p_parent and p.role='parent' and child.role='pupil' and p.organization_id=child.organization_id) then
   raise exception 'not authorized' using errcode='42501';
  end if;
  insert into lexigo.parent_pupils(parent_user_id,pupil_user_id,verified_by,revoked_at)

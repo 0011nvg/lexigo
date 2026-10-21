@@ -68,7 +68,8 @@ try{
    await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
   }else if(mode==='crystals'){
    const buttons=round.locator('div > button');
-   assert.equal(await buttons.count(),36,'Expected 36 server-issued crystal cells');
+   await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length===36 || document.querySelector('#status').classList.contains('error'),null,{timeout:15000});
+   assert.equal(await buttons.count(),36,'Expected 36 server-issued crystal cells; status: '+await page.locator('#status').innerText());
    await buttons.nth(0).click();
    await buttons.nth(1).click();
    await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});

@@ -6,7 +6,7 @@ const base='http://127.0.0.1:54321';
 const anon=process.env.SUPABASE_ANON_KEY;
 const service=process.env.SUPABASE_SERVICE_ROLE_KEY;
 assert.ok(anon&&service,'Local CLI-generated API keys are required');
-const uuid='00000000-0000-4000-8000-000000000';
+const uuid='00000000-0000-4000-8000-0000000000';
 const ids={org:uuid+'01',teacher2:uuid+'02',classA:uuid+'03',classB:uuid+'04',assignment:'',attempt:''};
 async function api(path,{method='GET',key=anon,token=key,body,schema}={}){
  const res=await fetch(base+path,{method,headers:{

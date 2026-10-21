@@ -15,7 +15,8 @@ try{
   await page.locator('#email').fill('stage5-'+who+'@example.invalid');
   await page.locator('#password').fill('SyntheticTestPassword#2026');
   await page.locator('#form button[type=submit]').click();
-  await page.locator('#cabinet').waitFor({state:'visible',timeout:15000});
+  await page.waitForFunction(()=>!document.querySelector('#cabinet').hidden || document.querySelector('#status').classList.contains('error'),{timeout:15000});
+  if(await page.locator('#cabinet').isHidden())throw new Error('Login failed for '+who+': '+await page.locator('#status').innerText());
  };
  await login('teacher');
  await page.getByText('Мои классы').waitFor();

@@ -19,7 +19,7 @@ button:disabled{opacity:.5}#choices button{display:block;width:100%;text-align:l
 if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Demo runs only on localhost');
 const $=id=>document.getElementById(id);
 const API='http://127.0.0.1:54321/functions/v1/learning-api/';
-let attempt=null,question=null,busy=false,streak=0,completed=0,damage=0;
+let attempt=null,question=null,busy=false;
 async function call(route,body){const res=await fetch(API+route,{method:'POST',headers:{
  'authorization':'Bearer '+$('jwt').value.trim(),'content-type':'application/json'
 },body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error('HTTP '+res.status+': '+(data.error||'запрос отклонён'));return data}
@@ -35,8 +35,8 @@ async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
  if(game){const phase=Number(q.phase??question.index%3);
  $('progress').textContent=question.mode==='pairs'?'🔗 Найди пару · Раунд '+(question.index+1):
  question.mode==='crystals'?'💎 Кристаллы · Этап '+(phase+1)+'/3':'🐉 Босс · Фаза '+(phase+1)+'/3';
- $('hearts').textContent='❤️ '+Math.max(0,3-damage)+' · Серия: '+streak;
- $('crystals').textContent=question.mode==='crystals'?'💎 Собрано: '+completed:question.mode==='boss'?'⚔️ Удары: '+completed:'';
+ $('hearts').textContent='❤️ '+(question.state?.hearts??3)+' · Ошибки: '+(question.state?.mistakes??0);
+ $('crystals').textContent=question.mode==='crystals'?'💎 Собрано: '+(question.state?.crystals??0):question.mode==='boss'?'🐉 Здоровье босса: '+(question.state?.bossHealth??3):'🔗 Верные пары: '+(question.state?.completed??0);
  }
  $('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'')+(q.instruction?' · '+q.instruction:'');
  $('choices').replaceChildren();$('answer').value='';$('next').hidden=true;$('submit').disabled=false;$('hint').disabled=Boolean(question.hinted);
@@ -53,12 +53,11 @@ async function submit(answer){if(busy||!question)return;busy=true;try{
  const result=await call('answer-question',{attemptId:attempt,challengeId:question.challengeId,
  index:question.index,wordId:question.wordId,answer});
  message(result.correct?'✓ Сервер подтвердил правильный ответ':result.complete?'✕ Попытки исчерпаны':'✕ Попробуй ещё. Осталось: '+result.remaining);
- if(result.complete){if(result.correct){completed++;streak++}else{damage++;streak=0}
+ if(result.complete){
  $('submit').disabled=true;$('next').hidden=false;$('hint').disabled=true;
  for(const el of $('choices').querySelectorAll('button'))el.disabled=true;
  if(['crystals','boss','pairs'].includes(question.mode)){
- $('hearts').textContent='❤️ '+Math.max(0,3-damage)+' · Серия: '+streak;
- $('crystals').textContent=question.mode==='crystals'?'💎 Собрано: '+completed:question.mode==='boss'?'⚔️ Удары: '+completed:'🔗 Верные пары: '+completed;
+ $('hearts').textContent='Результат раунда записан сервером. Следующий ход обновит состояние.';
  }}
  }catch(e){message(e.message)}finally{busy=false}}
 $('hint').onclick=async()=>{if(busy||!question)return;busy=true;try{const r=await call('hint-question',{attemptId:attempt,challengeId:question.challengeId});message(r.hint);$('hint').disabled=true}catch(e){message(e.message)}finally{busy=false}};

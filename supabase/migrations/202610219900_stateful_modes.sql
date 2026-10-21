@@ -339,6 +339,7 @@ begin
   select * into v_other from lexigo.vocabulary_words where section_id=v_section
    and id<>v_word.id order by random() limit 1;
   if not found then raise exception 'boss needs two words' using errcode='22023'; end if;
+  v_flip:=random()<0.5;
   v_stages:=pg_catalog.jsonb_build_array(
    pg_catalog.jsonb_build_object('expected',v_word.ru,
     'question',pg_catalog.jsonb_build_object('responseType','text',
@@ -346,9 +347,9 @@ begin
    pg_catalog.jsonb_build_object('expected',v_other.en,
     'question',pg_catalog.jsonb_build_object('responseType','text',
      'prompt',v_other.ru,'stage','spell')),
-   pg_catalog.jsonb_build_object('expected','true',
+   pg_catalog.jsonb_build_object('expected',case when v_flip then 'true' else 'false' end,
     'question',pg_catalog.jsonb_build_object('responseType','boolean',
-     'prompt',v_word.en,'proposed',v_word.ru,'stage','truefalse')));
+     'prompt',v_word.en,'proposed',case when v_flip then v_word.ru else v_other.ru end,'stage','truefalse')));
   v_payload:=pg_catalog.jsonb_build_object('responseType','boss',
    'lives',3,'stages',3,'question',v_stages->0->'question');
   v_state:=pg_catalog.jsonb_build_object('stages',v_stages,'phase',0,

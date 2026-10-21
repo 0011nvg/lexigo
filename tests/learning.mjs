@@ -29,8 +29,14 @@ async function run(viewport){
  await page.evaluate(()=>start('cards'));
  await page.locator('.flash').click();
  assert.equal((await page.locator('.flash').innerText()).length>0,true);
+ const selfBefore=await page.evaluate(()=>({id:game.words[0].id,p:{...getProgress(game.words[0])}}));
  await page.getByRole('button',{name:'Знаю',exact:true}).click();
  assert.equal(await page.evaluate(()=>game.index),1);
+ const selfAfter=await page.evaluate(id=>getProgress({id}),selfBefore.id);
+ assert.equal(selfAfter.selfKnown,(selfBefore.p.selfKnown||0)+1,'Flashcard self-assessment recorded separately');
+ assert.equal(selfAfter.right||0,selfBefore.p.right||0,'Self-assessment does not count as verified answer');
+ assert.equal(selfAfter.recall||0,selfBefore.p.recall||0,'Self-assessment does not count as recall');
+ assert.equal(selfAfter.wrong||0,selfBefore.p.wrong||0,'Self-assessment does not count as error');
  await page.locator('#back').click();
  // Spelling: empty input must not count, then hint must not count as mastered.
  await page.evaluate(()=>start('spell'));
@@ -81,6 +87,13 @@ async function run(viewport){
  assert.equal(await page.locator('#play .pair-finish').count(),1,'One completion panel');
  await page.locator('#back').click();
 
+ // The leaderboard retains fastest results even after more than 100 sessions.
+ await page.evaluate(()=>{
+  localStorage.setItem('lexigo_pair_scores',JSON.stringify(Array.from({length:100},(_,i)=>({pairs:4,seconds:i+1,mistakes:0}))));
+  const scores=savePairScore({pairs:4,seconds:999,mistakes:9});
+  if(scores.length!==100||scores.some(x=>x.seconds===999)||!scores.some(x=>x.seconds===1))throw Error('Fastest records were lost');
+  localStorage.removeItem('lexigo_pair_scores');
+ });
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});
  assert.equal(await page.evaluate(()=>game.words.length),Math.min(15,await page.evaluate(()=>scope.length)));

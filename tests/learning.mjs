@@ -144,9 +144,9 @@ async function run(viewport){
   const previous=game;
   try{
    game={words:[my,mine],mode:'spell',activeQuestionMode:'spell',answered:false,hinted:false};
-   if(contextFor(my)!=='перед существительным'||contextFor(mine)!=='самостоятельно, без существительного')throw Error('Wrong grammatical context');
+   if(contextFor(my)!=='говорим перед предметом: мой мяч'||contextFor(mine)!=='говорим без предмета: мяч мой')throw Error('Wrong grammatical context');
    const q=document.createElement('div');document.body.append(q);textAnswer(q,my);
-   if(!q.textContent.includes('перед существительным')||q.textContent.includes('первая буква'))throw Error('Context prompt not rendered');
+   if(!q.textContent.includes('мой мяч')||q.textContent.includes('первая буква'))throw Error('Context prompt not rendered');
    q.remove();
    const unknown={...mine,en:'unlisted',id:'test-unknown'};
    game.words=[my,unknown];const q2=document.createElement('div');document.body.append(q2);textAnswer(q2,unknown);
@@ -161,12 +161,30 @@ async function run(viewport){
  });
  // Final assessment must not be passed by a high score without independent recall.
  await page.evaluate(()=>{
-  const base={words:[{},{},{},{},{}],retries:0,firstCorrect:5,recallTotal:0,recallScore:0,retryQueue:[]};
+  const base={words:[{},{},{},{},{}],retries:0,firstCorrect:5,recallTotal:0,recallScore:0,retryQueue:[],retryIds:new Set()};
   if(finalTestPassed(base))throw Error('No independent recall accepted');
   if(finalTestPassed({...base,recallTotal:2,recallScore:1}))throw Error('Less than 70% recall accepted');
   if(!finalTestPassed({...base,recallTotal:2,recallScore:2}))throw Error('Valid result rejected');
   if(finalTestPassed({...base,recallTotal:2,recallScore:2,retryQueue:[{}]}))throw Error('Pending retry accepted');
   if(finalTestPassed({...base,firstCorrect:3,recallTotal:2,recallScore:2}))throw Error('Below 80% first attempts accepted');
+ });
+ // An incorrect retry must reappear; success on a later retry resolves it.
+ await page.evaluate(()=>{
+  const w=scope[0],saved=progress[w.id],previous=game;
+  try{
+   game={mode:'spell',words:[w],index:0,answered:false,hinted:false,retryActive:false,retryIds:new Set(),retryQueue:[],retryIndexes:new Set(),retries:0,firstCorrect:0,recallTotal:0,recallScore:0,score:0,misses:0,activeQuestionMode:'spell'};
+   answerUI(w,false,w.en,'recall');
+   if(game.retryQueue.length!==1)throw Error('First mistake not queued');
+   advance();
+   if(!game.retryActive||game.words.length!==2)throw Error('First retry missing');
+   answerUI(w,false,w.en,'recall');
+   if(game.retryQueue.length!==1)throw Error('Failed retry not requeued');
+   advance();
+   if(!game.retryActive||game.words.length!==3)throw Error('Second retry missing');
+   answerUI(w,true,w.en,'recall');
+   if(game.retryQueue.length!==0||game.retryIds.has(w.id))throw Error('Correct retry did not clear error');
+   if(finalTestPassed({...game,mode:'boss',firstCorrect:1,recallTotal:1,recallScore:1}))throw Error('Retry inflated initial accuracy');
+  }finally{if(saved)progress[w.id]=saved;else delete progress[w.id];game=previous;save();updateStats()}
  });
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});

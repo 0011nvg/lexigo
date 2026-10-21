@@ -56,6 +56,19 @@ async function run(viewport){
  await page.getByRole('button',{name:first.ru,exact:true}).click();
  assert.equal(await page.evaluate(()=>game.matched),1);
  await page.locator('#back').click();
+ // Daily session uses up to fifteen words, not the old eight-word cap.
+ await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});
+ assert.equal(await page.evaluate(()=>game.words.length),Math.min(15,await page.evaluate(()=>scope.length)));
+ await page.locator('#back').click();
+ // Boss must exclude phrases, while preserving source vocabulary in the library.
+ const boss=await page.evaluate(()=>{
+  const singles=scope.filter(w=>/^[a-zA-Z]+(?:[-'][a-zA-Z]+)*$/.test(w.en.trim())).slice(0,4);
+  const phrase=scope.find(w=>w.en.trim().includes(' '));
+  if(singles.length<3)return {skip:true};
+  selected=new Set([...singles,...(phrase?[phrase]:[])].map(w=>w.id));
+  start('boss');return {skip:false,phraseId:phrase?.id||null};
+ });
+ if(!boss.skip){assert.equal(await page.evaluate(()=>game.words.every(w=>!w.en.trim().includes(' '))),true);await page.locator('#back').click()}
  // Single-word fallback for quiz and true/false must be writable.
  await page.evaluate(()=>{selected=new Set([scope[0].id]);start('quiz')});
  // Quiz deliberately blocks one-word selections: no accidental game start.

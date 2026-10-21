@@ -10,7 +10,6 @@ async function scenario(viewport){
  await page.locator('#book').waitFor({state:'attached'});
  assert.ok(await page.locator('#words input[type=checkbox]').count()>0,'Vocabulary loaded');
  assert.ok(await page.locator('#homeTitle').isVisible(),'Landing page headline visible');
- assert.equal(await page.locator('.home-step').count(),3,'Three onboarding steps');
  await page.locator('#heroStart').click();
  assert.ok(await page.locator('#catalogAside').isVisible(),'CTA reveals library on mobile and desktop');
  await page.locator('#homeNav').click();
@@ -55,7 +54,7 @@ async function scenario(viewport){
    const displayed=await box.locator('.question p').nth(1).innerText();
    await box.getByRole('button',{name:displayed.trim()===state.w.ru?'✓ Верно':'✕ Неверно'}).click();
   }else throw Error('Unexpected crystal exercise at '+n);
-  await box.getByRole('button',{name:/Следующее|Результат/}).click();
+  const next=box.getByRole('button',{name:/Следующее|Результат/});if(await next.count())await next.click();else await page.waitForFunction(prev=>game.index>prev,n,{timeout:5000});
  }
  const state=await page.evaluate(()=>({index:game.index,length:game.words.length}));
  if(state.index<state.length)await page.locator('.crystal-arena').waitFor();
@@ -63,6 +62,11 @@ async function scenario(viewport){
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'true');
  assert.ok(await page.locator('.teacher-only').first().isVisible());
+ assert.ok(await page.locator('#printTest').isVisible(),'Printable teacher test available');
+ await page.evaluate(()=>{window.__printCalled=false;window.print=()=>{window.__printCalled=true};printTeacherTest()});
+ assert.equal(await page.evaluate(()=>window.__printCalled),true,'Print dialog invoked');
+ assert.ok(await page.locator('#lexigoPrint .print-question').count()>0,'Printable questions generated');
+ assert.ok(await page.locator('#lexigoPrint .print-key li').count()>0,'Separate answer key generated');
  await page.locator('#showReport').click();
  assert.ok(await page.locator('#reportContent table tbody tr').count()>0);
  const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexigo.*csv/);

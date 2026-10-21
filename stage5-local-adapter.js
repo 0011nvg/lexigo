@@ -53,9 +53,9 @@ function renderQuestion(){const root=content(),q=question.question;
  }
  if(q.responseType==='crystals'){
   let board=q.board,first=null;const grid=document.createElement('div');
-  grid.style.cssText='display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;max-width:360px';
+  grid.style.cssText='display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;max-width:360px';
   const draw=()=>{grid.replaceChildren();board.forEach((color,i)=>{
-   const b=actionBtn(grid,['🔴','🟢','🔵','🟡','🟣'][Number(color)]||'💎',async()=>{
+   const b=actionBtn(grid,['🔴','🟢','🔵','🟡','🟣','🟠'][Number(color)]||'💎',async()=>{
     if(first===null){first=i;return}const a=first;first=null;
     const r=await play('swap',{from:a,to:i});if(r.board){board=r.board;draw()}
    });b.setAttribute('aria-label','Кристалл '+(i+1))})};

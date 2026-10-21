@@ -1,0 +1,48 @@
+name: LEXIGO stage 5 PostgreSQL security
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - 'tests/stage5-security.mjs'
+      - '.github/workflows/stage5-postgres.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lexigo_stage5_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lexigo_stage5_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: lexigo_stage5_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Bootstrap isolated Supabase Auth substitute
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/bootstrap_auth_stub.sql
+      - name: Apply migrations
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210001_stage5_foundation.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210002_privileged_operations.sql
+      - name: Verify role isolation and revocation (real PostgreSQL)
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rls_isolation.sql
+      - name: Verify invitations, parent links and teacher reviews (real PostgreSQL)
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/privileged_operations.sql

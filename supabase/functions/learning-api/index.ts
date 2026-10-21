@@ -5,10 +5,16 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{
- status,headers:{'content-type':'application/json','cache-control':'no-store'}
+const LOCAL_ORIGINS=new Set(['http://127.0.0.1:3000','http://localhost:3000']);
+const reply=(status:number,data:unknown,origin='')=>new Response(JSON.stringify(data),{
+ status,headers:{'content-type':'application/json','cache-control':'no-store',
+ ...(LOCAL_ORIGINS.has(origin)?{'access-control-allow-origin':origin,'vary':'Origin',
+ 'access-control-allow-headers':'authorization,content-type,apikey',
+ 'access-control-allow-methods':'POST,OPTIONS'}:{})}
 });
 Deno.serve(async(req:Request)=>{
+ const origin=req.headers.get('origin')||'';
+ if(req.method==='OPTIONS')return reply(LOCAL_ORIGINS.has(origin)?204:403,{},origin);
  if(req.method!=='POST')return reply(405,{error:'method not allowed'});
  const bearer=/^Bearer (\S+)$/i.exec(req.headers.get('authorization')||'');
  if(!bearer)return reply(401,{error:'unauthorized'});
@@ -125,6 +131,6 @@ Deno.serve(async(req:Request)=>{
   }
  }
  const {data,error}=await server.schema('lexigo').rpc(fn,args);
- if(error)return reply(error.code==='42501'?403:error.code==='23505'?409:400,{error:'request rejected'});
- return reply(200,fn==='next_challenge'||fn==='answer_challenge'?data:{id:data});
+ if(error)return reply(error.code==='42501'?403:error.code==='23505'?409:400,{error:'request rejected'},origin);
+ return reply(200,fn==='next_challenge'||fn==='answer_challenge'?data:{id:data},origin);
 });

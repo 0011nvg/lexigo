@@ -5,18 +5,23 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','play-round','hint-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Hosted pilot origins must be explicitly configured server-side, never inferred from a request.
 const LOCAL_ORIGINS=new Set(['http://127.0.0.1:3000','http://localhost:3000']);
+const PILOT_ORIGINS=new Set((Deno.env.get('LEXIGO_PILOT_ORIGINS')||'').split(',').map(s=>s.trim()).filter(s=>{try{const u=new URL(s);return u.protocol==='https:'&&u.origin===s&&!u.username&&!u.password}catch{return false}}));
+const allowedOrigin=(origin:string)=>LOCAL_ORIGINS.has(origin)||PILOT_ORIGINS.has(origin);
 const reply=(status:number,data:unknown,origin='')=>new Response(JSON.stringify(data),{
  status,headers:{'content-type':'application/json','cache-control':'no-store',
- ...(LOCAL_ORIGINS.has(origin)?{'access-control-allow-origin':origin,'vary':'Origin',
+ ...(allowedOrigin(origin)?{'access-control-allow-origin':origin,'vary':'Origin',
  'access-control-allow-headers':'authorization,content-type,apikey',
  'access-control-allow-methods':'POST,OPTIONS'}:{})}
 });
 Deno.serve(async(req:Request)=>{
  const origin=req.headers.get('origin')||'';
  const respond=(status:number,data:unknown)=>reply(status,data,origin);
- if(req.method==='OPTIONS')return respond(LOCAL_ORIGINS.has(origin)?204:403,{});
+ if(req.method==='OPTIONS')return respond(allowedOrigin(origin)?204:403,{});
  if(req.method!=='POST')return respond(405,{error:'method not allowed'});
+ // Origin checks are defense-in-depth; authorization is always verified separately.
+ if(origin&&!allowedOrigin(origin))return respond(403,{error:'origin not allowed'});
  const bearer=/^Bearer (\S+)$/i.exec(req.headers.get('authorization')||'');
  if(!bearer)return respond(401,{error:'unauthorized'});
  const url=Deno.env.get('SUPABASE_URL');

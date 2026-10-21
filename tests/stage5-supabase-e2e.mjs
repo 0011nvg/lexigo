@@ -96,6 +96,27 @@ async function main(){
  assert.equal(wrong.data[0]?.verification_source,'server_evaluated');
  r=await edge('submit-answer',pupil.jwt,{...event,answer:'wrong'});assert.equal(r.status,409,'Conflicting replay accepted');
  r=await edge('submit-answer',parent.jwt,event);assert.equal(r.status,403,'Parent forged event');
+ // A browser cannot submit an 'answer' event with a forged correct flag.
+ r=await edge('append-event',pupil.jwt,{attemptId:ids.attempt,index:2,
+ wordId:'fixture-word',kind:'answer',correct:true,hinted:false,retry:false});
+ assert.equal(r.status,400,'Legacy correct flag accepted');
+ // Cards remain self-assessment; their rating never becomes a verified score.
+ const cards=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
+ sectionId:'fixture-section',mode:'cards',dueAt:'2030-01-01T00:00:00Z',
+ audience:'individual',recipients:[pupil.id]});
+ assert.equal(cards.status,200,'Card assignment '+JSON.stringify(cards));
+ const cardStart=await edge('start-attempt',pupil.jwt,{assignmentId:cards.data.id,
+ sessionId:'00000000-0000-4000-8000-000000000055'});
+ assert.equal(cardStart.status,200,'Card start '+JSON.stringify(cardStart));
+ const cardEvent=await edge('append-event',pupil.jwt,{attemptId:cardStart.data.id,
+ index:0,wordId:'fixture-word',kind:'card_self_rating',correct:null,
+ hinted:false,retry:false,rating:'known'});
+ assert.equal(cardEvent.status,200,'Card self rating '+JSON.stringify(cardEvent));
+ const cardRead=await api('/rest/v1/attempt_events?select=verified_correct,verification_source,self_rating&id=eq.'+cardEvent.data.id,
+ {token:teacher.jwt,schema:'lexigo'});
+ assert.equal(cardRead.data[0]?.verified_correct,null,'Self-rating falsely graded');
+ assert.equal(cardRead.data[0]?.verification_source,'client_unverified');
+ assert.equal(cardRead.data[0]?.self_rating,'known');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
  r=await edge('submit-answer',pupil.jwt,{...event,index:1});assert.equal(r.status,403,'Event after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');

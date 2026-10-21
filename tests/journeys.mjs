@@ -7,7 +7,7 @@ async function scenario(viewport){
  const page=await browser.newPage({viewport,reducedMotion:'reduce',acceptDownloads:true});
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base,{waitUntil:'load'});
- await page.locator('#book').waitFor();
+ await page.locator('#book').waitFor({state:'attached'});
  assert.ok(await page.locator('#words input[type=checkbox]').count()>0,'Vocabulary loaded');
  await page.locator('#journeyStart').click();
  await page.locator('#game:not(.hidden)').waitFor();
@@ -46,6 +46,7 @@ async function scenario(viewport){
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
  await page.locator('#changeLesson').click();
  assert.equal(await page.locator('#catalogToggle').getAttribute('aria-expanded'),'true');
+ await page.locator('#book').waitFor({state:'visible'});
  await page.locator('#book').selectOption('3');
  assert.ok((await page.locator('#currentLesson').innerText()).includes('3'));
  await page.close();

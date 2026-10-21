@@ -90,7 +90,7 @@ async function main(){
  challengeId:question.challengeId,index:0,wordId:question.wordId,answer:'hello',correct:true});
  assert.equal(injected.status,400,'Client correctness injected');
  const response={attemptId:ids.attempt,challengeId:question.challengeId,index:0,
- wordId:question.wordId,answer:'привет'};
+ wordId:question.wordId,answer:'hello'};
  const concurrent=await Promise.all(Array.from({length:5},()=>edge('answer-question',pupil.jwt,response)));
  assert.ok(concurrent.every(x=>x.status===200&&x.data.id===concurrent[0].data.id),
  'Concurrent challenge answers not idempotent: '+JSON.stringify(concurrent));
@@ -112,7 +112,7 @@ async function main(){
  assert.equal(wrong.status,200);
  assert.equal(wrong.data.correct,false,'Wrong answer accepted as correct');
  const stale=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
- challengeId:question.challengeId,index:1,wordId:question.wordId,answer:'привет'});
+ challengeId:question.challengeId,index:1,wordId:question.wordId,answer:'hello'});
  assert.equal(stale.status,403,'Challenge index substitution accepted');
  const old=await edge('submit-answer',pupil.jwt,{attemptId:ids.attempt,index:2,
  wordId:'fixture-word',answer:'hello',hinted:false,retry:false});
@@ -132,7 +132,7 @@ async function main(){
   assert.equal(challenge.status,200,'Issue '+mode+' '+JSON.stringify(challenge));
   assert.equal(challenge.data.mode,mode);
   const prompt=challenge.data.question;
-  const answer=mode==='truefalse'?'true':mode==='pairs'||mode==='quiz'?'привет':'hello';
+  const answer=mode==='truefalse'?'true':'hello';
   const scored=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
    challengeId:challenge.data.challengeId,index:challenge.data.index,
    wordId:challenge.data.wordId,answer});

@@ -49,6 +49,13 @@ async function main(){
  await insert('vocabulary_words',[{id:'fixture-word',section_id:'fixture-section',en:'hello',ru:'привет',order_index:0}]);
  let r=await edge('create-assignment',teacher.jwt,{classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'individual',recipients:[pupil.id]});
  assert.equal(r.status,200,'Teacher assignment '+JSON.stringify(r));ids.assignment=r.data.id;
+ // Direct PostgREST writes must fail even for a legitimate teacher.
+ for(const table of ['assignments','assignment_recipients','attempts','attempt_events']){
+  const direct=await api('/rest/v1/'+table,{method:'POST',token:teacher.jwt,
+   schema:'lexigo',body:table==='assignments'?{class_id:ids.classA,created_by:teacher.id,
+   section_id:'fixture-section',mode:'quiz',due_at:'2030-01-01T00:00:00Z',audience_type:'class'}:{}});
+  assert.equal(direct.status,403,'Direct '+table+' write bypassed Edge: '+JSON.stringify(direct));
+ }
  r=await edge('create-assignment',parent.jwt,{classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'class',recipients:[]});
  assert.equal(r.status,403,'Parent created assignment');
  r=await edge('create-assignment',teacher.jwt,{actor:teacher.id,classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'class',recipients:[]});
@@ -59,9 +66,17 @@ async function main(){
  assert.equal(r.status,200,'Pupil start '+JSON.stringify(r));ids.attempt=r.data.id;
  r=await edge('start-attempt',pupil.jwt,{assignmentId:ids.assignment,sessionId:ids.classB});
  assert.equal(r.status,200,'Start retry '+JSON.stringify(r));assert.equal(r.data.id,ids.attempt);
+ // Concurrent retries must resolve to one attempt.
+ const sessions=await Promise.all(Array.from({length:5},()=>edge('start-attempt',pupil.jwt,
+ {assignmentId:ids.assignment,sessionId:ids.classB})));
+ assert.ok(sessions.every(x=>x.status===200&&x.data.id===ids.attempt),
+ 'Concurrent session idempotency failed: '+JSON.stringify(sessions));
  const event={attemptId:ids.attempt,index:0,wordId:'fixture-word',kind:'answer',correct:true,hinted:false,retry:false};
  r=await edge('append-event',pupil.jwt,event);assert.equal(r.status,200,'Event '+JSON.stringify(r));const eventId=r.data.id;
  r=await edge('append-event',pupil.jwt,event);assert.equal(r.status,200,'Event retry '+JSON.stringify(r));assert.equal(r.data.id,eventId);
+ const simultaneous=await Promise.all(Array.from({length:5},()=>edge('append-event',pupil.jwt,event)));
+ assert.ok(simultaneous.every(x=>x.status===200&&x.data.id===eventId),
+ 'Concurrent event idempotency failed: '+JSON.stringify(simultaneous));
  r=await edge('append-event',pupil.jwt,{...event,correct:false});assert.equal(r.status,409,'Conflicting replay accepted');
  r=await edge('append-event',parent.jwt,event);assert.equal(r.status,403,'Parent forged event');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));

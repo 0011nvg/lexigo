@@ -24,6 +24,7 @@ jobs:
       - run: node tests/visual-smoke.mjs
       - run: node tests/pairs-print.mjs
       - run: node tests/rankings.mjs
+      - run: node tests/lesson-share.mjs
       - name: Upload browser screenshots and failures
         if: always()
         uses: actions/upload-artifact@v4

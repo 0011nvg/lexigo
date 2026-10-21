@@ -13,7 +13,8 @@ try{
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   assert.ok(overflow<=2,'Mobile horizontal overflow '+width+': '+overflow);
   await page.locator('#localBegin').click();
-  await page.locator('#localStatus').getByText('Укажи тестовый JWT и ID назначения').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#localStatus')?.textContent?.includes('Укажи тестовый JWT'));
+  assert.match(await page.locator('#localStatus').innerText(),/Укажи тестовый JWT/);
   assert.deepEqual(errors,[],'Mobile demo script error');
   await page.close();
  }

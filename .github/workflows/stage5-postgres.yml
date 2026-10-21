@@ -50,9 +50,9 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210008_server_verified_answers.sql
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210009_server_challenges.sql
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210010_stateful_modes.sql
-          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210010_server_hint_state.sql
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210011_challenge_rounds_and_retries.sql
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210012_encounter_server_state.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610210013_server_hint_state.sql
       - name: Verify role isolation and revocation (real PostgreSQL)
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rls_isolation.sql
       - name: Verify atomic assignments and idempotent event writes (real PostgreSQL)

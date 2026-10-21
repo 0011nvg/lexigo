@@ -176,11 +176,11 @@ function quickStart(){let ws=selectedWords();if(!ws.length){alert('Выбери 
 function goHome(){stop();window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});$('homeLogo').focus({preventScroll:true})}function goToLibrary(){const area=$('learningArea');area.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});if(window.matchMedia('(max-width:760px)').matches){$('catalogAside').classList.add('catalog-open');$('catalogToggle').setAttribute('aria-expanded','true')}setTimeout(()=>$('book').focus({preventScroll:true}),250)}const CABINET_TASK_KEY='lexigo_cabinet_demo_v1',CABINET_HISTORY_KEY='lexigo_cabinet_attempts_v1';
 let activeAssignment=null;
 function assignmentFromLink(){
- const id=new URLSearchParams(location.search).get('assignment');if(!id||id.length>120)return null;
+ const params=new URLSearchParams(location.search),id=params.get('assignment'),pupilId=params.get('pupil');if(!id||id.length>120||!pupilId||!['masha-2a','sasha-2a','dima-3b','anya-4v'].includes(pupilId))return null;const pupilClass={'masha-2a':'2А','sasha-2a':'2А','dima-3b':'3Б','anya-4v':'4В'}[pupilId];
  try{const all=JSON.parse(localStorage.getItem(CABINET_TASK_KEY));if(!Array.isArray(all))return null;
- const a=all.find(x=>x&&x.id===id&&x.className==='2А'&&Number(x.grade)===2&&Number.isInteger(x.sectionIndex)&&x.sectionIndex>=0&&x.sectionIndex<(DB.books.find(b=>Number(b.grade)===2)?.sections.length||0));
+ const a=all.find(x=>x&&x.id===id&&x.className===pupilClass&&Number(x.grade)==={'2А':2,'3Б':3,'4В':4}[pupilClass]&&Number.isInteger(x.sectionIndex)&&x.sectionIndex>=0&&x.sectionIndex<(DB.books.find(b=>Number(b.grade)===Number(x.grade))?.sections.length||0));
  if(!a||!['daily','cards','quiz','spell','pairs','truefalse','fix','audio','crystals','boss'].includes(a.mode))return null;
- return {id:a.id,grade:2,sectionIndex:a.sectionIndex,mode:a.mode};
+ return {id:a.id,pupilId,grade:Number(a.grade),sectionIndex:a.sectionIndex,mode:a.mode};
  }catch{return null}
 }
 function launchAssignment(){
@@ -195,7 +195,7 @@ function launchAssignment(){
  if(mode==='mixed')start('mixed',words.slice(0,15),['quiz','spell','truefalse','spell','fix']);
  else if(mode==='boss')start('boss',words,['spell','quiz','spell','truefalse']);
  else start(mode,words);
- if(game){game.assignmentId=a.id;game.grade=a.grade;game.sectionIndex=a.sectionIndex;game.events=[];game.savedAttempt=false;
+ if(game){game.assignmentId=a.id;game.pupilId=a.pupilId;game.grade=a.grade;game.sectionIndex=a.sectionIndex;game.events=[];game.savedAttempt=false;
  const note=document.createElement('p');note.id='assignmentBanner';note.className='muted';note.textContent='Задание из кабинета · Spotlight '+a.grade+' · '+section.title+' · результаты сохраняются только в этом браузере';
  $('game').prepend(note);
  }else activeAssignment=null;
@@ -204,7 +204,7 @@ function saveLearningAttempt(g,finished){
  if(!g||g.savedAttempt||!g.assignmentId)return;
  g.savedAttempt=true;
  const initial=Math.max(1,g.words.length-g.retries),events=g.events||[];const assessed=events.filter(e=>e.mode!=='cards'&&!e.retry);const firstAccuracy=assessed.length?Math.round(100*assessed.filter(e=>e.correct&&!e.hinted).length/assessed.length):null;
- const result={id:'attempt-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),assignmentId:g.assignmentId,grade:g.grade,sectionIndex:g.sectionIndex,mode:g.mode,finished:!!finished,at:new Date().toISOString(),firstCorrect:g.firstCorrect,initial,answered:events.length,firstAccuracy,assessedFirst:assessed.length,selfRatings:events.filter(x=>x.mode==='cards').length,hints:events.filter(x=>x.hinted).length,retries:events.filter(x=>x.retry).length,events:events.slice(0,500),verified:false,passed:g.mode==='boss'?finalTestPassed(g):null};
+ const result={id:'attempt-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),assignmentId:g.assignmentId,pupilId:g.pupilId,grade:g.grade,sectionIndex:g.sectionIndex,mode:g.mode,finished:!!finished,at:new Date().toISOString(),firstCorrect:g.firstCorrect,initial,answered:events.length,firstAccuracy,assessedFirst:assessed.length,selfRatings:events.filter(x=>x.mode==='cards').length,hints:events.filter(x=>x.hinted).length,retries:events.filter(x=>x.retry).length,events:events.slice(0,500),verified:false,passed:g.mode==='boss'?finalTestPassed(g):null};
  try{const prev=JSON.parse(localStorage.getItem(CABINET_HISTORY_KEY)||'[]');const all=Array.isArray(prev)?prev:[];all.push(result);localStorage.setItem(CABINET_HISTORY_KEY,JSON.stringify(all.slice(-100)))}catch{}
 }
 function recordLearningEvent(w,correct,hinted,retry,mode,selfRating=null){if(game?.assignmentId){game.events.push({wordId:w.id,mode,correct:!!correct,hinted:!!hinted,retry:!!retry,...(selfRating===null?{}:{selfRating})})}}

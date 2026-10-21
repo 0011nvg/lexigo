@@ -81,22 +81,40 @@ begin
   raise exception 'Session reused across assignments';
  exception when unique_violation then null; when insufficient_privilege then null; end;
 
- -- Event replay is idempotent only if payload matches byte-for-byte.
- e:=lexigo.append_event_atomic('00000000-0000-4000-8000-000000000103',
- a,0,'fixture-word','answer',true,false,false,null);
- x:=lexigo.append_event_atomic('00000000-0000-4000-8000-000000000103',
- a,0,'fixture-word','answer',true,false,false,null);
- if e<>x then raise exception 'Event replay created duplicate'; end if;
+ -- Verified answers are evaluated by the database, never by a client flag.
+ e:=lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
+ a,0,'fixture-word','hello',false,false);
+ x:=lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
+ a,0,'fixture-word','hello',false,false);
+ if e<>x then raise exception 'Verified replay created duplicate'; end if;
+ if not exists(select 1 from lexigo.attempt_events where id=e
+ and verified_correct and verification_source='server_evaluated') then
+  raise exception 'Server did not verify canonical answer'; end if;
  begin
-  perform lexigo.append_event_atomic('00000000-0000-4000-8000-000000000103',
-  a,0,'fixture-word','answer',false,false,false,null);
-  raise exception 'Conflicting event replay accepted';
+  perform lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
+  a,0,'fixture-word','wrong',false,false);
+  raise exception 'Conflicting answer replay accepted';
  exception when unique_violation then null; end;
  begin
-  perform lexigo.append_event_atomic('00000000-0000-4000-8000-000000000104',
-  a,1,'fixture-word','answer',true,false,false,null);
-  raise exception 'Foreign pupil appended event';
+  perform lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
+  a,1,'forged-word','hello',false,false);
+  raise exception 'Forged word ID accepted';
  exception when insufficient_privilege then null; end;
+ begin
+  perform lexigo.append_event_atomic('00000000-0000-4000-8000-000000000103',
+  a,1,'fixture-word','answer',true,false,false,null);
+  raise exception 'Legacy client correctness accepted';
+ exception when invalid_parameter_value then null; end;
+ begin
+  perform lexigo.append_verified_answer('00000000-0000-4000-8000-000000000104',
+  a,1,'fixture-word','hello',false,false);
+  raise exception 'Foreign pupil appended verified answer';
+ exception when insufficient_privilege then null; end;
+ x:=lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
+ a,1,'fixture-word','wrong',false,false);
+ if not exists(select 1 from lexigo.attempt_events where id=x
+ and verified_correct=false and verification_source='server_evaluated') then
+  raise exception 'Wrong answer scored as correct'; end if;
  perform lexigo.finish_attempt_atomic('00000000-0000-4000-8000-000000000103',a);
  perform lexigo.finish_attempt_atomic('00000000-0000-4000-8000-000000000103',a);
  begin

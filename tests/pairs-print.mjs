@@ -14,8 +14,8 @@ try{
  await page.locator('#play .pair-grid button').first().waitFor();
  const pairs=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));
  for(const w of pairs){
-  await page.locator('#play .pair-grid button').filter({hasText:w.en}).first().click();
-  await page.locator('#play .pair-grid button').filter({hasText:w.ru}).first().click();
+  await page.getByRole('button',{name:'Английское слово: '+w.en,exact:true}).click();
+  await page.getByRole('button',{name:'Перевод: '+w.ru,exact:true}).click();
  }
  await page.locator('.pair-name-form input').waitFor();
  await page.locator('.pair-name-form input').fill('Тестовый игрок');

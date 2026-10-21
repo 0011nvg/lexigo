@@ -96,7 +96,7 @@ async function run(viewport){
   await page.getByRole('button',{name:'Перевод: '+word.ru,exact:true}).click();
  }
  assert.equal(await page.evaluate(()=>game.matched),pairs.length,'All pairs matched');
- assert.equal(await page.locator('#play .pair-leaderboard').count(),1,'One leaderboard after completion');
+ assert.equal(await page.locator('#play .pair-leaderboard').count(),0,'Partial word selection cannot enter leaderboard');
  assert.equal(await page.locator('#play .pair-finish').count(),1,'One completion panel');
  await page.locator('#back').click();
 

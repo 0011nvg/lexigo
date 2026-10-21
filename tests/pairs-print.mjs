@@ -1,0 +1,81 @@
+import { chromium } from 'playwright';
+import { PDFDocument } from 'pdf-lib';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true});
+const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
+const page=await browser.newPage({viewport:{width:1280,height:900}});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+try{
+ await page.goto(base);
+ await page.locator('#book').waitFor();
+ // Use every word of the selected lesson: partial sets are intentionally ineligible.
+ // Complete every pair using real DOM clicks, not by calling the scoring function.
+ const eligibleLesson=await page.evaluate(()=>{
+  for(const b of DB.books)for(let i=0;i<b.sections.length;i++){
+   const section=b.sections[i];
+   if(section.words.length>=3&&uniquePairs(section.words).length===section.words.length)
+    return {grade:String(b.grade),module:section.module,index:String(i)};
+  }
+  return null;
+ });
+ assert.ok(eligibleLesson,'Need lesson with unique pairs for complete-lesson ranking');
+ await page.locator('#book').selectOption(eligibleLesson.grade);
+ await page.locator('#module').selectOption(eligibleLesson.module);
+ await page.locator('#unit').selectOption(eligibleLesson.index);
+ console.log('Lesson fixture',eligibleLesson,await page.evaluate(()=>({grade:book.grade,module:mod,unit,scope:scope.length,selected:selectedWords().length,unique:uniquePairs(selectedWords()).length,lesson:book.sections[Number(unit)]?.words.length})));
+ await page.locator('[data-mode="pairs"]').click();
+ await page.locator('#play .pair-grid button').first().waitFor();
+ const pairs=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));
+ for(const w of pairs){
+  await page.getByRole('button',{name:'Английское слово: '+w.en,exact:true}).click();
+  await page.getByRole('button',{name:'Перевод: '+w.ru,exact:true}).click();
+ }
+ console.log('Pairs completed:',await page.evaluate(()=>({matched:game.matched,total:game.words.length,errors:game.pairMistakes,eligible:lessonRankingEligible(game),unit,sectionWords:book.sections[Number(unit)]?.words.length})));
+ await page.locator('.pair-name-form input').waitFor({timeout:5000});
+ await page.locator('.pair-name-form input').fill('Тестовый игрок');
+ await page.locator('.pair-name-form button').click();
+ assert.match(await page.locator('.pair-leaderboard').innerText(),/Тестовый игрок/);
+ const scores=await page.evaluate(()=>JSON.parse(localStorage.getItem('lexigo_pair_scores')||'[]'));
+ assert.ok(scores.some(s=>s.name==='Тестовый игрок'&&s.pairs===pairs.length),'Named record was not saved');
+ await page.reload();
+ await page.locator('#book').selectOption(eligibleLesson.grade);
+ await page.locator('#module').selectOption(eligibleLesson.module);
+ await page.locator('#unit').selectOption(eligibleLesson.index);
+ await page.locator('[data-mode="pairs"]').click();
+ assert.match(await page.locator('.pair-leaderboard').innerText(),/Тестовый игрок/,'Leaderboard did not survive reload');
+ await page.locator('#back').click();
+ // A subset of the same lesson must not qualify for the leaderboard.
+ await page.locator('#words input[type=checkbox]').first().uncheck();
+ await page.locator('[data-mode="pairs"]').click();
+ const subset=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));
+ for(const w of subset){
+  await page.getByRole('button',{name:'Английское слово: '+w.en,exact:true}).click();
+  await page.getByRole('button',{name:'Перевод: '+w.ru,exact:true}).click();
+ }
+ assert.equal(await page.locator('.pair-name-form').count(),0,'Partial lesson should not allow ranking');
+ await page.locator('#back').click();
+ await page.locator('#roleSwitch').click();
+ const largest=await page.evaluate(()=>{
+  const options=DB.books.flatMap(b=>[...new Set(b.sections.map(x=>x.module))].map(m=>({grade:String(b.grade),module:m,count:uniquePairs(b.sections.filter(x=>x.module===m).flatMap(x=>x.words)).length})));
+  return options.sort((a,b)=>b.count-a.count)[0];
+ });
+ assert.ok(largest.count>=20,'Fixture needs at least 20 distinct words for 20-question print');
+ await page.locator('#book').selectOption(largest.grade);
+ await page.locator('#module').selectOption(largest.module);
+ await page.locator('#unit').selectOption('__all');
+ await page.locator('#all').click();
+ for(const count of [5,10,20]){
+  await page.locator('#testCount').selectOption(String(count));
+  await page.evaluate(()=>{window.print=()=>{};printTeacherTest()});
+  assert.equal(await page.locator('#lexigoPrint .print-question').count(),count);
+  assert.equal(await page.locator('#lexigoPrint .print-key li').count(),count);
+  assert.deepEqual(await page.locator('#lexigoPrint .print-questions > div').evaluateAll(cols=>cols.map(c=>c.querySelectorAll('.print-question').length)),[Math.ceil(count/2),Math.floor(count/2)],'Questions must be balanced into two columns');
+  const pdf=await page.pdf({format:'A4',printBackground:true,preferCSSPageSize:true});
+  const doc=await PDFDocument.load(pdf);
+  const pages=doc.getPageCount();
+  console.log('Print A4 '+count+' questions: '+pages+' pages');
+  assert.equal(pages,2,'Expected exactly one question sheet and one teacher key for '+count+' questions');
+ }
+ assert.deepEqual(errors,[]);
+ console.log('PASS: named pairs leaderboard persistence and 5/10/20-question two-page A4 PDFs');
+}finally{await browser.close()}

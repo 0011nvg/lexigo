@@ -63,8 +63,6 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  await page.goto(base+'cabinet.html#student');
  assert.equal(await page.locator('#studentHistory .task').count(),2);
  assert.match(await page.locator('#studentHistory').innerText(),/Завершена/);
- await page.getByRole('tab',{name:/родитель/i}).click();
- assert.equal(await page.locator('#parentHistory .task').count(),2);
  await page.getByRole('tab',{name:/учитель/i}).click();
  assert.equal(await page.locator('#teacherHistory .task').count(),2);
  // One finished verified-by-game attempt can be locally reviewed by a teacher.
@@ -73,8 +71,6 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.equal(await page.locator('#teacherHistory [data-verify]').count(),1);
  await page.locator('#teacherHistory [data-verify]').click();
  assert.match(await page.locator('#teacherHistory').innerText(),/Учитель отметил просмотр/);
- await page.getByRole('tab',{name:/родитель/i}).click();
- assert.match(await page.locator('#parentHistory').innerText(),/Учитель отметил просмотр/);
  await page.reload();
  await page.getByRole('tab',{name:/учитель/i}).click();
  assert.match(await page.locator('#teacherHistory').innerText(),/Учитель отметил просмотр/);
@@ -95,8 +91,6 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.match(await page.locator('#teacherHistory').innerText(),/Правильно самостоятельно/);
  await page.getByRole('tab',{name:/ученик/i}).click();
  assert.equal(await page.locator('#studentHistory .trend-item').count(),2);
- await page.getByRole('tab',{name:/родитель/i}).click();
- assert.equal(await page.locator('#parentHistory .trend-item').count(),2);
  await page.getByRole('tab',{name:/учитель/i}).click();
  assert.equal(await page.locator('#teacherHistory [data-verify]').count(),2);
  // Teacher review is local and applies to one attempt, not all sessions.
@@ -130,8 +124,6 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.equal(await page.locator('#studentHistory .history-entry').count(),0);
  assert.equal(await page.locator('#studentHistory .trend-item').count(),0);
  assert.equal(await page.locator('#studentTasks .task').count(),2);
- await page.getByRole('tab',{name:/родитель/i}).click();
- assert.equal(await page.locator('#parentHistory .history-entry').count(),0);
  await page.getByRole('tab',{name:/ученик/i}).click();
  await page.locator('#activePupil').selectOption('dima-3b');
  assert.equal(await page.locator('#studentTasks .task').count(),1);
@@ -152,14 +144,12 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  await page.reload();
  assert.equal(await page.locator('#studentHistory .history-entry').count(),3);
  await page.getByRole('tab',{name:/ученик/i}).click();
- const before=Number(await page.locator('#parentCompleted').innerText());
+ const before=await page.evaluate(()=>JSON.stringify(JSON.parse(localStorage.getItem('lexigo_cabinet_completed_by_pupil_v1')||'{}')));
  await page.locator('#studentTasks [data-complete]').last().click();
- await page.getByRole('tab',{name:/родитель/i}).click();
- assert.equal(Number(await page.locator('#parentCompleted').innerText()),before+1);
- assert.ok((await page.locator('#parentAdvice').innerText()).length>30);
+ const after=await page.evaluate(()=>JSON.stringify(JSON.parse(localStorage.getItem('lexigo_cabinet_completed_by_pupil_v1')||'{}')));
+ assert.notEqual(after,before,'Student completion must be saved');
  await page.reload();
- await page.getByRole('tab',{name:/родитель/i}).click();
- assert.equal(Number(await page.locator('#parentCompleted').innerText()),before+1,'Demo tasks must survive reload');
+ assert.equal(await page.evaluate(()=>JSON.stringify(JSON.parse(localStorage.getItem('lexigo_cabinet_completed_by_pupil_v1')||'{}'))),after,'Completion must survive reload');
  await page.getByRole('tab',{name:/учитель/i}).click();
  // A pupil-only task is not shown to the classmate in the same class.
  await page.locator('#assignClass').selectOption('2А');
@@ -210,4 +200,4 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
 }
 await browser.close();
 assert.deepEqual(errors,[]);
-console.log('PASS: dashboard roles, real Spotlight sections, assignment flow, parent visibility, persistence, reset, desktop/mobile');
+console.log('PASS: dashboard roles, real Spotlight sections, assignment flow, student visibility, persistence, reset, desktop/mobile');

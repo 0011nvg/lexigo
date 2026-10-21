@@ -74,7 +74,7 @@ async function main(){
  view=await cabinetRead('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+pupil.id,foreign.jwt);
  assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read assignment recipient');
  view=await cabinetRead('profiles','select=user_id,role,display_name&user_id=eq.'+teacher.id,pupil.jwt);
- assert.equal(view.status,200);assert.equal(view.data.length,0,'Pupil read teacher profile');
+ assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read teacher profile');
  view=await cabinetRead('classes','select=id,title,grade&teacher_user_id=eq.'+teacher.id,foreign.jwt);
  assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read teacher class');
  const impersonate=await edge('create-assignment',pupil.jwt,{classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'individual',recipients:[pupil.id]});

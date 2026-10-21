@@ -127,7 +127,7 @@ async function teacherControls(root,classes,assignments){
  const pupil=choice(form,recipients.filter(r=>r.class_id===classes[0].id).map(r=>[r.pupil_user_id,'Тестовый ученик '+r.pupil_user_id.slice(0,8)]));
  classSelect.addEventListener('change',()=>{pupil.replaceChildren();for(const r of recipients.filter(r=>r.class_id===classSelect.value)){const o=el('option','Тестовый ученик '+r.pupil_user_id.slice(0,8));o.value=r.pupil_user_id;pupil.append(o)}});
  const button=el('button','Создать назначение');button.type='submit';form.append(button);
- form.onsubmit=async e=>{e.preventDefault();button.disabled=true;try{if(!pupil.value||!sectionSelect.value)throw Error('Нужен активный ученик и раздел');await edge('create-assignment',{classId:classSelect.value,sectionId:sectionSelect.value,mode:mode.value,dueAt:new Date(Date.now()+7*86400000).toISOString(),audience:'individual',recipients:[pupil.value]});say('Задание сохранено сервером');await load()}catch(err){say(err.message,true)}finally{button.disabled=false}};
+ form.onsubmit=async e=>{e.preventDefault();button.disabled=true;try{if(!pupil.value||!sectionSelect.value)throw Error('Нужен активный ученик и раздел');await edge('create-assignment',{classId:classSelect.value,sectionId:sectionSelect.value,mode:mode.value,dueAt:new Date(Date.now()+7*86400000).toISOString(),audience:'individual',recipients:[pupil.value]});await load();say('Задание сохранено сервером')}catch(err){say(err.message,true)}finally{button.disabled=false}};
  root.append(form);
  heading(root,'Результаты моих учеников');
  const attempts=await rows('attempts','select=id,assignment_id,pupil_user_id,status,started_at');
@@ -148,7 +148,7 @@ async function play(root,assignment,attemptId){
  const next=el('button','Следующий вопрос');box.append(next);
  const question=el('div');box.append(question);
  const finish=el('button','Завершить попытку');box.append(finish);
- finish.onclick=async()=>{try{await edge('finish-attempt',{attemptId});say('Попытка завершена на сервере');await load()}catch(err){say(err.message,true)}};
+ finish.onclick=async()=>{try{await edge('finish-attempt',{attemptId});await load();say('Попытка завершена на сервере')}catch(err){say(err.message,true)}};
  next.onclick=async()=>{next.disabled=true;question.replaceChildren();try{
   if(['cards','daily'].includes(assignment.mode)){await selfRating(question,assignment,attemptId);return}
   const c=await edge('next-question',{attemptId});

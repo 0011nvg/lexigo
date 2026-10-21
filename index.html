@@ -255,7 +255,7 @@ function record(w,ok,skill='recognition'){let p=progress[w.id]||{right:0,wrong:0
  const lesson=book.sections[Number(unit)];
  if(!lesson||!lesson.words.length)return false;
  const expected=new Set(lesson.words.map(w=>w.id));
- return expected.size===g.words.length&&g.words.every(w=>expected.has(w.id));
+ const attempted=new Set(g.words.map(w=>w.id));return expected.size===attempted.size&&[...expected].every(id=>attempted.has(id));
 }
 function modeRecords(){try{return JSON.parse(localStorage.getItem('lexigo_mode_records_v1')||'[]')}catch{return []}}
 function saveModeRecord(entry){try{localStorage.setItem('lexigo_mode_records_v1',JSON.stringify([...modeRecords(),entry].slice(-300)))}catch{}}

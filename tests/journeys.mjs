@@ -4,7 +4,7 @@ const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const errors=[];
 async function scenario(viewport){
- const page=await browser.newPage({viewport});
+ const page=await browser.newPage({viewport,reducedMotion:'reduce',acceptDownloads:true});
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base,{waitUntil:'load'});
  await page.locator('#book').waitFor();

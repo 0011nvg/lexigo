@@ -10,7 +10,18 @@ try{
  await page.locator('#book').waitFor();
  // Use every word of the selected lesson: partial sets are intentionally ineligible.
  // Complete every pair using real DOM clicks, not by calling the scoring function.
- await page.locator('#unit').selectOption({index:1});
+ const eligibleLesson=await page.evaluate(()=>{
+  for(const b of DB.books)for(let i=0;i<b.sections.length;i++){
+   const section=b.sections[i];
+   if(section.words.length>=3&&uniquePairs(section.words).length===section.words.length)
+    return {grade:String(b.grade),module:section.module,index:String(i)};
+  }
+  return null;
+ });
+ assert.ok(eligibleLesson,'Need lesson with unique pairs for complete-lesson ranking');
+ await page.locator('#book').selectOption(eligibleLesson.grade);
+ await page.locator('#module').selectOption(eligibleLesson.module);
+ await page.locator('#unit').selectOption(eligibleLesson.index);
  await page.locator('[data-mode="pairs"]').click();
  await page.locator('#play .pair-grid button').first().waitFor();
  const pairs=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));

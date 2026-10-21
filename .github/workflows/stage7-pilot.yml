@@ -1,0 +1,17 @@
+name: LEXIGO stage 7 pilot boundary checks
+on:
+  pull_request:
+  push:
+    branches: [stage7/closed-pilot]
+permissions:
+  contents: read
+jobs:
+  pilot-boundaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check tests/stage5-supabase-e2e.mjs
+      - run: node tests/stage7-pilot-boundaries.mjs

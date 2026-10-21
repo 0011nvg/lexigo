@@ -12,9 +12,9 @@ begin
  if not lexigo.is_teacher_of(p_class,p_actor) then
   raise exception 'not authorized' using errcode='42501';
  end if;
- v_token:=encode(gen_random_bytes(32),'hex');
+ v_token:=replace(gen_random_uuid()::text,'-','')||replace(gen_random_uuid()::text,'-','');
  insert into lexigo.invitations(class_id,target_role,token_digest,created_by,expires_at)
- values(p_class,p_role,digest(v_token,'sha256'),p_actor,now()+make_interval(hours=>p_ttl_hours));
+ values(p_class,p_role,pg_catalog.sha256(pg_catalog.convert_to(v_token,'UTF8')),p_actor,now()+make_interval(hours=>p_ttl_hours));
  insert into lexigo.audit_log(actor_user_id,action,subject_type,subject_id)
  values(p_actor,'invitation.issued','class',p_class);
  return v_token; -- return only once; never log token
@@ -28,7 +28,7 @@ begin
   raise exception 'invalid invitation' using errcode='22023';
  end if;
  select * into v_inv from lexigo.invitations
- where token_digest=digest(p_token,'sha256') for update;
+ where token_digest=pg_catalog.sha256(pg_catalog.convert_to(p_token,'UTF8')) for update;
  if not found or v_inv.revoked_at is not null or v_inv.redeemed_at is not null
     or v_inv.expires_at<=now() then
   raise exception 'invitation unavailable' using errcode='42501';

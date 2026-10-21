@@ -8,7 +8,8 @@ const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto(base);
  await page.locator('#book').waitFor();
- await page.locator('#all').click();
+ await page.locator('#none').click();
+ for(const checkbox of await page.locator('#words input[type=checkbox]').all().then(a=>a.slice(0,5)))await checkbox.check();
  // Complete every pair using real DOM clicks, not by calling the scoring function.
  await page.locator('[data-mode="pairs"]').click();
  await page.locator('#play .pair-grid button').first().waitFor();

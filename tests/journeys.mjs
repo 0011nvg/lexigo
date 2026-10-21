@@ -41,7 +41,7 @@ async function scenario(viewport){
  assert.ok(await page.locator('.teacher-only').first().isVisible());
  await page.locator('#showReport').click();
  assert.ok(await page.locator('#reportContent table tbody tr').count()>0);
- await page.locator('#exportReport').click();
+ const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexigo.*csv/);
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
  await page.locator('#changeLesson').click();
@@ -54,5 +54,5 @@ try{
  await scenario({width:1280,height:800});
  await scenario({width:390,height:844});
  assert.deepEqual(errors,[],'Browser runtime errors');
- console.log('PASS: desktop/mobile: daily training, crystals, sound controls, teacher report, catalog and grade switch');
+ console.log('PASS: desktop/mobile: daily training, crystal loop, teacher report/CSV, catalog and grade switch');
 }finally{await browser.close()}

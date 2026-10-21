@@ -59,8 +59,8 @@ async function run(viewport){
  await page.evaluate(()=>start('pairs'));
  assert.equal(await page.locator('.pair').count(),8);
  const first=await page.evaluate(()=>game.words[0]);
- await page.getByRole('button',{name:first.en,exact:true}).click();
- await page.getByRole('button',{name:first.ru,exact:true}).click();
+ await page.getByRole('button',{name:'Английское слово: '+first.en,exact:true}).click();
+ await page.getByRole('button',{name:'Перевод: '+first.ru,exact:true}).click();
  assert.equal(await page.evaluate(()=>game.matched),1);
  await page.locator('#back').click();
  // Daily session uses up to fifteen words, not the old eight-word cap.

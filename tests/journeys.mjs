@@ -36,6 +36,7 @@ async function scenario(viewport){
   assert.ok(move,'Playable match-three move exists');
   await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
   await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
+  await page.waitForFunction(()=>!game.gemBusy,{timeout:10000});
  }
  assert.match(await page.locator('#crystalScore').innerText(),/очков/);
  assert.ok(await page.evaluate(()=>game.crystals>=21));

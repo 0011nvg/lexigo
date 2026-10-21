@@ -26,7 +26,7 @@ for(const book of data.books){
 assert.equal(all.length,1035);
 assert.equal(new Set(all.map(w=>w.id)).size,all.length,'Duplicate word IDs');
 assert.ok(html.includes('<script src="data.js"></script>'));
-const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)];
+const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 assert.ok(scripts.length,'Inline script missing');
 for(const match of scripts) new vm.Script(match[1],{filename:'index.html'});
 for(const id of ['book','module','unit','words','quickStart','game','launcher','showReport','exportReport','reportContent']){

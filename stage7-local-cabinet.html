@@ -165,7 +165,7 @@ async function play(root,assignment,attemptId){
  await next.onclick();
 }
 
-$('form').onsubmit=async e=>{e.preventDefault();clear();try{config();say('Проверка входа…');const data=await request('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('email').value,password:$('password').value})});if(!data.access_token||!data.user?.id)throw Error('Auth не вернул подтверждённую сессию');access=data.access_token;userId=data.user.id;await load()}catch(err){clear();say(err.message,true)}};
+$('form').onsubmit=async e=>{e.preventDefault();access='';userId='';try{config();say('Проверка входа…');const data=await request('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('email').value,password:$('password').value})});if(!data.access_token||!data.user?.id)throw Error('Auth не вернул подтверждённую сессию');access=data.access_token;userId=data.user.id;await load()}catch(err){clear();say(err.message,true)}};
 $('logout').onclick=async()=>{try{if(access)await request('/auth/v1/logout',{method:'POST'})}catch{}finally{clear();say('Вы вышли. Сессия удалена из памяти страницы.')}};
 window.addEventListener('pagehide',clear);
 </script></body></html>

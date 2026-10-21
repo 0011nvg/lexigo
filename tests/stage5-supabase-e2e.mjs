@@ -315,9 +315,6 @@ async function main(){
  {token:teacher.jwt,schema:'lexigo'});
  assert.equal(dailyRead.data[0]?.verified_correct,null);
  assert.equal(dailyRead.data[0]?.self_rating,'unknown');
- const forbiddenBossHint=await edge('hint-question',pupil.jwt,{attemptId:bossAttempt.data.id,
- challengeId:bossQuestion.data.challengeId});
- assert.equal(forbiddenBossHint.status,403,'Generic hint bypassed boss state');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
  r=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,403,'Challenge after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');

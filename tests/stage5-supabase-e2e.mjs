@@ -35,6 +35,16 @@ async function edge(route,jwt,body){
 }
 async function main(){
  for(let n=0;n<40;n++){try{const r=await fetch(base+'/auth/v1/health');if(r.ok)break}catch{}await sleep(1000)}
+ // Only the local synthetic UI may use cross-origin browser requests.
+ const allowedCors=await fetch(base+'/functions/v1/learning-api/next-question',
+ {method:'OPTIONS',headers:{origin:'http://127.0.0.1:3000',
+ 'access-control-request-method':'POST',
+ 'access-control-request-headers':'authorization,content-type'}});
+ assert.equal(allowedCors.status,204,'Local demo preflight rejected');
+ assert.equal(allowedCors.headers.get('access-control-allow-origin'),'http://127.0.0.1:3000');
+ const forbiddenCors=await fetch(base+'/functions/v1/learning-api/next-question',
+ {method:'OPTIONS',headers:{origin:'https://example.com'}});
+ assert.equal(forbiddenCors.status,403,'External origin preflight accepted');
  const [teacher,pupil,parent,foreign,newPupil]=await Promise.all(['teacher','pupil','parent','foreign','newpupil'].map(signup));
  await insert('organizations',[{id:ids.org,name:'Fixture school A'},{id:ids.teacher2,name:'Fixture school B'}]);
  await insert('profiles',[

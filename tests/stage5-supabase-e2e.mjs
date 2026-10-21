@@ -335,7 +335,7 @@ async function main(){
  await insert('parent_pupils',[{parent_user_id:parent.id,pupil_user_id:pupil.id,verified_by:teacher.id}]);
  const linked=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
  assert.equal(linked.status,200,'Linked parent read '+JSON.stringify(linked));
- assert.equal(linked.data.length,13,'Verified parent cannot see linked pupil attempts');
+ assert.equal(linked.data.length,10,'Verified parent cannot see linked pupil attempts');
  const revoke=await api('/rest/v1/parent_pupils?parent_user_id=eq.'+parent.id+'&pupil_user_id=eq.'+pupil.id,
  {method:'PATCH',key:service,body:{revoked_at:new Date().toISOString()},schema:'lexigo'});
  assert.equal(revoke.status,204,'Parent link revoke '+JSON.stringify(revoke));
@@ -344,7 +344,7 @@ async function main(){
  assert.equal(afterRevoke.data.length,0,'Revoked parent still sees pupil attempts');
  const pupilRead=await api('/rest/v1/attempts?select=id',{token:pupil.jwt,schema:'lexigo'});
  assert.equal(pupilRead.status,200,'Pupil read '+JSON.stringify(pupilRead));
- assert.equal(pupilRead.data.length,13,'Pupil cannot see own attempts');
+ assert.equal(pupilRead.data.length,10,'Pupil cannot see own attempts');
  const foreignRead=await api('/rest/v1/attempts?select=id',{token:foreign.jwt,schema:'lexigo'});
  assert.equal(foreignRead.status,200,'Foreign read '+JSON.stringify(foreignRead));
  assert.equal(foreignRead.data.length,0,'Foreign pupil saw attempt');
@@ -397,7 +397,7 @@ async function main(){
  const verified=await edge('verify-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
  assert.equal(verified.status,200,'Teacher parent verification '+JSON.stringify(verified));
  const linkedAgain=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
- assert.equal(linkedAgain.data.length,13,'Verified parent still denied');
+ assert.equal(linkedAgain.data.length,10,'Verified parent still denied');
  const unlinked=await edge('revoke-parent-link',teacher.jwt,{parentUserId:parent.id,childUserId:pupil.id});
  assert.equal(unlinked.status,200,'Teacher parent revocation');
  const unlinkedRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});

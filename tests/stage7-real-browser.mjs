@@ -56,7 +56,7 @@ try{
  await page.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  await page.getByText('Мои попытки').waitFor();
  for(const mode of ['pairs','crystals','boss','cards','daily']){
-  const tile=page.locator('#results div[data-mode="'+mode+'"]');
+  const tile=page.locator('#results div[data-mode="'+mode+'"]').last();
   await tile.getByRole('button',{name:'Играть'}).click();
   await page.getByRole('heading',{name:'Игра · '+mode}).waitFor({timeout:15000});
   const round=page.locator('#results section').first();

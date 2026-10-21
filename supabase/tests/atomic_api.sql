@@ -40,7 +40,7 @@ insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,corr
 ('40000000-0000-4000-8000-000000000002','fixture-word',0,'answer',false);
 
 do $$
-declare a uuid; b uuid; e uuid; x uuid; v_count integer;
+declare a uuid; b uuid; e uuid; x uuid; v_count integer; v_q jsonb; v_r jsonb;
 begin
  -- Assignment and recipients are committed or rolled back as one operation.
  a:=lexigo.create_assignment_atomic(
@@ -81,40 +81,31 @@ begin
   raise exception 'Session reused across assignments';
  exception when unique_violation then null; when insufficient_privilege then null; end;
 
- -- Verified answers are evaluated by the database, never by a client flag.
- e:=lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
- a,0,'fixture-word','hello',false,false);
- x:=lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
- a,0,'fixture-word','hello',false,false);
- if e<>x then raise exception 'Verified replay created duplicate'; end if;
- if not exists(select 1 from lexigo.attempt_events where id=e
- and verified_correct and verification_source='server_evaluated') then
-  raise exception 'Server did not verify canonical answer'; end if;
+ -- Server issues an attempt-bound challenge and grades it without client correct.
+ v_q:=lexigo.next_challenge('00000000-0000-4000-8000-000000000103',a);
+ if (v_q->>'index')::integer<>0 or v_q->>'wordId'<>'fixture-word' then
+  raise exception 'Unexpected challenge'; end if;
+ v_r:=lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','привет');
+ if (v_r->>'correct')::boolean is not true then raise exception 'Server grade wrong'; end if;
+ if (lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','привет')->>'id')<>v_r->>'id' then
+  raise exception 'Idempotent answer changed'; end if;
  begin
-  perform lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
-  a,0,'fixture-word','wrong',false,false);
-  raise exception 'Conflicting answer replay accepted';
+  perform lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','wrong');
+  raise exception 'Changed replay accepted';
  exception when unique_violation then null; end;
  begin
-  perform lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
-  a,1,'forged-word','hello',false,false);
-  raise exception 'Forged word ID accepted';
+  perform lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
+  a,(v_q->>'challengeId')::uuid,0,'fake-word','привет');
+  raise exception 'Word spoof accepted';
  exception when insufficient_privilege then null; end;
  begin
-  perform lexigo.append_event_atomic('00000000-0000-4000-8000-000000000103',
-  a,1,'fixture-word','answer',true,false,false,null);
-  raise exception 'Legacy client correctness accepted';
- exception when invalid_parameter_value then null; end;
- begin
-  perform lexigo.append_verified_answer('00000000-0000-4000-8000-000000000104',
-  a,1,'fixture-word','hello',false,false);
-  raise exception 'Foreign pupil appended verified answer';
+  perform lexigo.answer_challenge('00000000-0000-4000-8000-000000000104',
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','привет');
+  raise exception 'Foreign pupil answered';
  exception when insufficient_privilege then null; end;
- x:=lexigo.append_verified_answer('00000000-0000-4000-8000-000000000103',
- a,1,'fixture-word','wrong',false,false);
- if not exists(select 1 from lexigo.attempt_events where id=x
- and verified_correct=false and verification_source='server_evaluated') then
-  raise exception 'Wrong answer scored as correct'; end if;
  perform lexigo.finish_attempt_atomic('00000000-0000-4000-8000-000000000103',a);
  perform lexigo.finish_attempt_atomic('00000000-0000-4000-8000-000000000103',a);
  begin

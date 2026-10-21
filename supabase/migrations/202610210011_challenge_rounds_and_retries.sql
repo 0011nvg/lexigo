@@ -64,7 +64,7 @@ end $$;
 -- Server creates a distinct pair board or staged encounter; client never supplies the answer key.
 create or replace function lexigo.next_challenge(p_actor uuid,p_attempt uuid)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare a lexigo.attempts%rowtype; section_id text; game_mode text;
+declare a lexigo.attempts%rowtype; v_section text; game_mode text;
  idx integer; w lexigo.vocabulary_words%rowtype; other lexigo.vocabulary_words%rowtype;
  ch lexigo.attempt_challenges%rowtype; payload jsonb; expected_answer text;
  flip boolean; challenge_id uuid; phase integer;
@@ -73,7 +73,7 @@ begin
  if not found or a.pupil_user_id<>p_actor or a.status<>'started'
  or not lexigo.can_see_assignment(a.assignment_id,p_actor) then
   raise exception 'not authorized' using errcode='42501'; end if;
- select section_id,mode into section_id,game_mode from lexigo.assignments where id=a.assignment_id;
+ select assignments.section_id,assignments.mode into v_section,game_mode from lexigo.assignments where id=a.assignment_id;
  if game_mode in ('cards','daily') then raise exception 'self rating only' using errcode='22023'; end if;
  select coalesce(max(event_index),-1)+1 into idx from lexigo.attempt_events where attempt_id=p_attempt;
  if idx>499 then raise exception 'attempt limit' using errcode='22023'; end if;
@@ -84,11 +84,11 @@ begin
    'wordId',ch.word_id,'mode',ch.mode,'question',ch.payload,
    'hinted',ch.hint_count>0,'retriesUsed',ch.wrong_tries);
  end if;
- select * into w from lexigo.vocabulary_words where vocabulary_words.section_id=next_challenge.section_id
+ select * into w from lexigo.vocabulary_words where vocabulary_words.section_id=v_section
  order by random() limit 1;
  if not found then raise exception 'empty section' using errcode='22023'; end if;
  select * into other from lexigo.vocabulary_words
- where vocabulary_words.section_id=next_challenge.section_id and id<>w.id and ru<>w.ru
+ where vocabulary_words.section_id=v_section and id<>w.id and ru<>w.ru
  order by random() limit 1;
  flip:=random()<0.5;
  expected_answer:=w.en;

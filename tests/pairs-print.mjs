@@ -28,6 +28,16 @@ try{
  await page.locator('[data-mode="pairs"]').click();
  assert.match(await page.locator('.pair-leaderboard').innerText(),/Тестовый игрок/,'Leaderboard did not survive reload');
  await page.locator('#back').click();
+ // A subset of the same lesson must not qualify for the leaderboard.
+ await page.locator('#words input[type=checkbox]').first().uncheck();
+ await page.locator('[data-mode="pairs"]').click();
+ const subset=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));
+ for(const w of subset){
+  await page.getByRole('button',{name:'Английское слово: '+w.en,exact:true}).click();
+  await page.getByRole('button',{name:'Перевод: '+w.ru,exact:true}).click();
+ }
+ assert.equal(await page.locator('.pair-name-form').count(),0,'Partial lesson should not allow ranking');
+ await page.locator('#back').click();
  await page.locator('#roleSwitch').click();
  const largest=await page.evaluate(()=>{
   const options=DB.books.flatMap(b=>[...new Set(b.sections.map(x=>x.module))].map(m=>({grade:String(b.grade),module:m,count:uniquePairs(b.sections.filter(x=>x.module===m).flatMap(x=>x.words)).length})));

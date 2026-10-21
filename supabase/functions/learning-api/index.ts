@@ -3,7 +3,7 @@
 // All identities are derived from auth.getUser(accessToken), never request body.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
+const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{
  status,headers:{'content-type':'application/json','cache-control':'no-store'}
@@ -61,6 +61,7 @@ Deno.serve(async(req:Request)=>{
     p_hinted:body.hinted,p_retry:body.retry,p_rating:body.rating??null};break;
   }
   case 'submit-answer':{
+   return reply(410,{error:'use server-issued challenge'});
    if(!UUID.test(String(body.attemptId||''))||typeof body.wordId!=='string'||
     typeof body.answer!=='string'||body.answer.length>250||
     !Number.isInteger(body.index)||Number(body.index)<0||Number(body.index)>499||
@@ -71,6 +72,19 @@ Deno.serve(async(req:Request)=>{
    fn='append_verified_answer';
    args={p_actor:user.id,p_attempt:body.attemptId,p_index:body.index,
     p_word:body.wordId,p_answer:body.answer,p_hinted:body.hinted,p_retry:body.retry};break;
+  }
+  case 'next-question':{
+   if(!UUID.test(String(body.attemptId||'')))return reply(400,{error:'invalid attempt'});
+   fn='next_challenge';args={p_actor:user.id,p_attempt:body.attemptId};break;
+  }
+  case 'answer-question':{
+   if(!UUID.test(String(body.attemptId||''))||!UUID.test(String(body.challengeId||''))||
+    typeof body.wordId!=='string'||typeof body.answer!=='string'||body.answer.length>250||
+    !Number.isInteger(body.index)||body.index<0||body.index>499||
+    Object.hasOwn(body,'correct')||Object.hasOwn(body,'hinted')||Object.hasOwn(body,'retry'))
+    return reply(400,{error:'invalid challenge answer'});
+   fn='answer_challenge';args={p_actor:user.id,p_attempt:body.attemptId,
+    p_challenge:body.challengeId,p_index:body.index,p_word:body.wordId,p_answer:body.answer};break;
   }
   case 'issue-invitation':{
    if(!UUID.test(String(body.classId||''))||!['pupil','parent'].includes(String(body.role))||
@@ -112,5 +126,5 @@ Deno.serve(async(req:Request)=>{
  }
  const {data,error}=await server.schema('lexigo').rpc(fn,args);
  if(error)return reply(error.code==='42501'?403:error.code==='23505'?409:400,{error:'request rejected'});
- return reply(200,{id:data});
+ return reply(200,fn==='next_challenge'||fn==='answer_challenge'?data:{id:data});
 });

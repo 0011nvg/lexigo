@@ -80,6 +80,29 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.match(await page.locator('#teacherHistory').innerText(),/Учитель отметил просмотр/);
  await page.locator('#teacherHistory [data-verify]').click();
  assert.equal(await page.locator('#teacherHistory').getByText(/Учитель отметил просмотр/).count(),0);
+ // Consecutive local sessions produce a real chart, visible to all demo roles.
+ const sessionData=await page.evaluate(()=>{
+   const key='lexigo_cabinet_attempts_v1',rows=JSON.parse(localStorage.getItem(key)),a=rows.find(x=>x.finished);
+   const next={...a,id:'sequence-test-2',at:'2026-10-22T10:00:00.000Z',events:[{wordId:a.events[0].wordId,mode:'spell',correct:false,hinted:false,retry:false},{wordId:a.events[0].wordId,mode:'spell',correct:true,hinted:false,retry:true}]};
+   rows.push(next);localStorage.setItem(key,JSON.stringify(rows));return {first:attemptMetrics(a).rate,second:attemptMetrics(next).rate};
+ });
+ assert.equal(sessionData.second,0,'Retry success must not inflate first-attempt accuracy');
+ await page.reload();
+ await page.getByRole('tab',{name:/учитель/i}).click();
+ assert.equal(await page.locator('#teacherHistory .trend-item').count(),2);
+ assert.equal(await page.locator('#teacherHistory .trend-bar').count(),2);
+ assert.ok(await page.locator('#teacherHistory .word-card').count()>=1);
+ assert.match(await page.locator('#teacherHistory').innerText(),/Правильно самостоятельно/);
+ await page.getByRole('tab',{name:/ученик/i}).click();
+ assert.equal(await page.locator('#studentHistory .trend-item').count(),2);
+ await page.getByRole('tab',{name:/родитель/i}).click();
+ assert.equal(await page.locator('#parentHistory .trend-item').count(),2);
+ await page.getByRole('tab',{name:/учитель/i}).click();
+ assert.equal(await page.locator('#teacherHistory [data-verify]').count(),2);
+ // Teacher review is local and applies to one attempt, not all sessions.
+ await page.locator('#teacherHistory [data-verify]').first().click();
+ assert.equal(await page.locator('#teacherHistory').getByText(/Учитель отметил просмотр/).count(),1);
+ await page.locator('#teacherHistory [data-verify]').first().click();
  // Self-assessed cards cannot inflate objectively checked first-attempt accuracy.
  const synthetic=await page.evaluate(()=>attemptMetrics({events:[{mode:'cards',selfRating:'known',correct:false,retry:false},{mode:'spell',correct:true,hinted:false,retry:false},{mode:'spell',correct:true,hinted:false,retry:true},{mode:'quiz',correct:false,hinted:true,retry:false}]}));
  assert.equal(synthetic.first,2);

@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate HTTP E2E JavaScript syntax before starting Docker
+        run: node --check tests/stage5-supabase-e2e.mjs
       - name: Start isolated Supabase Auth, PostgREST and PostgreSQL
         run: supabase start -x studio,imgproxy,inbucket,storage-api,realtime,analytics,vector,edge-runtime
       - name: Apply migrations

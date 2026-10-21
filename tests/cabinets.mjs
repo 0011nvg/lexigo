@@ -67,6 +67,28 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.equal(await page.locator('#parentHistory .task').count(),2);
  await page.getByRole('tab',{name:/учитель/i}).click();
  assert.equal(await page.locator('#teacherHistory .task').count(),2);
+ // One finished verified-by-game attempt can be locally reviewed by a teacher.
+ assert.match(await page.locator('#teacherHistory').innerText(),/Точность первой попытки/);
+ assert.match(await page.locator('#teacherHistory').innerText(),/Трудные слова/);
+ assert.equal(await page.locator('#teacherHistory [data-verify]').count(),1);
+ await page.locator('#teacherHistory [data-verify]').click();
+ assert.match(await page.locator('#teacherHistory').innerText(),/Учитель отметил просмотр/);
+ await page.getByRole('tab',{name:/родитель/i}).click();
+ assert.match(await page.locator('#parentHistory').innerText(),/Учитель отметил просмотр/);
+ await page.reload();
+ await page.getByRole('tab',{name:/учитель/i}).click();
+ assert.match(await page.locator('#teacherHistory').innerText(),/Учитель отметил просмотр/);
+ await page.locator('#teacherHistory [data-verify]').click();
+ assert.equal(await page.locator('#teacherHistory').getByText(/Учитель отметил просмотр/).count(),0);
+ // Self-assessed cards cannot inflate objectively checked first-attempt accuracy.
+ const synthetic=await page.evaluate(()=>attemptMetrics({events:[{mode:'cards',selfRating:'known',correct:false,retry:false},{mode:'spell',correct:true,hinted:false,retry:false},{mode:'spell',correct:true,hinted:false,retry:true},{mode:'quiz',correct:false,hinted:true,retry:false}]}));
+ assert.equal(synthetic.first,2);
+ assert.equal(synthetic.correct,1);
+ assert.equal(synthetic.rate,50);
+ assert.equal(synthetic.cards,1);
+ assert.equal(synthetic.retries,1);
+ assert.equal(synthetic.hints,1);
+
  await page.getByRole('tab',{name:/ученик/i}).click();
  const before=Number(await page.locator('#parentCompleted').innerText());
  await page.locator('#studentTasks [data-complete]').last().click();

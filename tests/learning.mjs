@@ -12,6 +12,19 @@ async function run(viewport){
  // Accept case and harmless sentence punctuation without altering source vocabulary.
  assert.equal(await page.evaluate(()=>normalize('Fine things!')),await page.evaluate(()=>normalize('fine things')));
  assert.equal(await page.evaluate(()=>normalize('  Hello, world!!! ')),await page.evaluate(()=>normalize('hello world')));
+ // Real Spotlight records: punctuation, apostrophes, and ambiguous translations.
+ const lexical=await page.evaluate(()=>{
+  const words=LEXIGO_DATA.books.flatMap(b=>b.sections.flatMap(s=>s.words));
+  const apostrophe=words.find(w=>w.en==="Let's");
+  const punctuation=words.find(w=>w.en==="What's your name?");
+  const duplicates=words.filter(w=>normalize(w.ru)==='мой');
+  if(!apostrophe||!punctuation||duplicates.length<2)throw Error('Required real Spotlight examples missing');
+  if(!isSingleVocabularyWord(apostrophe.en)||!isSingleVocabularyWord(apostrophe.en.replace("'",'’')))throw Error('Apostrophe words excluded from single-word modes');
+  if(normalize("What's your name?")!==normalize("What’s your name"))throw Error('Typography changes answer');
+  if(new Set(duplicates.map(w=>normalize(w.en))).size<2)throw Error('Ambiguous translation fixture invalid');
+  return {apostrophe:apostrophe.en,ambiguous:duplicates.length};
+ });
+ assert.equal(lexical.apostrophe,"Let's");
  assert.equal(await page.evaluate(()=>gemScore(3,1)),30);
  assert.equal(await page.evaluate(()=>gemScore(4,1)),60);
  assert.equal(await page.evaluate(()=>gemScore(5,1)),100);

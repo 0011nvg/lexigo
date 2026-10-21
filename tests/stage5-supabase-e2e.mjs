@@ -245,14 +245,25 @@ async function main(){
  assert.ok(simultaneousSwaps.every(x=>x.status===200),'Crystal concurrency '+JSON.stringify(simultaneousSwaps));
  assert.deepEqual(simultaneousSwaps.map(x=>x.data),Array(5).fill(simultaneousSwaps[0].data));
  let crystalLast=simultaneousSwaps[0];
- for(let i=1;i<7&&!crystalLast.data.complete;i++){
+ for(let i=1;i<7&&!crystalLast.data.boardComplete;i++){
   crystalLast=await crystalAction({from:0,to:1});
   assert.equal(crystalLast.status,200,'Crystal move '+i+' '+JSON.stringify(crystalLast));
  }
- assert.equal(crystalLast.data.complete,true,'Crystal round never finished');
+ assert.equal(crystalLast.data.boardComplete,true,'Seven swaps did not open vocabulary test');
+ assert.equal(crystalLast.data.complete,false,'Gem swaps falsely verified vocabulary');
  assert.ok(crystalLast.data.hits>=0);
  const extraCrystal=await crystalAction({from:0,to:1});
- assert.equal(extraCrystal.status,403,'Completed crystal round reopened');
+ assert.equal(extraCrystal.status,403,'Extra crystal swap after seven moves accepted');
+ const crystalAnswer=async(answer)=>edge('play-round',pupil.jwt,{
+ attemptId:crystalAttempt.data.id,challengeId:crystalQuestion.data.challengeId,
+ requestId:randomUUID(),action:'answer',payload:{answer}});
+ const crystalCorrect=await crystalAnswer(crystalQuestion.data.wordId==='fixture-word'?'hello':'world');
+ assert.equal(crystalCorrect.status,200,'Crystal vocabulary answer '+JSON.stringify(crystalCorrect));
+ assert.equal(crystalCorrect.data.complete,true,'Crystal word not graded');
+ assert.equal(crystalCorrect.data.correct,true);
+ const crystalRead=await api('/rest/v1/attempt_events?select=verified_correct&id=eq.'+crystalCorrect.data.eventId,
+ {token:teacher.jwt,schema:'lexigo'});
+ assert.equal(crystalRead.data[0]?.verified_correct,true);
 
  // Boss: 3 server-owned phases, hint and retry cannot be spoofed.
  const bossAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,

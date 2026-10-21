@@ -150,7 +150,7 @@ async function main(){
  const expRecord=expList.data.find(x=>String(x.token_digest).toLowerCase().replace(/^\\\\x/,'')===expiredDigest);
  assert.ok(expRecord,'Expired invite digest not found');
  const expired=await api('/rest/v1/invitations?id=eq.'+expRecord.id,
- {method:'PATCH',key:service,schema:'lexigo',body:{expires_at:new Date(Date.now()-1000).toISOString()}});
+ {method:'PATCH',key:service,schema:'lexigo',body:{created_at:new Date(Date.now()-2*86400000).toISOString(),expires_at:new Date(Date.now()-86400000).toISOString()}});
  assert.equal(expired.status,204,'Fixture expiry update '+JSON.stringify(expired));
  redeem=await edge('redeem-invitation',newPupil.jwt,{token:expiredToken});
  assert.equal(redeem.status,403,'Expired invitation redeemed');

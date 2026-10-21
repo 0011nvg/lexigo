@@ -253,8 +253,8 @@ async function main(){
  const bossAction=(action,payload={})=>edge('play-round',pupil.jwt,{
  attemptId:bossAttempt.data.id,challengeId:bossQuestion.data.challengeId,
  requestId:randomUUID(),action,payload});
- const hint=await bossAction('hint');
- assert.equal(hint.status,200,'Boss hint denied');
+ const bossHint=await bossAction('hint');
+ assert.equal(bossHint.status,200,'Boss hint denied');
  const secondHint=await bossAction('hint');
  assert.equal(secondHint.status,403,'Unlimited boss hints accepted');
  const miss=await bossAction('answer',{answer:'wrong'});

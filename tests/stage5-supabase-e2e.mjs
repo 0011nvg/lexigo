@@ -84,6 +84,9 @@ async function main(){
  assert.equal(grading.data[0]?.correct,true,'Client-reported answer missing');
  assert.equal(grading.data[0]?.verified_correct,true,'Canonical answer was not verified by server');
  assert.equal(grading.data[0]?.verification_source,'server_evaluated','Server correctness not labeled verified');
+ const directScoreEdit=await api('/rest/v1/attempt_events?id=eq.'+eventId,
+ {method:'PATCH',token:pupil.jwt,schema:'lexigo',body:{verified_correct:false}});
+ assert.equal(directScoreEdit.status,403,'Direct score edit allowed');
  r=await edge('submit-answer',pupil.jwt,{...event,correct:true});
  assert.equal(r.status,400,'Client correct spoofing accepted');
  r=await edge('submit-answer',pupil.jwt,{...event,wordId:'different-word',index:1});

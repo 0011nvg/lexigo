@@ -99,9 +99,6 @@ begin
  if not found or ch.expires_at<=now()
  or ch.mode not in ('pairs','crystals','boss') then
   raise exception 'challenge unavailable' using errcode='42501'; end if;
- if (select coalesce(max(event_index),-1)+1 from lexigo.attempt_events
- where attempt_id=p_attempt)<>ch.event_index then
-  raise exception 'out of sequence' using errcode='42501'; end if;
  digest:=pg_catalog.sha256(pg_catalog.convert_to(p_action||':'||p_payload::text,'UTF8'));
  select * into old from lexigo.challenge_actions
  where challenge_id=p_challenge and request_id=p_request;
@@ -110,6 +107,9 @@ begin
    raise exception 'conflicting request replay' using errcode='23505'; end if;
   return old.response;
  end if;
+ if (select coalesce(max(event_index),-1)+1 from lexigo.attempt_events
+ where attempt_id=p_attempt)<>ch.event_index then
+  raise exception 'out of sequence' using errcode='42501'; end if;
  if ch.answered_at is not null then raise exception 'challenge completed' using errcode='42501'; end if;
  state:=ch.private_state; mode:=ch.mode;
  if state is null then raise exception 'missing server state' using errcode='22023'; end if;

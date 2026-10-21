@@ -79,6 +79,12 @@ async function main(){
  const simultaneous=await Promise.all(Array.from({length:5},()=>edge('append-event',pupil.jwt,event)));
  assert.ok(simultaneous.every(x=>x.status===200&&x.data.id===eventId),
  'Concurrent event idempotency failed: '+JSON.stringify(simultaneous));
+ const grading=await api('/rest/v1/attempt_events?select=correct,verified_correct,verification_source&id=eq.'+eventId,
+ {token:teacher.jwt,schema:'lexigo'});
+ assert.equal(grading.status,200,'Teacher event read '+JSON.stringify(grading));
+ assert.equal(grading.data[0]?.correct,true,'Client-reported answer missing');
+ assert.equal(grading.data[0]?.verified_correct,null,'Forged client correctness was marked verified');
+ assert.equal(grading.data[0]?.verification_source,'client_unverified','Client correctness not labeled unverified');
  r=await edge('append-event',pupil.jwt,{...event,correct:false});assert.equal(r.status,409,'Conflicting replay accepted');
  r=await edge('append-event',parent.jwt,event);assert.equal(r.status,403,'Parent forged event');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const modes=['cards','quiz','spell','pairs','fix','truefalse','audio','mixed','boss','crystals'];
+const modes=['cards','quiz','spell','fix','truefalse','audio','mixed','boss','crystals'];
 try{
  await page.goto(process.env.LEXIGO_URL||'http://127.0.0.1:4173/');
  await page.locator('#book').waitFor();

@@ -100,6 +100,10 @@ async function main(){
  challengeId:question.challengeId,index:0,wordId:question.wordId,answer:'hello',correct:true});
  assert.equal(injected.status,400,'Client correctness injected');
  const expectedTranslation=question.wordId==='fixture-word'?'привет':'мир';
+ const hint=await edge('hint-question',pupil.jwt,{attemptId:ids.attempt,challengeId:question.challengeId});
+ assert.equal(hint.status,200,'Hint rejected');assert.equal(hint.data.hinted,true);
+ const forbiddenHint=await edge('hint-question',foreign.jwt,{attemptId:ids.attempt,challengeId:question.challengeId});
+ assert.equal(forbiddenHint.status,403,'Foreign hint allowed');
  const response={attemptId:ids.attempt,challengeId:question.challengeId,index:0,
  wordId:question.wordId,answer:expectedTranslation};
  const concurrent=await Promise.all(Array.from({length:5},()=>edge('answer-question',pupil.jwt,response)));
@@ -122,6 +126,16 @@ async function main(){
  challengeId:next.data.challengeId,index:1,wordId:next.data.wordId,answer:'wrong'});
  assert.equal(wrong.status,200);
  assert.equal(wrong.data.correct,false,'Wrong answer accepted as correct');
+ assert.equal(wrong.data.complete,false,'First wrong answer prematurely finalized');
+ const repeatedWrong=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:next.data.challengeId,index:1,wordId:next.data.wordId,answer:'wrong'});
+ assert.equal(repeatedWrong.data.remaining,wrong.data.remaining,'Repeated wrong answer consumed retry');
+ const secondWrong=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:next.data.challengeId,index:1,wordId:next.data.wordId,answer:'wrong again'});
+ assert.equal(secondWrong.data.complete,false);
+ const finalWrong=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:next.data.challengeId,index:1,wordId:next.data.wordId,answer:'wrong finally'});
+ assert.equal(finalWrong.data.complete,true,'Retry cap not enforced');
  const stale=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
  challengeId:question.challengeId,index:1,wordId:question.wordId,answer:'hello'});
  assert.equal(stale.status,403,'Challenge index substitution accepted');
@@ -146,7 +160,7 @@ async function main(){
   const en=challenge.data.wordId==='fixture-word'?'hello':'world';
   const ru=challenge.data.wordId==='fixture-word'?'привет':'мир';
   const answer=mode==='truefalse'?String(prompt.proposed===ru):
-   prompt.responseType==='choice'?ru:en;
+   ['choice','pair'].includes(prompt.responseType)?ru:en;
   const scored=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
    challengeId:challenge.data.challengeId,index:challenge.data.index,
    wordId:challenge.data.wordId,answer});

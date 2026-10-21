@@ -130,6 +130,32 @@ select:focus,input:focus{border-color:#718FE0}
  .print-question{break-inside:avoid;border-bottom:1px solid #ddd;padding:10px 0 13px;margin:0 0 8px}.print-qhead{display:flex;justify-content:space-between;gap:10px;font-size:11pt}.print-qhead span{font-size:9pt;color:#666}.print-prompt{margin:9px 0}.print-options{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;margin:10px 0 2px}.print-line{border-bottom:1px solid #666;height:24px;margin-top:6px}.print-result{margin-top:24px;border-top:2px solid #222;padding-top:13px;font-weight:700}
  .print-key ol{padding-left:22px}.print-key li{margin-bottom:9px;break-inside:avoid}
 }
+
+/* Compact A4 classroom test: worksheet and teacher key each start on their own page. */
+@media print{
+ @page{size:A4;margin:9mm 11mm}
+ #lexigoPrint{font-size:9pt;line-height:1.18}
+ .print-sheet{break-after:page;page-break-after:always}
+ .print-sheet:last-child{break-after:auto;page-break-after:auto}
+ .print-head{padding-bottom:4px;margin-bottom:6px}
+ .print-brand{font-size:15pt}.print-caption{font-size:7pt}
+ .print-sheet h1{font-size:14pt;margin:0 0 3px}
+ .print-subtitle{margin:0 0 7px}
+ .print-student{padding:6px 8px;margin:6px 0;font-size:8.5pt}
+ .print-meta{font-size:8pt;margin-bottom:5px}
+ .print-question{padding:3px 0 4px;margin:0 0 2px;break-inside:avoid}
+ .print-qhead{font-size:9pt;gap:5px}
+ .print-qhead span{font-size:8pt}
+ .print-prompt{margin:3px 0}
+ .print-options{grid-template-columns:1fr 1fr;gap:2px 9px;margin:3px 0 1px;font-size:8.5pt}
+ .print-line{height:13px;margin-top:2px}
+ .print-result{margin-top:8px;padding-top:6px;border-top:1px solid #222}
+ .print-key ol{columns:2;column-gap:12mm;padding-left:18px;font-size:9pt}
+ .print-key li{margin-bottom:4px;break-inside:avoid}
+}
+.pair-name-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.pair-name-form label{flex-basis:100%;font-weight:700}
+.pair-name-form input{min-width:160px;flex:1;padding:10px;border:1px solid #b7c8e2;border-radius:10px}
 </style></head><body><header><button class="logo home-logo" id="homeLogo" type="button" aria-label="На главную страницу LEXIGO"><span class="brand-word">LEXI<b>GO</b></span></button><div class="header-actions"><a class="header-home" href="./cabinet.html" style="text-decoration:none" aria-label="Открыть демонстрационные кабинеты учителя, ученика и родителя">👥 Кабинеты</a><button class="header-home" id="homeNav" type="button"><svg class="nav-house" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg> Главная</button><span class="tag">Learn. Play. Remember.</span><button class="role-switch" id="roleSwitch" type="button" aria-pressed="false">👩‍🏫 Режим учителя</button></div></header><main><section class="hero" id="home" aria-labelledby="homeTitle"><div class="hero-copy"><span class="tag">Spotlight • 2–4 классы</span><h1 id="homeTitle">Английский, в который<br>хочется играть<span class="hero-star" aria-hidden="true">✦</span></h1><p>Учи английские слова из Spotlight в своём темпе: выбирай урок, играй, пробуй снова и замечай свой прогресс.</p><div class="hero-actions"><button class="btn hero-primary" id="heroStart" type="button">Выбрать слова <span aria-hidden="true">↗</span></button><span class="hero-assurance">Spotlight 2–4 · учимся играя</span></div></div><div class="hero-art" aria-hidden="true">
 <svg class="hero-scene" viewBox="0 0 390 325" xmlns="http://www.w3.org/2000/svg">
 <defs><linearGradient id="lexiViolet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#A1ACFF"/><stop offset="1" stop-color="#5B6CD8"/></linearGradient><linearGradient id="lexiMint" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7AE5C6"/><stop offset="1" stop-color="#2BB595"/></linearGradient><linearGradient id="lexiPeach" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE1AE"/><stop offset="1" stop-color="#FFB779"/></linearGradient></defs>
@@ -154,7 +180,9 @@ function printTeacherTest(){
  const words=uniquePairs(selectedWords()),types=[...document.querySelectorAll('#taskTypes input:checked')].map(x=>x.value).filter(x=>['quiz','spell','fix','truefalse'].includes(x));
  if(!words.length){alert('Сначала отметь слова для теста в библиотеке.');return}
  if(!types.length){alert('Выбери хотя бы один тип письменного задания.');return}
- const amount=$('testCount').value,items=shuffle(words).slice(0,amount==='all'?words.length:Number(amount));
+ const amount=$('testCount').value,requested=amount==='all'?words.length:Number(amount);
+ if(requested>20)alert('Для компактной печати на одном листе тест ограничен 20 заданиями. Выбраны первые 20 случайных слов; ответы печатаются отдельно.');
+ const items=shuffle(words).slice(0,Math.min(requested,20));
  const questions=[],answers=[];const safe=x=>escapeHTML(String(x));const scramble=w=>{const letters=[...w.en],alphabet='abcdefghijklmnopqrstuvwxyz';const index=letters.findIndex(c=>/[a-z]/i.test(c));if(index<0)return null;const old=letters[index],replacement=alphabet[(alphabet.indexOf(old.toLowerCase())+7)%26];letters[index]=old===old.toUpperCase()?replacement.toUpperCase():replacement;return letters.join('')};
  items.forEach((w,i)=>{let kind=types[i%types.length],body='',answer=w.en+' — '+w.ru;
   if(kind==='quiz'){const wrong=shuffle(words.filter(x=>x.id!==w.id&&normalize(x.ru)!==normalize(w.ru))).filter((x,i,a)=>a.findIndex(y=>normalize(y.ru)===normalize(x.ru))===i).slice(0,3);if(wrong.length<2)kind='spell';else{const options=shuffle([w,...wrong]);body='<div class="print-options">'+options.map((x,j)=>'<div>'+String.fromCharCode(65+j)+') '+safe(x.ru)+'</div>').join('')+'</div>';answer=String.fromCharCode(65+options.findIndex(x=>x.id===w.id))+') '+w.ru}}
@@ -289,14 +317,22 @@ function textAnswer(q,w){let help=action('💡 Подсказка',()=>{if(game.
 function speak(s){if(!audioAvailable()){alert('Озвучивание недоступно в этом браузере.');return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(s);u.lang='en-GB';u.rate=.85;speechSynthesis.speak(u)}function uniquePairs(ws){let a=new Set(),b=new Set();return ws.filter(w=>{let en=normalize(w.en),ru=normalize(w.ru);if(a.has(en)||b.has(ru))return false;a.add(en);b.add(ru);return true})}
 function pairScores(){try{return JSON.parse(localStorage.getItem('lexigo_pair_scores')||'[]')}catch{return []}}
 function savePairScore(entry){const scores=[...pairScores(),entry].sort((a,b)=>a.seconds-b.seconds||a.mistakes-b.mistakes).slice(0,100);try{localStorage.setItem('lexigo_pair_scores',JSON.stringify(scores))}catch{}return scores}
-function renderPairLeaderboard(root,scores){const table=document.createElement('section');table.className='pair-leaderboard';const heading=document.createElement('h3');heading.textContent='🏅 Рекорды для одинакового количества пар (на этом устройстве)';table.append(heading);const list=document.createElement('ol');scores.slice(0,5).forEach(x=>{const li=document.createElement('li');li.textContent=x.pairs+' пар · '+x.seconds+' сек. · '+x.mistakes+' ошибок';list.append(li)});if(!scores.length){const p=document.createElement('p');p.textContent='Пока нет результатов. Твой первый рекорд ждёт!';table.append(p)}else table.append(list);root.append(table)}
+function pairNameForm(root,entry,refresh){
+ const form=document.createElement('form');form.className='pair-name-form';
+ const label=document.createElement('label');label.textContent='Запиши своё имя в таблицу рекордов';
+ const input=document.createElement('input');input.type='text';input.maxLength=24;input.required=true;input.autocomplete='nickname';input.placeholder='Имя или псевдоним';input.setAttribute('aria-label','Имя игрока');
+ const button=document.createElement('button');button.type='submit';button.className='btn good';button.textContent='Сохранить рекорд';
+ form.append(label,input,button);root.append(form);
+ form.onsubmit=e=>{e.preventDefault();const name=input.value.trim().replace(/\\s+/g,' ');if(!name)return;entry.name=name;savePairScore(entry);form.remove();refresh();};input.focus();
+}
+function renderPairLeaderboard(root,scores){const table=document.createElement('section');table.className='pair-leaderboard';const heading=document.createElement('h3');heading.textContent='🏅 Рекорды для одинакового количества пар (на этом устройстве)';table.append(heading);const list=document.createElement('ol');scores.slice(0,5).forEach(x=>{const li=document.createElement('li');li.textContent=(x.name?x.name+' · ':'')+x.pairs+' пар · '+x.seconds+' сек. · '+x.mistakes+' ошибок';list.append(li)});if(!scores.length){const p=document.createElement('p');p.textContent='Пока нет результатов. Твой первый рекорд ждёт!';table.append(p)}else table.append(list);root.append(table)}
 function renderPairs(){const current=game,w=current.words,items=shuffle(w.flatMap(x=>[{id:x.id,side:'en',text:x.en},{id:x.id,side:'ru',text:x.ru}]));game.pairStart=performance.now();game.pairMistakes=0;game.matched=0;
  $('counter').textContent='0 / '+w.length+' пар';$('bar').style.width='0%';const p=$('play');p.innerHTML='<p class="muted pair-instruction">Найди пары как можно быстрее. Ошибки не завершают игру — попробуй ещё!</p><div class="pair-hud"><strong id="pairTime">0.0 с</strong><span id="pairProgress">0 из '+w.length+' пар</span></div>';const grid=document.createElement('div');grid.className='pairs pair-grid';p.append(grid);let choice=null;
  const clock=setInterval(()=>{if(game!==current||!document.getElementById('pairTime')){clearInterval(clock);return}document.getElementById('pairTime').textContent=((performance.now()-game.pairStart)/1000).toFixed(1)+' с'},100);
  items.forEach(x=>{const b=action(x.text,()=>{if(b.classList.contains('matched')||game!==current)return;if(!choice){choice={x,b};b.classList.add('selected');return}if(choice.b===b){b.classList.remove('selected');choice=null;return}
  const first=choice;choice=null;first.b.classList.remove('selected');
  if(first.x.id===x.id&&first.x.side!==x.side){first.b.classList.add('matched');b.classList.add('matched');first.b.disabled=true;b.disabled=true;game.matched++;record(w.find(v=>v.id===x.id),true);$('counter').textContent=game.matched+' / '+w.length+' пар';$('pairProgress').textContent=game.matched+' из '+w.length+' пар';$('bar').style.width=(game.matched/w.length*100)+'%';
- if(game.matched===w.length){saveLearningAttempt(game,true);clearInterval(clock);const elapsed=Math.round((performance.now()-game.pairStart)/100)/10;const scores=savePairScore({pairs:w.length,seconds:elapsed,mistakes:game.pairMistakes});p.querySelector('.pair-leaderboard')?.remove();clearInterval(tick);$('timer').textContent='⏱ '+elapsed+' с';const done=document.createElement('div');done.className='pair-finish';done.innerHTML='<h3>🎉 Все пары найдены!</h3><p>Время: <strong>'+elapsed+' с</strong> · Ошибок: <strong>'+game.pairMistakes+'</strong></p>';p.append(done);renderPairLeaderboard(p,scores.filter(x=>x.pairs===w.length).sort((a,b)=>a.seconds-b.seconds||a.mistakes-b.mistakes));p.append(action('Сыграть ещё',()=>start('pairs'),'btn good'))}
+ if(game.matched===w.length){saveLearningAttempt(game,true);clearInterval(clock);const elapsed=Math.round((performance.now()-game.pairStart)/100)/10;const score={pairs:w.length,seconds:elapsed,mistakes:game.pairMistakes};const scores=pairScores();p.querySelector('.pair-leaderboard')?.remove();clearInterval(tick);$('timer').textContent='⏱ '+elapsed+' с';const done=document.createElement('div');done.className='pair-finish';done.innerHTML='<h3>🎉 Все пары найдены!</h3><p>Время: <strong>'+elapsed+' с</strong> · Ошибок: <strong>'+game.pairMistakes+'</strong></p>';p.append(done);const showBoard=()=>{p.querySelector('.pair-leaderboard')?.remove();renderPairLeaderboard(p,pairScores().filter(x=>x.pairs===w.length).sort((a,b)=>a.seconds-b.seconds||a.mistakes-b.mistakes))};pairNameForm(done,score,showBoard);showBoard();p.append(action('Сыграть ещё',()=>start('pairs'),'btn good'))}
  }else{game.pairMistakes++;if(game?.assignmentId){game.events.push({wordId:null,mode:'pairs',correct:false,hinted:false,retry:false,pairError:true})}first.b.classList.add('pair-error');b.classList.add('pair-error');setTimeout(()=>{first.b.classList.remove('pair-error');b.classList.remove('pair-error')},320)}
  },'pair');b.setAttribute('aria-label',(x.side==='en'?'Английское слово: ':'Перевод: ')+x.text);grid.append(b)});
  renderPairLeaderboard(p,pairScores().filter(x=>x.pairs===w.length).sort((a,b)=>a.seconds-b.seconds||a.mistakes-b.mistakes))

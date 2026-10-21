@@ -120,6 +120,6 @@ revoke all on function lexigo.issue_invitation(uuid,uuid,lexigo.member_role,inte
  lexigo.review_attempt(uuid,uuid) from public,anon,authenticated;
 grant execute on function lexigo.issue_invitation(uuid,uuid,lexigo.member_role,integer),
  lexigo.redeem_invitation(uuid,text),lexigo.revoke_invitation(uuid,uuid),
- lexigo.verify_parent_link(uuid,uuid,uuid),lexigo.revoke_parent_link(uuid,uuid),
+ lexigo.verify_parent_link(uuid,uuid,uuid),lexigo.revoke_parent_link(uuid,uuid,uuid),
  lexigo.review_attempt(uuid,uuid) to service_role;
 commit;

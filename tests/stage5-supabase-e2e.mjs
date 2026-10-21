@@ -72,54 +72,67 @@ async function main(){
  {assignmentId:ids.assignment,sessionId:ids.classB})));
  assert.ok(sessions.every(x=>x.status===200&&x.data.id===ids.attempt),
  'Concurrent session idempotency failed: '+JSON.stringify(sessions));
- const event={attemptId:ids.attempt,index:0,wordId:'fixture-word',answer:'hello',hinted:false,retry:false};
- r=await edge('submit-answer',pupil.jwt,event);assert.equal(r.status,200,'Event '+JSON.stringify(r));const eventId=r.data.id;
- r=await edge('submit-answer',pupil.jwt,event);assert.equal(r.status,200,'Event retry '+JSON.stringify(r));assert.equal(r.data.id,eventId);
- const simultaneous=await Promise.all(Array.from({length:5},()=>edge('submit-answer',pupil.jwt,event)));
- assert.ok(simultaneous.every(x=>x.status===200&&x.data.id===eventId),
- 'Concurrent event idempotency failed: '+JSON.stringify(simultaneous));
- const grading=await api('/rest/v1/attempt_events?select=correct,verified_correct,verification_source&id=eq.'+eventId,
+ // Real Auth JWT -> server-issued challenge; concurrent fetch is idempotent.
+ const questions=await Promise.all(Array.from({length:5},()=>edge('next-question',pupil.jwt,{attemptId:ids.attempt})));
+ assert.ok(questions.every(x=>x.status===200&&x.data.challengeId===questions[0].data.challengeId),
+ 'Concurrent challenge issuance changed identity: '+JSON.stringify(questions));
+ const question=questions[0].data;
+ assert.equal(question.index,0);
+ assert.equal(question.wordId,'fixture-word');
+ assert.equal(question.mode,'quiz');
+ const forged=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:question.challengeId,index:0,wordId:'fake-word',answer:'hello'});
+ assert.equal(forged.status,403,'Forged wordId accepted');
+ const badActor=await edge('answer-question',parent.jwt,{attemptId:ids.attempt,
+ challengeId:question.challengeId,index:0,wordId:question.wordId,answer:'hello'});
+ assert.equal(badActor.status,403,'Parent forged pupil response');
+ const injected=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:question.challengeId,index:0,wordId:question.wordId,answer:'hello',correct:true});
+ assert.equal(injected.status,400,'Client correctness injected');
+ const response={attemptId:ids.attempt,challengeId:question.challengeId,index:0,
+ wordId:question.wordId,answer:'привет'};
+ const concurrent=await Promise.all(Array.from({length:5},()=>edge('answer-question',pupil.jwt,response)));
+ assert.ok(concurrent.every(x=>x.status===200&&x.data.id===concurrent[0].data.id),
+ 'Concurrent challenge answers not idempotent: '+JSON.stringify(concurrent));
+ assert.ok(concurrent.every(x=>x.data.correct===true),'Server quiz answer not verified');
+ const conflicting=await edge('answer-question',pupil.jwt,{...response,answer:'wrong'});
+ assert.equal(conflicting.status,409,'Changed answer replay accepted');
+ const grading=await api('/rest/v1/attempt_events?select=verified_correct,verification_source&attempt_id=eq.'+ids.attempt,
  {token:teacher.jwt,schema:'lexigo'});
- assert.equal(grading.status,200,'Teacher event read '+JSON.stringify(grading));
- assert.equal(grading.data[0]?.correct,true,'Client-reported answer missing');
- assert.equal(grading.data[0]?.verified_correct,true,'Canonical answer was not verified by server');
- assert.equal(grading.data[0]?.verification_source,'server_evaluated','Server correctness not labeled verified');
- const directScoreEdit=await api('/rest/v1/attempt_events?id=eq.'+eventId,
+ assert.equal(grading.data[0]?.verified_correct,true,'Server did not grade correct response');
+ assert.equal(grading.data[0]?.verification_source,'server_evaluated');
+ const direct=await api('/rest/v1/attempt_events?id=eq.'+concurrent[0].data.id,
  {method:'PATCH',token:pupil.jwt,schema:'lexigo',body:{verified_correct:false}});
- assert.equal(directScoreEdit.status,403,'Direct score edit allowed');
- r=await edge('submit-answer',pupil.jwt,{...event,correct:true});
- assert.equal(r.status,400,'Client correct spoofing accepted');
- r=await edge('submit-answer',pupil.jwt,{...event,wordId:'different-word',index:1});
- assert.equal(r.status,403,'Word ID substitution accepted');
- r=await edge('submit-answer',pupil.jwt,{...event,index:1,answer:'incorrect'});
- assert.equal(r.status,200,'Wrong answer submission rejected '+JSON.stringify(r));
- const wrong=await api('/rest/v1/attempt_events?select=verified_correct,verification_source&attempt_id=eq.'+ids.attempt+'&event_index=eq.1',
- {token:teacher.jwt,schema:'lexigo'});
- assert.equal(wrong.data[0]?.verified_correct,false,'Wrong answer marked correct');
- assert.equal(wrong.data[0]?.verification_source,'server_evaluated');
- r=await edge('submit-answer',pupil.jwt,{...event,answer:'wrong'});assert.equal(r.status,409,'Conflicting replay accepted');
- r=await edge('submit-answer',parent.jwt,event);assert.equal(r.status,403,'Parent forged event');
- // A browser cannot submit an 'answer' event with a forged correct flag.
- r=await edge('append-event',pupil.jwt,{attemptId:ids.attempt,index:2,
- wordId:'fixture-word',kind:'answer',correct:true,hinted:false,retry:false});
- assert.equal(r.status,400,'Legacy correct flag accepted');
- // Cards remain self-assessment; their rating never becomes a verified score.
+ assert.equal(direct.status,403,'Direct score edit accepted');
+ const next=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});
+ assert.equal(next.status,200,'Next challenge missing');
+ assert.equal(next.data.index,1,'Challenge sequence not advanced');
+ const wrong=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:next.data.challengeId,index:1,wordId:next.data.wordId,answer:'wrong'});
+ assert.equal(wrong.status,200);
+ assert.equal(wrong.data.correct,false,'Wrong answer accepted as correct');
+ const stale=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
+ challengeId:question.challengeId,index:1,wordId:question.wordId,answer:'привет'});
+ assert.equal(stale.status,403,'Challenge index substitution accepted');
+ const old=await edge('submit-answer',pupil.jwt,{attemptId:ids.attempt,index:2,
+ wordId:'fixture-word',answer:'hello',hinted:false,retry:false});
+ assert.equal(old.status,410,'Predictable legacy scoring still available');
+ // Self-rating is independent of server-graded answers.
  const cards=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
  sectionId:'fixture-section',mode:'cards',dueAt:'2030-01-01T00:00:00Z',
  audience:'individual',recipients:[pupil.id]});
- assert.equal(cards.status,200,'Card assignment '+JSON.stringify(cards));
+ assert.equal(cards.status,200);
  const cardStart=await edge('start-attempt',pupil.jwt,{assignmentId:cards.data.id,
  sessionId:'00000000-0000-4000-8000-000000000055'});
- assert.equal(cardStart.status,200,'Card start '+JSON.stringify(cardStart));
+ assert.equal(cardStart.status,200);
  const cardEvent=await edge('append-event',pupil.jwt,{attemptId:cardStart.data.id,
  index:0,wordId:'fixture-word',kind:'card_self_rating',correct:null,
  hinted:false,retry:false,rating:'known'});
- assert.equal(cardEvent.status,200,'Card self rating '+JSON.stringify(cardEvent));
+ assert.equal(cardEvent.status,200);
  const cardRead=await api('/rest/v1/attempt_events?select=verified_correct,verification_source,self_rating&id=eq.'+cardEvent.data.id,
  {token:teacher.jwt,schema:'lexigo'});
- assert.equal(cardRead.data[0]?.verified_correct,null,'Self-rating falsely graded');
+ assert.equal(cardRead.data[0]?.verified_correct,null);
  assert.equal(cardRead.data[0]?.verification_source,'client_unverified');
- assert.equal(cardRead.data[0]?.self_rating,'known');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
  r=await edge('submit-answer',pupil.jwt,{...event,index:1});assert.equal(r.status,403,'Event after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');

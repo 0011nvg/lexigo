@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LEXIGO · закрытый локальный пилот</title>
+<style>body{font:16px system-ui;max-width:900px;margin:auto;padding:24px;background:#f5f8fc;color:#19314b}main,section{background:white;border-radius:18px;padding:22px;margin:14px 0}label{display:block;margin:12px 0}input,button{font:inherit;padding:11px;border-radius:10px}input{width:100%;box-sizing:border-box;border:1px solid #bbc8d8}button{border:0;background:#305bd5;color:white;cursor:pointer;margin:4px}button:disabled{opacity:.5}.muted{color:#576b82}.error{color:#a02132}li{padding:7px}code{overflow-wrap:anywhere}</style></head>
+<body><main><h1>LEXIGO · закрытый локальный пилот</h1>
+<p class="muted">Только фиктивные тестовые аккаунты. Этот интерфейс работает исключительно на localhost и не предназначен для настоящих учеников.</p>
+<p id="status" role="status"></p>
+<section id="login"><h2>Вход через Supabase Auth</h2>
+<form id="form"><label>Адрес локального Supabase<input id="url" value="http://127.0.0.1:54321" required></label>
+<label>Публичный anon key локального Supabase<input id="key" type="password" autocomplete="off" required></label>
+<label>Тестовый email<input id="email" type="email" autocomplete="username" required></label>
+<label>Пароль<input id="password" type="password" autocomplete="current-password" required></label>
+<button type="submit">Войти</button></form></section>
+<section id="cabinet" hidden><h2 id="identity">Кабинет</h2><button id="logout">Выйти</button>
+<p class="muted">Роль определяется только профилем, возвращённым сервером с RLS. Переключение ролей в браузере отсутствует.</p>
+<h3>Мои данные</h3><div id="results"></div></section></main>
+<script>
+'use strict';
+if(!['localhost','127.0.0.1'].includes(location.hostname)){document.body.replaceChildren(document.createTextNode('Локальный пилот недоступен вне localhost'));throw Error('localhost only')}
+const $=id=>document.getElementById(id);let access='',api='',anon='',userId='';
+function say(msg,error=false){$('status').textContent=msg;$('status').className=error?'error':''}
+function clear(){access='';userId='';$('password').value='';$('cabinet').hidden=true;$('login').hidden=false;$('results').replaceChildren();$('identity').textContent='Кабинет'}
+function config(){const u=new URL($('url').value);if(!['localhost','127.0.0.1'].includes(u.hostname)||u.protocol!=='http:')throw Error('Разрешён только локальный Supabase');api=u.origin;anon=$('key').value.trim();if(!anon)throw Error('Введите локальный anon key')}
+async function request(path,options={}){const headers={'apikey':anon,...(access?{'authorization':'Bearer '+access}:{}),...(options.body?{'content-type':'application/json'}:{})};const response=await fetch(api+path,{...options,headers,cache:'no-store'});const data=await response.json().catch(()=>null);if(!response.ok)throw Error('HTTP '+response.status+': '+(data?.msg||data?.message||data?.error||'доступ запрещён'));return data}
+async function rows(table,params){return request('/rest/v1/'+table+'?'+params,{headers:{}})}
+function heading(root,text){const h=document.createElement('h4');h.textContent=text;root.append(h)}
+function showRows(root,items,fields){const ul=document.createElement('ul');if(!items.length){const li=document.createElement('li');li.textContent='Пока нет данных';ul.append(li)}
+for(const item of items){const li=document.createElement('li');li.textContent=fields.map(f=>String(item[f]??'')).join(' · ');ul.append(li)}root.append(ul)}
+async function load(){const profiles=await rows('profiles','select=user_id,role,display_name&user_id=eq.'+encodeURIComponent(userId));if(profiles.length!==1)throw Error('Нет доступного профиля: вход запрещён');
+const profile=profiles[0];if(!['teacher','pupil'].includes(profile.role))throw Error('Эта роль пока не поддерживается в пилоте');
+$('identity').textContent='Кабинет: '+profile.display_name+' ('+(profile.role==='teacher'?'учитель':'ученик')+')';
+const root=$('results');root.replaceChildren();
+if(profile.role==='teacher'){
+const classes=await rows('classes','select=id,title,grade&teacher_user_id=eq.'+encodeURIComponent(userId));
+heading(root,'Мои классы');showRows(root,classes,['title','grade']);
+const assignments=await rows('assignments','select=id,section_id,mode,class_id&created_by=eq.'+encodeURIComponent(userId));
+heading(root,'Созданные задания');showRows(root,assignments,['section_id','mode','id']);
+}else{
+const recipients=await rows('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+encodeURIComponent(userId));
+heading(root,'Мои назначения');showRows(root,recipients,['assignment_id']);
+const attempts=await rows('attempts','select=id,assignment_id,status,started_at& pupil_user_id=eq.'.replace('& ','&')+encodeURIComponent(userId));
+heading(root,'Мои попытки');showRows(root,attempts,['assignment_id','status','started_at']);
+}
+$('login').hidden=true;$('cabinet').hidden=false;say('Данные загружены с сервера; браузерное демо-хранилище не используется')}
+$('form').onsubmit=async e=>{e.preventDefault();clear();try{config();say('Проверка входа…');const data=await request('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('email').value,password:$('password').value})});if(!data.access_token||!data.user?.id)throw Error('Auth не вернул подтверждённую сессию');access=data.access_token;userId=data.user.id;await load()}catch(err){clear();say(err.message,true)}};
+$('logout').onclick=async()=>{try{if(access)await request('/auth/v1/logout',{method:'POST'})}catch{}finally{clear();say('Вы вышли. Сессия удалена из памяти страницы.')}};
+window.addEventListener('pagehide',clear);
+</script></body></html>

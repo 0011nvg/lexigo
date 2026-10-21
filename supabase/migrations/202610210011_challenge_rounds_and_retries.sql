@@ -20,7 +20,7 @@ begin
   raise exception 'not authorized' using errcode='42501'; end if;
  select * into c from lexigo.attempt_challenges
  where id=p_challenge and attempt_id=p_attempt and event_index=p_index for update;
- if not found or c.word_id is distinct from p_word or c.expires_at<=now() then
+ if not found or c.mode in ('pairs','crystals','boss') or c.word_id is distinct from p_word or c.expires_at<=now() then
   raise exception 'challenge mismatch' using errcode='42501'; end if;
  if p_answer is null or length(p_answer)>250 then
   raise exception 'invalid answer' using errcode='22023'; end if;

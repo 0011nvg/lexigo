@@ -145,7 +145,7 @@ begin
  if exists(select 1 from lexigo.invitations where class_id='20000000-0000-4000-8000-000000000001'
   and target_role='pupil' and redeemed_at is null and revoked_at is null) then
   raise exception 'Outstanding class pupil invitation survived revocation'; end if;
-end $;
+end $$;
 
 -- A client cannot call privileged invitation/review functions or write audit records.
 set local role authenticated;

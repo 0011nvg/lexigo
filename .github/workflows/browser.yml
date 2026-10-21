@@ -17,11 +17,13 @@ jobs:
       - run: npm install --no-save playwright
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
+      - run: python3 -m http.server 3000 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
       - run: node tests/journeys.mjs
       - run: node tests/learning.mjs
       - run: node tests/cabinets.mjs
       - run: node tests/visual-smoke.mjs
+      - run: node tests/stage5-mobile.mjs
       - name: Upload browser screenshots and failures
         if: always()
         uses: actions/upload-artifact@v4

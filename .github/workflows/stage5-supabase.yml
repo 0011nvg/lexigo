@@ -1,0 +1,51 @@
+name: LEXIGO real local Supabase integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - 'tests/stage5-supabase-e2e.mjs'
+      - '.github/workflows/stage5-supabase.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  supabase-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate HTTP E2E JavaScript syntax before starting Docker
+        run: node --check tests/stage5-supabase-e2e.mjs
+      - name: Start isolated Supabase Auth, PostgREST and PostgreSQL
+        run: supabase start -x studio,imgproxy,inbucket,storage-api,realtime,analytics,vector,edge-runtime
+      - name: Apply migrations
+        run: supabase db reset --local
+      - name: Cache Edge Runtime image via Docker Hub mirror
+        run: |
+          docker pull supabase/edge-runtime:v1.77.4
+          docker tag supabase/edge-runtime:v1.77.4 public.ecr.aws/supabase/edge-runtime:v1.77.4
+      - name: Start Edge Function locally
+        run: |
+          supabase functions serve learning-api --no-verify-jwt > /tmp/lexigo-edge.log 2>&1 &
+          echo $! > /tmp/lexigo-edge.pid
+      - name: Exercise Auth-issued JWT and Edge HTTP requests
+        run: |
+          supabase status -o env > /tmp/lexigo-local-env
+          set -a
+          source /tmp/lexigo-local-env
+          export SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          set +a
+          node tests/stage5-supabase-e2e.mjs
+      - name: Edge diagnostics on failure
+        if: failure()
+        run: tail -100 /tmp/lexigo-edge.log || true
+      - name: Stop disposable local stack
+        if: always()
+        run: supabase stop --no-backup || true

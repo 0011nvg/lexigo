@@ -302,4 +302,10 @@ function renderPairs(){const current=game,w=current.words,items=shuffle(w.flatMa
  renderPairLeaderboard(p,pairScores().filter(x=>x.pairs===w.length).sort((a,b)=>a.seconds-b.seconds||a.mistakes-b.mistakes))
 }
 init();launchAssignment();
+</script><script>
+if(['http://127.0.0.1:3000','http://localhost:3000'].includes(location.origin)&&
+ new URLSearchParams(location.search).get('localDemo')==='1'){
+ const adapter=document.createElement('script');adapter.src='./stage5-local-adapter.js';
+ document.body.append(adapter);
+}
 </script></body></html>

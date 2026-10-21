@@ -1,0 +1,101 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LEXIGO · локальная проверка заданий</title>
+<style>body{font:17px system-ui;max-width:660px;margin:32px auto;padding:0 16px;background:#f5f8fc;color:#172b48}
+section{background:white;border-radius:18px;padding:24px;margin:16px 0;box-shadow:0 3px 18px #12294412}
+label{display:block;margin:14px 0}input,button{font:inherit;padding:12px;border-radius:10px}
+input{width:100%;box-sizing:border-box;border:1px solid #aab7c9}button{border:0;background:#225be0;color:white;margin:5px 4px 5px 0;cursor:pointer}
+button:disabled{opacity:.5}#choices button{display:block;width:100%;text-align:left}#choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#choices button{margin:0}#choices button.selected{outline:3px solid #f4b942}#progress{font-weight:700}#arena{padding:12px;border-radius:12px;background:#eef4ff;margin:12px 0}#arena[hidden]{display:none}
+#message{min-height:30px}small{color:#52627c}</style>
+<h1>LEXIGO · безопасная локальная тренировка</h1>
+<p>Только фиктивные пользователи. API доступен исключительно на <code>127.0.0.1</code>. Это отдельный тестовый интерфейс: исходные игры не изменяются.</p>
+<section><label>Локальный JWT фиктивного ученика<input id="jwt" type="password" autocomplete="off"></label>
+<label>ID назначения<input id="assignment" autocomplete="off"></label>
+<button id="start">Начать тренировку</button><small>Токен не сохраняется и не отправляется на другие серверы.</small></section>
+<section id="round" hidden><h2 id="mode"></h2><p id="prompt"></p><div id="choices"></div>
+<div id="arena" hidden><div id="progress"></div><div id="hearts"></div><div id="crystals"></div></div><label id="textLabel">Ответ<input id="answer" autocomplete="off"></label><button id="submit">Проверить</button>
+<button id="hint">Подсказка</button><button id="next" hidden>Следующий вопрос</button><p id="message" role="status"></p></section>
+<script>
+'use strict';
+if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Demo runs only on localhost');
+const $=id=>document.getElementById(id);
+const API='http://127.0.0.1:54321/functions/v1/learning-api/';
+let attempt=null,question=null,busy=false;
+async function call(route,body){const res=await fetch(API+route,{method:'POST',headers:{
+ 'authorization':'Bearer '+$('jwt').value.trim(),'content-type':'application/json'
+},body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error('HTTP '+res.status+': '+(data.error||'запрос отклонён'));return data}
+function message(s){$('message').textContent=s}
+async function play(action,payload){if(busy||!question)return;busy=true;try{
+ const result=await call('play-round',{attemptId:attempt,challengeId:question.challengeId,
+ requestId:crypto.randomUUID(),action,payload});
+ if(result.hint)message(result.hint);
+ else if(action==='pair'){message(result.correct?'✓ Пара найдена':'✕ Это разные слова');for(const id of selected){}selected=[];
+  if(result.correct){for(const id of payloadIds){const el=document.getElementById('tile-'+id);if(el)el.disabled=true}}
+  $('crystals').textContent='🔗 Найдено пар: '+(result.matched??0)}
+ else if(action==='swap'){message(result.correct?'💎 Комбинация собрана':'Попробуй другую перестановку');
+  renderBoard(result.board);$('crystals').textContent='💎 Кристаллов: '+result.hits+' · Ходов: '+result.moves}
+ else if(action==='answer'){message(result.correct?'⚔️ Удар нанесён':'❤️ Осталось жизней: '+result.lives);
+  if(result.nextQuestion)renderBoss(result.nextQuestion);
+  else if(!result.correct&&!result.complete){$('submit').disabled=true;const retry=document.createElement('button');retry.textContent='Повторить фазу';retry.onclick=async()=>{retry.remove();await play('retry',{});$('submit').disabled=false};$('choices').append(retry)}}
+ if(result.complete){$('next').hidden=false;$('submit').disabled=true;$('hint').disabled=true;
+  message('Раунд завершён. '+(result.passed===false?'Босс победил.':'Результат сохранён сервером.'))}
+ }catch(e){message(e.message)}finally{busy=false}}
+let selected=[],payloadIds=[];
+function renderBoard(board){$('choices').replaceChildren();if(!Array.isArray(board))return;
+ board.forEach((gem,i)=>{const b=document.createElement('button');b.textContent=['💎','🔷','🔶','🟣','🟢'][Number(gem)]||'◆';
+ b.onclick=()=>{if(selected.length===0){selected=[i];b.classList.add('selected');return}
+ const from=selected[0];selected=[];play('swap',{from,to:i})};$('choices').append(b)})}
+function renderBoss(q){$('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'');
+ $('textLabel').hidden=q.responseType==='boolean';$('answer').value='';
+ $('choices').replaceChildren();if(q.responseType==='boolean'){for(const value of ['true','false']){
+ const b=document.createElement('button');b.textContent=value==='true'?'Верно':'Неверно';b.onclick=()=>play('answer',{answer:value});$('choices').append(b)}}}
+
+$('start').onclick=async()=>{try{const session=crypto.randomUUID();
+ const result=await call('start-attempt',{assignmentId:$('assignment').value.trim(),sessionId:session});
+ attempt=result.id;$('round').hidden=false;await nextQuestion()}catch(e){alert(e.message)}};
+async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
+ question=await call('next-question',{attemptId:attempt});const q=question.question;
+ $('mode').textContent='Режим: '+question.mode+' · вопрос '+(question.index+1);
+ const game=['pairs','crystals','boss'].includes(question.mode);
+ $('arena').hidden=!game;
+ if(game){const phase=Number(q.phase??question.index%3);
+ $('progress').textContent=question.mode==='pairs'?'🔗 Найди пару · Раунд '+(question.index+1):
+ question.mode==='crystals'?'💎 Кристаллы · Этап '+(phase+1)+'/3':'🐉 Босс · Фаза '+(phase+1)+'/3';
+ $('hearts').textContent='❤️ '+(question.state?.hearts??3)+' · Ошибки: '+(question.state?.mistakes??0);
+ $('crystals').textContent=question.mode==='crystals'?'💎 Собрано: '+(question.state?.crystals??0):question.mode==='boss'?'🐉 Здоровье босса: '+(question.state?.bossHealth??3):'🔗 Верные пары: '+(question.state?.completed??0);
+ }
+ $('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'')+(q.instruction?' · '+q.instruction:'');
+ $('choices').replaceChildren();$('answer').value='';$('next').hidden=true;$('submit').disabled=false;$('hint').disabled=Boolean(question.hinted);
+ $('textLabel').hidden=['choice','pair','pairs','crystals','boolean'].includes(q.responseType);
+ if(q.responseType==='pairs'){selected=[];const tiles=q.tiles;$('choices').replaceChildren();
+ for(const tile of tiles){const b=document.createElement('button');b.id='tile-'+tile.id;b.textContent=tile.text;
+ b.onclick=()=>{if(selected.includes(tile.id))return;selected.push(tile.id);b.classList.add('selected');
+ if(selected.length===2){payloadIds=[...selected];play('pair',{first:selected[0],second:selected[1]});
+ for(const el of $('choices').children)el.classList.remove('selected')}};$('choices').append(b)}
+ $('submit').hidden=true;return}
+ if(q.responseType==='crystals'){$('submit').hidden=true;renderBoard(q.board);return}
+ if(q.responseType==='boss'){$('submit').hidden=false;renderBoss(q.question);return}
+ $('submit').hidden=false;
+ if(['choice','pair'].includes(q.responseType)){for(const value of q.choices){const btn=document.createElement('button');btn.textContent=value;btn.onclick=()=>{for(const el of $('choices').children)el.classList.remove('selected');btn.classList.add('selected');submit(value)};$('choices').append(btn)}}
+ if(q.responseType==='boolean'){for(const [label,value] of [['Верно','true'],['Неверно','false']]){const btn=document.createElement('button');btn.textContent=label;btn.onclick=()=>submit(value);$('choices').append(btn)}}
+ if(q.responseType==='audio'){const btn=document.createElement('button');btn.textContent='🔊 Прослушать';
+ btn.onclick=()=>{if(!('speechSynthesis'in window))return message('Аудио недоступно');
+ speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(q.speechText);utterance.lang='en-GB';speechSynthesis.speak(utterance)};
+ $('choices').append(btn)}
+ message('Ответ проверит сервер, а не браузер.');
+ }catch(e){message(e.message)}finally{busy=false}}
+async function submit(answer){if(question?.mode==='boss')return play('answer',{answer});if(busy||!question)return;busy=true;try{
+ const result=await call('answer-question',{attemptId:attempt,challengeId:question.challengeId,
+ index:question.index,wordId:question.wordId,answer});
+ message(result.correct?'✓ Сервер подтвердил правильный ответ':result.complete?'✕ Попытки исчерпаны':'✕ Попробуй ещё. Осталось: '+result.remaining);
+ if(result.complete){
+ $('submit').disabled=true;$('next').hidden=false;$('hint').disabled=true;
+ for(const el of $('choices').querySelectorAll('button'))el.disabled=true;
+ if(['crystals','boss','pairs'].includes(question.mode)){
+ $('hearts').textContent='Результат раунда записан сервером. Следующий ход обновит состояние.';
+ }}
+ }catch(e){message(e.message)}finally{busy=false}}
+$('hint').onclick=async()=>{if(['pairs','boss'].includes(question?.mode))return play('hint',{});if(busy||!question)return;busy=true;try{const r=await call('hint-question',{attemptId:attempt,challengeId:question.challengeId});message(r.hint);$('hint').disabled=true}catch(e){message(e.message)}finally{busy=false}};
+$('submit').onclick=()=>submit($('answer').value);
+$('answer').onkeydown=e=>{if(e.key==='Enter')$('submit').click()};
+$('next').onclick=nextQuestion;
+</script></html>

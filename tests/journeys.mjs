@@ -9,9 +9,22 @@ async function scenario(viewport){
  await page.goto(base,{waitUntil:'load'});
  await page.locator('#book').waitFor({state:'attached'});
  assert.ok(await page.locator('#words input[type=checkbox]').count()>0,'Vocabulary loaded');
+ assert.ok(await page.locator('#homeTitle').isVisible(),'Landing page headline visible');
+ assert.equal(await page.locator('.home-step').count(),3,'Three onboarding steps');
+ await page.locator('#heroStart').click();
+ assert.ok(await page.locator('#catalogAside').isVisible(),'CTA reveals library on mobile and desktop');
+ await page.locator('#homeNav').click();
+ assert.ok(await page.locator('#homeTitle').isVisible(),'Home navigation works');
+
  await page.locator('#quickStart').click();
  await page.locator('#game:not(.hidden)').waitFor();
  assert.ok(await page.locator('#play .question').count()>0,'Daily practice starts');
+ await page.locator('#gameHome').click();
+ await page.locator('#launcher:not(.hidden)').waitFor();
+ assert.ok(await page.locator('#homeTitle').isVisible(),'Game can return home');
+ await page.locator('#quickStart').click();
+ await page.locator('#game:not(.hidden)').waitFor();
+
  await page.locator('#back').click();
  await page.locator('#launcher:not(.hidden)').waitFor();
  await page.locator('[data-mode="crystals"]').click();

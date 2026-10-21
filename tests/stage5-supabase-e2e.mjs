@@ -117,6 +117,28 @@ async function main(){
  const old=await edge('submit-answer',pupil.jwt,{attemptId:ids.attempt,index:2,
  wordId:'fixture-word',answer:'hello',hinted:false,retry:false});
  assert.equal(old.status,410,'Predictable legacy scoring still available');
+ // Every objective mode must issue its own server-owned question and grade via JWT.
+ const modes=['spell','pairs','truefalse','fix','audio','crystals','boss'];
+ for(let k=0;k<modes.length;k++){
+  const mode=modes[k];
+  const assignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
+   sectionId:'fixture-section',mode,dueAt:'2030-01-01T00:00:00Z',
+   audience:'individual',recipients:[pupil.id]});
+  assert.equal(assignment.status,200,'Create '+mode+' '+JSON.stringify(assignment));
+  const session='00000000-0000-4000-8000-'+String(100+k).padStart(12,'0');
+  const started=await edge('start-attempt',pupil.jwt,{assignmentId:assignment.data.id,sessionId:session});
+  assert.equal(started.status,200,'Start '+mode+' '+JSON.stringify(started));
+  const challenge=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
+  assert.equal(challenge.status,200,'Issue '+mode+' '+JSON.stringify(challenge));
+  assert.equal(challenge.data.mode,mode);
+  const prompt=challenge.data.question;
+  const answer=mode==='truefalse'?'true':mode==='pairs'||mode==='quiz'?'привет':'hello';
+  const scored=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
+   challengeId:challenge.data.challengeId,index:challenge.data.index,
+   wordId:challenge.data.wordId,answer});
+  assert.equal(scored.status,200,'Grade '+mode+' '+JSON.stringify(scored));
+  assert.equal(scored.data.correct,true,'Correct answer not accepted for '+mode);
+ }
  // Self-rating is independent of server-graded answers.
  const cards=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
  sectionId:'fixture-section',mode:'cards',dueAt:'2030-01-01T00:00:00Z',

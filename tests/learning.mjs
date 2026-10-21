@@ -9,6 +9,13 @@ async function run(viewport){
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto(base);
  await page.locator('#words input[type=checkbox]').first().waitFor({state:'attached'});
+ // Accept case and harmless sentence punctuation without altering source vocabulary.
+ assert.equal(await page.evaluate(()=>normalize('Fine things!')),await page.evaluate(()=>normalize('fine things')));
+ assert.equal(await page.evaluate(()=>normalize('  Hello, world!!! ')),await page.evaluate(()=>normalize('hello world')));
+ assert.equal(await page.evaluate(()=>gemScore(3,1)),30);
+ assert.equal(await page.evaluate(()=>gemScore(4,1)),60);
+ assert.equal(await page.evaluate(()=>gemScore(5,1)),100);
+ assert.equal(await page.evaluate(()=>gemScore(3,2)),60);
  // Select a small, unambiguous vocabulary sample.
  const sample=await page.evaluate(()=>{
   const distinct=[];const en=new Set(),ru=new Set();

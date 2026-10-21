@@ -113,7 +113,7 @@ end $$;
 
 -- Authenticated users have NO direct write grants, including valid own rows.
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000107',true);
-do $ begin
+do $$ begin
  begin
   insert into lexigo.attempts(assignment_id,pupil_user_id,client_session_id)
   values('30000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000107',
@@ -141,7 +141,7 @@ do $ begin
   values('30000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000107');
   raise exception 'Direct recipient insert accepted';
  exception when insufficient_privilege then null; end;
-end $;
+end $$;
 reset role;
 set local role anon;
 do $$ begin

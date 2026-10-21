@@ -20,6 +20,7 @@ jobs:
       - run: node tests/verify.mjs
       - run: node tests/journeys.mjs
       - run: node tests/learning.mjs
+      - run: node tests/cabinets.mjs
       - run: node tests/visual-smoke.mjs
       - name: Upload browser screenshots and failures
         if: always()

@@ -178,7 +178,7 @@ let activeAssignment=null;
 function assignmentFromLink(){
  const params=new URLSearchParams(location.search),id=params.get('assignment'),pupilId=params.get('pupil');if(!id||id.length>120||!pupilId||!['masha-2a','sasha-2a','dima-3b','anya-4v'].includes(pupilId))return null;const pupilClass={'masha-2a':'2А','sasha-2a':'2А','dima-3b':'3Б','anya-4v':'4В'}[pupilId];
  try{const all=JSON.parse(localStorage.getItem(CABINET_TASK_KEY));if(!Array.isArray(all))return null;
- const a=all.find(x=>x&&x.id===id&&x.className===pupilClass&&Number(x.grade)==={'2А':2,'3Б':3,'4В':4}[pupilClass]&&Number.isInteger(x.sectionIndex)&&x.sectionIndex>=0&&x.sectionIndex<(DB.books.find(b=>Number(b.grade)===Number(x.grade))?.sections.length||0));
+ const a=all.find(x=>x&&x.id===id&&x.className===pupilClass&&(!x.pupilId||x.pupilId===pupilId)&&Number(x.grade)==={'2А':2,'3Б':3,'4В':4}[pupilClass]&&Number.isInteger(x.sectionIndex)&&x.sectionIndex>=0&&x.sectionIndex<(DB.books.find(b=>Number(b.grade)===Number(x.grade))?.sections.length||0));
  if(!a||!['daily','cards','quiz','spell','pairs','truefalse','fix','audio','crystals','boss'].includes(a.mode))return null;
  return {id:a.id,pupilId,grade:Number(a.grade),sectionIndex:a.sectionIndex,mode:a.mode};
  }catch{return null}

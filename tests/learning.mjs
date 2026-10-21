@@ -136,6 +136,29 @@ async function run(viewport){
    stop();
   }finally{original.forEach(([x,v])=>x.checked=v)}
  });
+ // Ambiguous translations get meaning-specific context without leaking the English answer.
+ await page.evaluate(()=>{
+  const all=LEXIGO_DATA.books.flatMap(b=>b.sections.flatMap(s=>s.words));
+  const my=all.find(w=>w.en==='my'&&w.ru==='мой'),mine=all.find(w=>w.en==='mine'&&w.ru==='мой');
+  if(!my||!mine)throw Error('Real ambiguous records missing');
+  const previous=game;
+  try{
+   game={words:[my,mine],mode:'spell',activeQuestionMode:'spell',answered:false,hinted:false};
+   if(contextFor(my)!=='перед существительным'||contextFor(mine)!=='самостоятельно, без существительного')throw Error('Wrong grammatical context');
+   const q=document.createElement('div');document.body.append(q);textAnswer(q,my);
+   if(!q.textContent.includes('перед существительным')||q.textContent.includes('первая буква'))throw Error('Context prompt not rendered');
+   q.remove();
+   const unknown={...mine,en:'unlisted',id:'test-unknown'};
+   game.words=[my,unknown];const q2=document.createElement('div');document.body.append(q2);textAnswer(q2,unknown);
+   if(!game.hinted||!q2.textContent.includes('тренировочным'))throw Error('Ambiguous unknown answer not marked assisted');
+   q2.remove();
+  }finally{game=previous}
+ });
+ // An unavailable SpeechSynthesisUtterance constructor must disable audio mode.
+ await page.evaluate(()=>{
+  const original=window.SpeechSynthesisUtterance;
+  try{window.SpeechSynthesisUtterance=undefined;if(audioAvailable())throw Error('Audio incorrectly marked available')}finally{window.SpeechSynthesisUtterance=original}
+ });
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});
  assert.equal(await page.evaluate(()=>game.words.length),Math.min(15,await page.evaluate(()=>scope.length)));

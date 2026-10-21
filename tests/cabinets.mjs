@@ -33,6 +33,41 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  await page.locator('#pupilClass').selectOption('all');
  await page.getByRole('tab',{name:/ученик/i}).click();
  assert.ok(await page.locator('#studentTasks .task').count()>=2);
+ // Assignment deep-link must select the exact section and spelling mode.
+ const launch=page.locator('#studentTasks .task').last().getByRole('link',{name:/начать игру/i});
+ const target=await launch.getAttribute('href');
+ assert.match(target,/assignment=task-/);
+ await launch.click();
+ await page.waitForURL('**/index.html?assignment=*');
+ const initial=await page.evaluate(()=>({mode:game?.mode,grade:book.grade,section:Number(unit),assigned:game?.assignmentId,words:game?.words.length}));
+ assert.equal(initial.mode,'spell');
+ assert.equal(initial.grade,2);
+ assert.equal(initial.section,1);
+ assert.ok(initial.assigned&&initial.words>0);
+ // A real incorrect response and interrupted game must be saved, but not marked complete.
+ await page.locator('#play input[type=text]').fill('wrongword');
+ await page.getByRole('button',{name:'Проверить'}).click();
+ await page.locator('#back').click();
+ await page.goto(base+'cabinet.html#student');
+ assert.match(await page.locator('#studentHistory').innerText(),/Прервана/);
+ assert.equal(await page.locator('#studentHistory .task').count(),1);
+ assert.equal(await page.locator('#studentTasks .task').last().locator('.tag').innerText(),'В работе');
+ // A second attempt with a correct answer can finish and is recorded separately.
+ await page.locator('#studentTasks .task').last().getByRole('link',{name:/начать игру/i}).click();
+ await page.evaluate(()=>{game.words=[game.words[0]];});
+ const answer=await page.evaluate(()=>game.words[0].en);
+ await page.locator('#play input[type=text]').fill(answer);
+ await page.getByRole('button',{name:'Проверить'}).click();
+ await page.getByRole('button',{name:/результат|следующее/i}).click();
+ await page.getByText('Испытание завершено').waitFor();
+ await page.goto(base+'cabinet.html#student');
+ assert.equal(await page.locator('#studentHistory .task').count(),2);
+ assert.match(await page.locator('#studentHistory').innerText(),/Завершена/);
+ await page.getByRole('tab',{name:/родитель/i}).click();
+ assert.equal(await page.locator('#parentHistory .task').count(),2);
+ await page.getByRole('tab',{name:/учитель/i}).click();
+ assert.equal(await page.locator('#teacherHistory .task').count(),2);
+ await page.getByRole('tab',{name:/ученик/i}).click();
  const before=Number(await page.locator('#parentCompleted').innerText());
  await page.locator('#studentTasks [data-complete]').last().click();
  await page.getByRole('tab',{name:/родитель/i}).click();

@@ -10,7 +10,7 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  await page.getByRole('link',{name:/кабинеты/i}).waitFor();
  await page.getByRole('link',{name:/кабинеты/i}).click();
  await page.waitForURL('**/cabinet.html*');
- assert.equal(await page.getByRole('tab').count(),3);
+ assert.equal(await page.getByRole('tab').count(),2);
  assert.equal(await page.getByRole('tabpanel',{name:/учитель/i}).isVisible(),true);
  const options=await page.locator('#assignSection option').count();
  assert.ok(options>=1,'Real Spotlight sections should populate');

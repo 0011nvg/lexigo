@@ -52,8 +52,8 @@ async function run(viewport){
  await page.evaluate(()=>start('pairs'));
  assert.equal(await page.locator('.pair').count(),8);
  const first=await page.evaluate(()=>game.words[0]);
- await page.locator('.pair').filter({hasText:first.en}).first().click();
- await page.locator('.pair').filter({hasText:first.ru}).first().click();
+ await page.getByRole('button',{name:first.en,exact:true}).click();
+ await page.getByRole('button',{name:first.ru,exact:true}).click();
  assert.equal(await page.evaluate(()=>game.matched),1);
  await page.locator('#back').click();
  // Single-word fallback for quiz and true/false must be writable.

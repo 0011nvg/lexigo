@@ -73,7 +73,7 @@ async function main(){
  assert.equal(view.status,200);assert.equal(view.data.length,1);
  view=await cabinetRead('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+pupil.id,foreign.jwt);
  assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read assignment recipient');
- view=await cabinetRead('profiles','select=user_id,role,display_name&user_id=eq.'+teacher.id,pupil.jwt);
+ view=await cabinetRead('profiles','select=user_id,role,display_name&user_id=eq.'+teacher.id,foreign.jwt);
  assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read teacher profile');
  view=await cabinetRead('classes','select=id,title,grade&teacher_user_id=eq.'+teacher.id,foreign.jwt);
  assert.equal(view.status,200);assert.equal(view.data.length,0,'Foreign pupil read teacher class');

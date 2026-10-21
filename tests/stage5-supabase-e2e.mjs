@@ -72,22 +72,32 @@ async function main(){
  {assignmentId:ids.assignment,sessionId:ids.classB})));
  assert.ok(sessions.every(x=>x.status===200&&x.data.id===ids.attempt),
  'Concurrent session idempotency failed: '+JSON.stringify(sessions));
- const event={attemptId:ids.attempt,index:0,wordId:'fixture-word',kind:'answer',correct:true,hinted:false,retry:false};
- r=await edge('append-event',pupil.jwt,event);assert.equal(r.status,200,'Event '+JSON.stringify(r));const eventId=r.data.id;
- r=await edge('append-event',pupil.jwt,event);assert.equal(r.status,200,'Event retry '+JSON.stringify(r));assert.equal(r.data.id,eventId);
- const simultaneous=await Promise.all(Array.from({length:5},()=>edge('append-event',pupil.jwt,event)));
+ const event={attemptId:ids.attempt,index:0,wordId:'fixture-word',answer:'hello',hinted:false,retry:false};
+ r=await edge('submit-answer',pupil.jwt,event);assert.equal(r.status,200,'Event '+JSON.stringify(r));const eventId=r.data.id;
+ r=await edge('submit-answer',pupil.jwt,event);assert.equal(r.status,200,'Event retry '+JSON.stringify(r));assert.equal(r.data.id,eventId);
+ const simultaneous=await Promise.all(Array.from({length:5},()=>edge('submit-answer',pupil.jwt,event)));
  assert.ok(simultaneous.every(x=>x.status===200&&x.data.id===eventId),
  'Concurrent event idempotency failed: '+JSON.stringify(simultaneous));
  const grading=await api('/rest/v1/attempt_events?select=correct,verified_correct,verification_source&id=eq.'+eventId,
  {token:teacher.jwt,schema:'lexigo'});
  assert.equal(grading.status,200,'Teacher event read '+JSON.stringify(grading));
  assert.equal(grading.data[0]?.correct,true,'Client-reported answer missing');
- assert.equal(grading.data[0]?.verified_correct,null,'Forged client correctness was marked verified');
- assert.equal(grading.data[0]?.verification_source,'client_unverified','Client correctness not labeled unverified');
- r=await edge('append-event',pupil.jwt,{...event,correct:false});assert.equal(r.status,409,'Conflicting replay accepted');
- r=await edge('append-event',parent.jwt,event);assert.equal(r.status,403,'Parent forged event');
+ assert.equal(grading.data[0]?.verified_correct,true,'Canonical answer was not verified by server');
+ assert.equal(grading.data[0]?.verification_source,'server_evaluated','Server correctness not labeled verified');
+ r=await edge('submit-answer',pupil.jwt,{...event,correct:true});
+ assert.equal(r.status,400,'Client correct spoofing accepted');
+ r=await edge('submit-answer',pupil.jwt,{...event,wordId:'different-word',index:1});
+ assert.equal(r.status,403,'Word ID substitution accepted');
+ r=await edge('submit-answer',pupil.jwt,{...event,index:1,answer:'incorrect'});
+ assert.equal(r.status,200,'Wrong answer submission rejected '+JSON.stringify(r));
+ const wrong=await api('/rest/v1/attempt_events?select=verified_correct,verification_source&attempt_id=eq.'+ids.attempt+'&event_index=eq.1',
+ {token:teacher.jwt,schema:'lexigo'});
+ assert.equal(wrong.data[0]?.verified_correct,false,'Wrong answer marked correct');
+ assert.equal(wrong.data[0]?.verification_source,'server_evaluated');
+ r=await edge('submit-answer',pupil.jwt,{...event,answer:'wrong'});assert.equal(r.status,409,'Conflicting replay accepted');
+ r=await edge('submit-answer',parent.jwt,event);assert.equal(r.status,403,'Parent forged event');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
- r=await edge('append-event',pupil.jwt,{...event,index:1});assert.equal(r.status,403,'Event after finish accepted');
+ r=await edge('submit-answer',pupil.jwt,{...event,index:1});assert.equal(r.status,403,'Event after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');
  const parentRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
  assert.equal(parentRead.status,200,'Parent read '+JSON.stringify(parentRead));

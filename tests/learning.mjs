@@ -62,7 +62,14 @@ async function run(viewport){
  await page.getByRole('button',{name:'Английское слово: '+first.en,exact:true}).click();
  await page.getByRole('button',{name:'Перевод: '+first.ru,exact:true}).click();
  assert.equal(await page.evaluate(()=>game.matched),1);
+ // A restarted round must not be affected by stale callbacks from the previous round.
+ await page.evaluate(()=>start('pairs'));
+ assert.equal(await page.locator('#play .pair-leaderboard').count(),1,'Only one active leaderboard');
+ const round=await page.evaluate(()=>game);
+ assert.equal(await page.evaluate(()=>game.matched),0,'New round starts with zero matches');
  await page.locator('#back').click();
+ assert.equal(await page.locator('#play .pair').count(),0,'Pair tiles cleared when leaving');
+
  // Daily session uses up to fifteen words, not the old eight-word cap.
  await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));quickStart()});
  assert.equal(await page.evaluate(()=>game.words.length),Math.min(15,await page.evaluate(()=>scope.length)));

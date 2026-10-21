@@ -11,7 +11,7 @@ async function run(name,viewport){
  page.on('console',m=>{if(m.type()==='error')faults.push('console: '+m.text())});
  const capture=async suffix=>page.screenshot({path:'test-results/'+name+'-'+suffix+'.png',fullPage:true});
  try{
-  await page.goto(base,{waitUntil:'load'});await page.locator('#words input[type=checkbox]').first().waitFor();
+  await page.goto(base,{waitUntil:'load'});await page.locator('#words input[type=checkbox]').first().waitFor({state:'attached'});
   assert.equal(await page.locator('#homeTitle').isVisible(),true);
   await capture('home');
   const layout=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));

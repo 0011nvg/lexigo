@@ -33,7 +33,7 @@ begin
     or v_inv.expires_at<=now() then
   raise exception 'invitation unavailable' using errcode='42501';
  end if;
- select role into v_role from lexigo.profiles where user_id=p_user;
+ select p.role into v_role from lexigo.profiles p join lexigo.classes c on c.id=v_inv.class_id where p.user_id=p_user and p.organization_id=c.organization_id;
  if v_role is distinct from v_inv.target_role then
   raise exception 'role mismatch' using errcode='42501';
  end if;

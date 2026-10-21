@@ -34,7 +34,7 @@ async function scenario(viewport){
   const move=await page.evaluate(()=>gemPossible([...game.gemBoard])||[0,1]);
   await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
   await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
-  await page.waitForFunction(()=>!game.gemBusy,{timeout:10000});
+  await page.waitForFunction(()=>!game.gemBusy,null,{timeout:10000});
  }
  assert.match(await page.locator('#crystalScore').innerText(),/очков/);
  assert.ok(await page.evaluate(()=>game.crystals>=0));
@@ -48,12 +48,12 @@ async function scenario(viewport){
    await box.locator('.answerbox input').fill(state.w.en);
    await box.getByRole('button',{name:'Проверить'}).click();
   }else if(await box.locator('.options').count()){
-   await box.locator('.options button').filter({hasText:state.w.ru}).first().click();
+   const answer=box.locator('.options button').filter({hasText:state.w.ru}).first();if(await answer.count())await answer.click();else await box.locator('.options button').first().click();
   }else if(await box.getByRole('button',{name:'✓ Верно'}).count()){
    const displayed=await box.locator('.question p').nth(1).innerText();
    await box.getByRole('button',{name:displayed.trim()===state.w.ru?'✓ Верно':'✕ Неверно'}).click();
   }else throw Error('Unexpected crystal exercise at '+n);
-  const next=box.getByRole('button',{name:/Следующее|Результат/});if(await next.count())await next.click();else await page.waitForFunction(prev=>game.index>prev||game.mode==='crystals'&&game.crystalPhase, state.index,{timeout:5000});
+  const next=box.getByRole('button',{name:/Следующее|Результат/});if(await next.count())await next.click();else await page.waitForFunction(prev=>game.index>prev||game.mode==='crystals'&&game.crystalPhase,state.index,{timeout:5000});
  }
  const state=await page.evaluate(()=>({index:game.index,length:game.words.length}));
  if(state.index<state.length)await page.locator('.crystal-arena').waitFor();

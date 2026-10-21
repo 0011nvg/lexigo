@@ -26,6 +26,8 @@ try{
  const scores=await page.evaluate(()=>JSON.parse(localStorage.getItem('lexigo_pair_scores')||'[]'));
  assert.ok(scores.some(s=>s.name==='Тестовый игрок'&&s.pairs===pairs.length),'Named record was not saved');
  await page.reload();
+ await page.locator('#none').click();
+ for(const checkbox of await page.locator('#words input[type=checkbox]').all().then(a=>a.slice(0,5)))await checkbox.check();
  await page.locator('[data-mode="pairs"]').click();
  assert.match(await page.locator('.pair-leaderboard').innerText(),/Тестовый игрок/,'Leaderboard did not survive reload');
  await page.locator('#back').click();

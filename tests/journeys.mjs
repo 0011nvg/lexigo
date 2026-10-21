@@ -24,11 +24,12 @@ async function scenario(viewport){
   await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
   await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
  }
- assert.match(await page.locator('#crystalScore').innerText(),/7 \/ 7/);
+ assert.match(await page.locator('#crystalScore').innerText(),/очков/);
  assert.ok(await page.evaluate(()=>game.crystals>=21));
  assert.ok(await page.evaluate(()=>game.crystalPoints>=210));
- await page.locator('.crystal-continue').click();
- for(let n=0;n<4;n++){
+ assert.ok(await page.locator('.crystal-question-overlay').isVisible(),'Vocabulary task automatically overlays gems');
+ assert.ok(await page.locator('.crystal-arena').count(),'Gem board remains behind the task');
+ for(let n=0;n<3;n++){
   const state=await page.evaluate(()=>({w:game.words[game.index],mode:game.mode,index:game.index}));
   const box=page.locator('#play');
   if(await box.locator('.answerbox input').count()){

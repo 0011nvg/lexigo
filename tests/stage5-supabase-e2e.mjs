@@ -157,6 +157,11 @@ async function main(){
   const challenge=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
   assert.equal(challenge.status,200,'Issue '+mode+' '+JSON.stringify(challenge));
   assert.equal(challenge.data.mode,mode);
+  if(['pairs','crystals','boss'].includes(mode)){
+   assert.equal(challenge.data.state.round,1,'Encounter state not server-issued');
+   assert.equal(challenge.data.state.hearts,3,'Unexpected initial health');
+   assert.equal(challenge.data.state.completed,0);
+  }
   if(['crystals','boss'].includes(mode)){
    assert.equal(challenge.data.question.phase,0,'Encounter must start at phase zero');
    assert.equal(challenge.data.question.phaseCount,3);
@@ -177,6 +182,9 @@ async function main(){
     const follow=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
     assert.equal(follow.status,200,'Encounter next phase missing');
     assert.equal(follow.data.question.phase,phase,'Encounter phase out of order');
+    assert.equal(follow.data.state.completed,phase,'Server progress not persisted');
+    if(mode==='boss')assert.equal(follow.data.state.bossHealth,3-phase);
+    if(mode==='crystals')assert.equal(follow.data.state.crystals,phase);
     const english=follow.data.wordId==='fixture-word'?'hello':'world';
     const result=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
      challengeId:follow.data.challengeId,index:follow.data.index,wordId:follow.data.wordId,answer:english});

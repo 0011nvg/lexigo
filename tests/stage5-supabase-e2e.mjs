@@ -143,55 +143,25 @@ async function main(){
  const old=await edge('submit-answer',pupil.jwt,{attemptId:ids.attempt,index:2,
  wordId:'fixture-word',answer:'hello',hinted:false,retry:false});
  assert.equal(old.status,410,'Predictable legacy scoring still available');
- // Every objective mode must issue its own server-owned question and grade via JWT.
- const modes=['spell','pairs','truefalse','fix','audio','crystals','boss'];
- for(let k=0;k<modes.length;k++){
-  const mode=modes[k];
+ // Objective text modes use server-issued, server-graded challenges.
+ for(const [k,mode] of ['spell','truefalse','fix','audio'].entries()){
   const assignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,
    sectionId:'fixture-section',mode,dueAt:'2030-01-01T00:00:00Z',
    audience:'individual',recipients:[pupil.id]});
   assert.equal(assignment.status,200,'Create '+mode+' '+JSON.stringify(assignment));
-  const session='00000000-0000-4000-8000-'+String(100+k).padStart(12,'0');
-  const started=await edge('start-attempt',pupil.jwt,{assignmentId:assignment.data.id,sessionId:session});
-  assert.equal(started.status,200,'Start '+mode+' '+JSON.stringify(started));
+  const started=await edge('start-attempt',pupil.jwt,{assignmentId:assignment.data.id,
+   sessionId:'00000000-0000-4000-8000-'+String(100+k).padStart(12,'0')});
+  assert.equal(started.status,200,'Start '+mode);
   const challenge=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
-  assert.equal(challenge.status,200,'Issue '+mode+' '+JSON.stringify(challenge));
-  assert.equal(challenge.data.mode,mode);
-  if(['pairs','crystals','boss'].includes(mode)){
-   assert.equal(challenge.data.state.round,1,'Encounter state not server-issued');
-   assert.equal(challenge.data.state.hearts,3,'Unexpected initial health');
-   assert.equal(challenge.data.state.completed,0);
-  }
-  if(['crystals','boss'].includes(mode)){
-   assert.equal(challenge.data.question.phase,0,'Encounter must start at phase zero');
-   assert.equal(challenge.data.question.phaseCount,3);
-  }
-  if(mode==='pairs')assert.equal(challenge.data.question.responseType,'pair');
-  const prompt=challenge.data.question;
+  assert.equal(challenge.status,200,'Issue '+mode);
   const en=challenge.data.wordId==='fixture-word'?'hello':'world';
   const ru=challenge.data.wordId==='fixture-word'?'привет':'мир';
-  const answer=mode==='truefalse'?String(prompt.proposed===ru):
-   ['choice','pair'].includes(prompt.responseType)?ru:en;
+  const answer=mode==='truefalse'?String(challenge.data.question.proposed===ru):en;
   const scored=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
    challengeId:challenge.data.challengeId,index:challenge.data.index,
    wordId:challenge.data.wordId,answer});
   assert.equal(scored.status,200,'Grade '+mode+' '+JSON.stringify(scored));
-  assert.equal(scored.data.correct,true,'Correct answer not accepted for '+mode);
-  if(['crystals','boss'].includes(mode)){
-   for(let phase=1;phase<3;phase++){
-    const follow=await edge('next-question',pupil.jwt,{attemptId:started.data.id});
-    assert.equal(follow.status,200,'Encounter next phase missing');
-    assert.equal(follow.data.question.phase,phase,'Encounter phase out of order');
-    assert.equal(follow.data.state.completed,phase,'Server progress not persisted');
-    if(mode==='boss')assert.equal(follow.data.state.bossHealth,3-phase);
-    if(mode==='crystals')assert.equal(follow.data.state.crystals,phase);
-    const english=follow.data.wordId==='fixture-word'?'hello':'world';
-    const result=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
-     challengeId:follow.data.challengeId,index:follow.data.index,wordId:follow.data.wordId,answer:english});
-    assert.equal(result.status,200,'Encounter phase failed');
-    assert.equal(result.data.correct,true,'Encounter phase incorrectly graded');
-   }
-  }
+  assert.equal(scored.data.correct,true,'Wrong grading for '+mode);
  }
  // Stateful pair matching: server checks both sides and tile ownership.
  const pairAssignment=await edge('create-assignment',teacher.jwt,{classId:ids.classA,

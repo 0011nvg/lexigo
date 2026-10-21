@@ -13,9 +13,10 @@ button:disabled{opacity:.5}#choices button{display:block;width:100%;text-align:l
 <button id="start">Начать тренировку</button><small>Токен не сохраняется и не отправляется на другие серверы.</small></section>
 <section id="round" hidden><h2 id="mode"></h2><p id="prompt"></p><div id="choices"></div>
 <label id="textLabel">Ответ<input id="answer" autocomplete="off"></label><button id="submit">Проверить</button>
-<button id="next" hidden>Следующий вопрос</button><p id="message" role="status"></p></section>
+<button id="hint">Подсказка</button><button id="next" hidden>Следующий вопрос</button><p id="message" role="status"></p></section>
 <script>
 'use strict';
+if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Demo runs only on localhost');
 const $=id=>document.getElementById(id);
 const API='http://127.0.0.1:54321/functions/v1/learning-api/';
 let attempt=null,question=null,busy=false;
@@ -30,9 +31,9 @@ async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
  question=await call('next-question',{attemptId:attempt});const q=question.question;
  $('mode').textContent='Режим: '+question.mode+' · вопрос '+(question.index+1);
  $('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'')+(q.instruction?' · '+q.instruction:'');
- $('choices').replaceChildren();$('answer').value='';$('next').hidden=true;$('submit').disabled=false;
- $('textLabel').hidden=['choice','boolean'].includes(q.responseType);
- if(q.responseType==='choice'){for(const value of q.choices){const btn=document.createElement('button');btn.textContent=value;btn.onclick=()=>submit(value);$('choices').append(btn)}}
+ $('choices').replaceChildren();$('answer').value='';$('next').hidden=true;$('submit').disabled=false;$('hint').disabled=Boolean(question.hinted);
+ $('textLabel').hidden=['choice','pair','boolean'].includes(q.responseType);
+ if(['choice','pair'].includes(q.responseType)){for(const value of q.choices){const btn=document.createElement('button');btn.textContent=value;btn.onclick=()=>submit(value);$('choices').append(btn)}}
  if(q.responseType==='boolean'){for(const [label,value] of [['Верно','true'],['Неверно','false']]){const btn=document.createElement('button');btn.textContent=label;btn.onclick=()=>submit(value);$('choices').append(btn)}}
  if(q.responseType==='audio'){const btn=document.createElement('button');btn.textContent='🔊 Прослушать';
  btn.onclick=()=>{if(!('speechSynthesis'in window))return message('Аудио недоступно');
@@ -43,9 +44,10 @@ async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
 async function submit(answer){if(busy||!question)return;busy=true;try{
  const result=await call('answer-question',{attemptId:attempt,challengeId:question.challengeId,
  index:question.index,wordId:question.wordId,answer});
- message(result.correct?'✓ Сервер подтвердил правильный ответ':'✕ Сервер отметил ошибку');
- $('submit').disabled=true;$('next').hidden=false;
+ message(result.correct?'✓ Сервер подтвердил правильный ответ':result.complete?'✕ Попытки исчерпаны':'✕ Попробуй ещё. Осталось: '+result.remaining);
+ if(result.complete){$('submit').disabled=true;$('next').hidden=false;$('hint').disabled=true}
  }catch(e){message(e.message)}finally{busy=false}}
+$('hint').onclick=async()=>{if(busy||!question)return;busy=true;try{const r=await call('hint-question',{attemptId:attempt,challengeId:question.challengeId});message(r.hint);$('hint').disabled=true}catch(e){message(e.message)}finally{busy=false}};
 $('submit').onclick=()=>submit($('answer').value);
 $('answer').onkeydown=e=>{if(e.key==='Enter')$('submit').click()};
 $('next').onclick=nextQuestion;

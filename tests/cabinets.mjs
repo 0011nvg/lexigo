@@ -112,6 +112,34 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.equal(synthetic.retries,1);
  assert.equal(synthetic.hints,1);
 
+ // Pupil isolation: Masha's attempts must never appear under Sasha, Dima or Anya.
+ await page.getByRole('tab',{name:/ученик/i}).click();
+ assert.equal(await page.locator('#activePupil').inputValue(),'masha-2a');
+ await page.locator('#activePupil').selectOption('sasha-2a');
+ assert.equal(await page.locator('#studentHistory .history-entry').count(),0);
+ assert.equal(await page.locator('#studentHistory .trend-item').count(),0);
+ assert.equal(await page.locator('#studentTasks .task').count(),2);
+ await page.getByRole('tab',{name:/родитель/i}).click();
+ assert.equal(await page.locator('#parentHistory .history-entry').count(),0);
+ await page.getByRole('tab',{name:/ученик/i}).click();
+ await page.locator('#activePupil').selectOption('dima-3b');
+ assert.equal(await page.locator('#studentTasks .task').count(),1);
+ assert.equal(await page.locator('#studentHistory .history-entry').count(),0);
+ const dimaLink=await page.locator('#studentTasks a[href*="assignment="]').first().getAttribute('href');
+ assert.match(dimaLink,/pupil=dima-3b/);
+ await page.locator('#studentTasks a[href*="assignment="]').first().click();
+ await page.waitForURL('**/index.html?assignment=*');
+ assert.equal(await page.evaluate(()=>game?.grade),3);
+ assert.equal(await page.evaluate(()=>game?.pupilId),'dima-3b');
+ await page.locator('#back').click();
+ await page.goto(base+'cabinet.html#student');
+ assert.equal(await page.locator('#studentHistory .history-entry').count(),1);
+ await page.locator('#activePupil').selectOption('masha-2a');
+ assert.equal(await page.locator('#studentHistory .history-entry').count(),3);
+ // Invalid or unscoped local attempts must not enter another child's history.
+ await page.evaluate(()=>{const key='lexigo_cabinet_attempts_v1',a=JSON.parse(localStorage.getItem(key));a.push({...a[0],id:'bad-identity',pupilId:'unknown-child'});a.push({...a[0],id:'bad-class',pupilId:'dima-3b'});localStorage.setItem(key,JSON.stringify(a))});
+ await page.reload();
+ assert.equal(await page.locator('#studentHistory .history-entry').count(),3);
  await page.getByRole('tab',{name:/ученик/i}).click();
  const before=Number(await page.locator('#parentCompleted').innerText());
  await page.locator('#studentTasks [data-complete]').last().click();

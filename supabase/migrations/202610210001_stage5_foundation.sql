@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgcrypto;
 create schema if not exists lexigo;
 revoke all on schema lexigo from public, anon;
-grant usage on schema lexigo to authenticated;
+grant usage on schema lexigo to authenticated,service_role;
 
 create type lexigo.member_role as enum ('teacher','pupil','parent');
 create type lexigo.audience_kind as enum ('class','individual');

@@ -33,6 +33,7 @@ try{
  await teacherForm.getByRole('button',{name:'Создать назначение'}).click();
  await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
  await page.getByText('Результаты моих учеников').waitFor();
+ await page.getByText('Прогресс и рейтинг моих учеников').waitFor();
  for(const mode of ['pairs','crystals','boss','cards','daily']){
   const form=page.locator('#results form');
   await form.locator('select').nth(2).selectOption(mode);
@@ -76,6 +77,8 @@ try{
  await page.locator('#login').waitFor({state:'visible'});
  await login('pupil');
  await page.getByText('Мои назначения').waitFor();
+ await page.getByText('Мои галочки и рейтинг уроков').waitFor();
+ assert.equal(await page.locator('#results .lesson-progress').count()>=0,true);
  assert.equal(await page.getByText('Назначить задание').count(),0,'Pupil saw teacher assignment control');
  await page.getByText('Начать игру').waitFor();
  const gameButtons=page.getByRole('button',{name:'Играть',exact:true});

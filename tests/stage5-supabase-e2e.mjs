@@ -278,7 +278,9 @@ async function main(){
  const bossSecond=await bossAction('answer',{answer:q1.prompt==='привет'?'hello':'world'});
  assert.equal(bossSecond.status,200,'Boss spell '+JSON.stringify(bossSecond));
  assert.equal(bossSecond.data.correct,true);
- const bossThird=await bossAction('answer',{answer:'true'});
+ const q2=bossSecond.data.nextQuestion;
+ const bossExpected=q0.prompt.endsWith('hello')?'привет':'мир';
+ const bossThird=await bossAction('answer',{answer:String(q2.proposed===bossExpected)});
  assert.equal(bossThird.status,200,'Boss truefalse '+JSON.stringify(bossThird));
  assert.equal(bossThird.data.complete,true);
  assert.equal(bossThird.data.passed,true);

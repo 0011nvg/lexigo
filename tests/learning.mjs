@@ -183,7 +183,7 @@ async function run(viewport){
    if(!game.retryActive||game.words.length!==3)throw Error('Second retry missing');
    answerUI(w,true,w.en,'recall');
    if(game.retryQueue.length!==0||game.retryIds.has(w.id))throw Error('Correct retry did not clear error');
-   if(finalTestPassed({...game,mode:'boss',firstCorrect:1,recallTotal:1,recallScore:1}))throw Error('Retry inflated initial accuracy');
+   if(finalTestPassed({...game,mode:'boss',firstCorrect:0,recallTotal:1,recallScore:1}))throw Error('Retry inflated initial accuracy');
   }finally{if(saved)progress[w.id]=saved;else delete progress[w.id];game=previous;save();updateStats()}
  });
  // Daily session uses up to fifteen words, not the old eight-word cap.

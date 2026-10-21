@@ -25,6 +25,12 @@ try{
  await teacherForm.getByRole('button',{name:'Создать назначение'}).click();
  await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
  await page.getByText('Результаты моих учеников').waitFor();
+ for(const mode of ['pairs','crystals','boss','cards','daily']){
+  const form=page.locator('#results form');
+  await form.locator('select').nth(2).selectOption(mode);
+  await form.getByRole('button',{name:'Создать назначение'}).click();
+  await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
+ }
  await page.locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});
  await login('pupil');
@@ -40,6 +46,35 @@ try{
  await page.getByRole('button',{name:'Завершить попытку'}).click();
  await page.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  await page.getByText('Мои попытки').waitFor();
+ for(const mode of ['pairs','crystals','boss','cards','daily']){
+  const tile=page.locator('#results div[data-mode="'+mode+'"]');
+  await tile.getByRole('button',{name:'Играть'}).click();
+  await page.getByRole('heading',{name:'Игра · '+mode}).waitFor({timeout:15000});
+  const round=page.locator('#results section').first();
+  if(mode==='pairs'){
+   const buttons=round.locator('div > button');
+   assert.ok(await buttons.count()>=2,'No server-issued pair tiles');
+   await buttons.nth(0).click();
+   await buttons.nth(1).click();
+   await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
+  }else if(mode==='crystals'){
+   const buttons=round.locator('div > button');
+   assert.equal(await buttons.count(),36,'Expected 36 server-issued crystal cells');
+   await buttons.nth(0).click();
+   await buttons.nth(1).click();
+   await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
+  }else if(mode==='boss'){
+   await round.getByPlaceholder('Введите ответ').fill('wrong');
+   await round.getByRole('button',{name:'Ответить'}).click();
+   await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
+  }else{
+   await round.getByRole('button',{name:'Показать перевод'}).click();
+   await round.getByRole('button',{name:'Знаю'}).click();
+   await page.getByText('Самооценка сохранена сервером').waitFor({timeout:15000});
+  }
+  await page.locator('#results section').first().getByRole('button',{name:'Завершить попытку'}).click();
+  await page.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
+ }
  await page.locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});
  await login('teacher');

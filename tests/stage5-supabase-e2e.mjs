@@ -358,6 +358,17 @@ async function main(){
  assert.equal(dailyRead.data[0]?.verified_correct,null);
  assert.equal(dailyRead.data[0]?.self_rating,'unknown');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
+ const progressPupil=await api('/rest/v1/lesson_attempt_progress?select=attempt_id,section_id,mode,total_words,covered_words,lesson_completed,ranking_eligible,accuracy_pct&attempt_id=eq.'+ids.attempt,{token:pupil.jwt,schema:'lexigo'});
+ assert.equal(progressPupil.status,200,'Pupil RLS progress '+JSON.stringify(progressPupil));
+ assert.equal(progressPupil.data.length,1,'Pupil must see own attempt progress');
+ const progress=progressPupil.data[0];
+ assert.equal(progress.total_words,2,'Progress must use full server vocabulary section');
+ assert.equal(progress.lesson_completed,progress.covered_words===2,'Completion must require every word');
+ assert.equal(progress.ranking_eligible,progress.covered_words===2,'Partial attempt must not enter ranking');
+ const progressTeacher=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:teacher.jwt,schema:'lexigo'});
+ assert.equal(progressTeacher.status,200);assert.equal(progressTeacher.data.length,1,'Teacher must see enrolled pupil progress');
+ const progressOther=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:teacher2.jwt,schema:'lexigo'});
+ assert.equal(progressOther.status,200);assert.equal(progressOther.data.length,0,'Other-class teacher must not see ranking');
  r=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,403,'Challenge after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');
  const parentRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});

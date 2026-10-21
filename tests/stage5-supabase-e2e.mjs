@@ -128,18 +128,22 @@ async function main(){
  assert.equal(inv.status,200);
  const revokedToken=inv.data.id;
  const digest=Array.from(createHash('sha256').update(revokedToken).digest()).map(x=>x.toString(16).padStart(2,'0')).join('');
- const lookup=await api('/rest/v1/invitations?select=id&token_digest=eq.\\x'+digest,{key:service,schema:'lexigo'});
- assert.equal(lookup.status,200,'Invite digest lookup '+JSON.stringify(lookup));
- assert.equal(lookup.data.length,1,'Token digest lookup failed');
- let rev=await edge('revoke-invitation',teacher.jwt,{invitationId:lookup.data[0].id});
+ const lookup=await api('/rest/v1/invitations?select=id,token_digest',{key:service,schema:'lexigo'});
+ assert.equal(lookup.status,200,'Invite lookup '+JSON.stringify(lookup));
+ const matching=lookup.data.filter(x=>String(x.token_digest).toLowerCase().replace(/^\\\\x/,'')===digest);
+ assert.equal(matching.length,1,'Token digest lookup failed');
+ let rev=await edge('revoke-invitation',teacher.jwt,{invitationId:matching[0].id});
  assert.equal(rev.status,200,'Revoke invitation '+JSON.stringify(rev));
  redeem=await edge('redeem-invitation',newPupil.jwt,{token:revokedToken});
  assert.equal(redeem.status,403,'Revoked invitation redeemed');
  inv=await edge('issue-invitation',teacher.jwt,{classId:ids.classA,role:'pupil',ttlHours:1});
  assert.equal(inv.status,200);
  const expiredToken=inv.data.id;
- const expiredDigest='\\x'+createHash('sha256').update(expiredToken).digest('hex');
- const expired=await api('/rest/v1/invitations?token_digest=eq.'+expiredDigest,
+ const expiredDigest=createHash('sha256').update(expiredToken).digest('hex');
+ const expList=await api('/rest/v1/invitations?select=id,token_digest',{key:service,schema:'lexigo'});
+ const expRecord=expList.data.find(x=>String(x.token_digest).toLowerCase().replace(/^\\\\x/,'')===expiredDigest);
+ assert.ok(expRecord,'Expired invite digest not found');
+ const expired=await api('/rest/v1/invitations?id=eq.'+expRecord.id,
  {method:'PATCH',key:service,schema:'lexigo',body:{expires_at:new Date(Date.now()-1000).toISOString()}});
  assert.equal(expired.status,204,'Fixture expiry update '+JSON.stringify(expired));
  redeem=await edge('redeem-invitation',newPupil.jwt,{token:expiredToken});

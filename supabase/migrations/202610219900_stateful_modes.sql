@@ -115,10 +115,10 @@ begin
  if state is null then raise exception 'missing server state' using errcode='22023'; end if;
  result:=pg_catalog.jsonb_build_object('complete',false);
  if p_action='hint' then
-  if mode='crystals' or ch.hint_uses>=1 then
+  if (mode='crystals' and coalesce((state->>'moves')::integer,0)<7) or ch.hint_uses>=1 then
    raise exception 'hint unavailable' using errcode='42501'; end if;
   update lexigo.attempt_challenges set hint_uses=hint_uses+1 where id=ch.id;
-  result:=result||pg_catalog.jsonb_build_object('hint',state->>'hint','hinted',true);
+  result:=result||pg_catalog.jsonb_build_object('hint',case when mode='crystals' then left(ch.expected,1) else state->>'hint' end,'hinted',true);
  elsif mode='pairs' then
   if p_action<>'pair' then raise exception 'wrong action' using errcode='22023'; end if;
   tiles:=state->'tiles'; completed:=coalesce(state->'matched','[]'::jsonb);
@@ -146,7 +146,24 @@ begin
    result:=result||pg_catalog.jsonb_build_object('complete',true);
   end if;
  elsif mode='crystals' then
-  if p_action<>'swap' then raise exception 'wrong action' using errcode='22023'; end if;
+  if p_action='answer' then
+   if coalesce((state->>'moves')::integer,0)<7 or
+    pg_catalog.jsonb_typeof(p_payload->'answer')<>'string' or
+    length(p_payload->>'answer')>250 then
+    raise exception 'vocabulary question not ready' using errcode='22023'; end if;
+   good:=lower(btrim(p_payload->>'answer'))=lower(btrim(ch.expected));
+   retry:=coalesce((state->>'vocabWrong')::integer,0);
+   if good or retry>=2 then
+    state:=pg_catalog.jsonb_set(state,'{vocabCorrect}',pg_catalog.to_jsonb(good));
+    result:=result||pg_catalog.jsonb_build_object('complete',true,'correct',good);
+   else
+    state:=pg_catalog.jsonb_set(state,'{vocabWrong}',pg_catalog.to_jsonb(retry+1));
+    update lexigo.attempt_challenges set retry_uses=retry_uses+1 where id=ch.id;
+    result:=result||pg_catalog.jsonb_build_object('correct',false,'remaining',1-retry);
+   end if;
+  elsif p_action='swap' then
+   if coalesce((state->>'moves')::integer,0)>=7 then
+    raise exception 'board already finished' using errcode='42501'; end if;
   if pg_catalog.jsonb_typeof(p_payload->'from')<>'number'
    or pg_catalog.jsonb_typeof(p_payload->'to')<>'number' then
    raise exception 'invalid swap' using errcode='22023'; end if;
@@ -206,7 +223,11 @@ begin
   result:=result||pg_catalog.jsonb_build_object('correct',good,'board',board,
    'hits',coalesce((state->>'hits')::integer,0),'points',coalesce((state->>'points')::integer,0),'moves',moves);
   if moves>=7 then
-   result:=result||pg_catalog.jsonb_build_object('complete',true);
+   result:=result||pg_catalog.jsonb_build_object('boardComplete',true,
+    'vocabQuestion',pg_catalog.jsonb_build_object('prompt',ch.payload->>'prompt','responseType','text'));
+  end if;
+  else
+   raise exception 'wrong crystal action' using errcode='22023';
   end if;
  elsif mode='boss' then
   phase:=coalesce((state->>'phase')::integer,0);
@@ -249,7 +270,7 @@ begin
    correct,hinted,retry,verified_correct,verification_source,answer_digest)
   values(p_attempt,ch.word_id,ch.event_index,'answer',
    case when mode='pairs' then true when mode='crystals' then
-    true else coalesce((state->>'lives')::integer,0)>0 end,
+    coalesce((state->>'vocabCorrect')::boolean,false) else coalesce((state->>'lives')::integer,0)>0 end,
    ch.hint_uses>0,ch.retry_uses>0,
    case when mode='pairs' then true when mode='crystals' then
     coalesce((state->>'hits')::integer,0)>=7 else coalesce((state->>'lives')::integer,0)>0 end,
@@ -332,7 +353,7 @@ begin
    'responseType','audio','speechText',v_word.en);
  elsif v_mode='crystals' then
   v_board:=lexigo.make_gem_board();
-  v_payload:=pg_catalog.jsonb_build_object('responseType','crystals','board',v_board,
+  v_payload:=pg_catalog.jsonb_build_object('responseType','crystals','board',v_board,'prompt',v_word.ru,
    'target',7,'maxMoves',7);
   v_state:=pg_catalog.jsonb_build_object('board',v_board,'hits',0,'points',0,'moves',0);
  elsif v_mode='boss' then

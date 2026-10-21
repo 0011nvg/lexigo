@@ -70,6 +70,17 @@ async function main(){
  const parentRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
  assert.equal(parentRead.status,200,'Parent read '+JSON.stringify(parentRead));
  assert.equal(parentRead.data.length,0,'Unverified parent saw pupil attempts');
+ // Verified parent link is server-controlled and its revocation takes effect immediately.
+ await insert('parent_pupils',[{parent_user_id:parent.id,pupil_user_id:pupil.id,verified_by:teacher.id}]);
+ const linked=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
+ assert.equal(linked.status,200,'Linked parent read '+JSON.stringify(linked));
+ assert.equal(linked.data.length,1,'Verified parent cannot see linked pupil');
+ const revoke=await api('/rest/v1/parent_pupils?parent_user_id=eq.'+parent.id+'&pupil_user_id=eq.'+pupil.id,
+ {method:'PATCH',key:service,body:{revoked_at:new Date().toISOString()},schema:'lexigo'});
+ assert.equal(revoke.status,204,'Parent link revoke '+JSON.stringify(revoke));
+ const afterRevoke=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
+ assert.equal(afterRevoke.status,200,'Revoked parent read '+JSON.stringify(afterRevoke));
+ assert.equal(afterRevoke.data.length,0,'Revoked parent still sees pupil attempts');
  const pupilRead=await api('/rest/v1/attempts?select=id',{token:pupil.jwt,schema:'lexigo'});
  assert.equal(pupilRead.status,200,'Pupil read '+JSON.stringify(pupilRead));
  assert.equal(pupilRead.data.length,1,'Pupil cannot see own attempt');

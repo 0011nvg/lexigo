@@ -43,6 +43,20 @@ jobs:
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           set +a
           node tests/stage5-supabase-e2e.mjs
+      - name: Install Chromium for real cabinet journey
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local cabinet web origin
+        run: python3 -m http.server 3000 --bind 127.0.0.1 &
+      - name: Real browser login, RLS reads and logout
+        run: |
+          supabase status -o env > /tmp/lexigo-local-env
+          set -a
+          source /tmp/lexigo-local-env
+          export SUPABASE_ANON_KEY="$ANON_KEY"
+          set +a
+          node tests/stage7-real-browser.mjs
       - name: Edge diagnostics on failure
         if: failure()
         run: tail -100 /tmp/lexigo-edge.log || true

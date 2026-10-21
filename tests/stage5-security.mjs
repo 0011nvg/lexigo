@@ -4,6 +4,7 @@ const root=new URL('../',import.meta.url);
 const read=p=>readFileSync(new URL(p,root),'utf8');
 const foundation=read('supabase/migrations/202610210001_stage5_foundation.sql');
 const operations=read('supabase/migrations/202610210002_privileged_operations.sql');
+const revocation=read('supabase/migrations/202610210003_access_revocation.sql');
 const rls=read('supabase/tests/rls_isolation.sql');
 const spec=read('docs/stage-5-technical-spec.md');
 const tables=['organizations','profiles','classes','enrollments','parent_pupils','vocabulary_sections','vocabulary_words','assignments','assignment_recipients','attempts','attempt_events','teacher_reviews','invitations','audit_log'];
@@ -20,6 +21,9 @@ for(const fn of ['issue_invitation','redeem_invitation','revoke_invitation','ver
 assert.match(operations,/grant execute on function[\s\S]*to service_role/i);
 assert.match(operations,/revoke all on function[\s\S]*from public,anon,authenticated/i);
 assert.match(operations,/expires_at<=now\(\)/);
+assert.match(revocation,/create function lexigo\.revoke_enrollment\(/);
+assert.match(revocation,/create function lexigo\.revoke_teacher_review\(/);
+assert.match(revocation,/target_role='pupil' and redeemed_at is null and revoked_at is null/);
 assert.match(operations,/for update/);
 assert.match(operations,/revoked_at=now\(\)/);
 assert.match(operations,/if not lexigo\.is_teacher_of/);

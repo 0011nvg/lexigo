@@ -273,7 +273,7 @@ begin
     coalesce((state->>'vocabCorrect')::boolean,false) else coalesce((state->>'lives')::integer,0)>0 end,
    ch.hint_uses>0,ch.retry_uses>0,
    case when mode='pairs' then true when mode='crystals' then
-    coalesce((state->>'hits')::integer,0)>=7 else coalesce((state->>'lives')::integer,0)>0 end,
+    coalesce((state->>'vocabCorrect')::boolean,false) else coalesce((state->>'lives')::integer,0)>0 end,
    'server_evaluated',digest) returning id into event_id;
   update lexigo.attempt_challenges set answered_at=now() where id=ch.id;
   result:=result||pg_catalog.jsonb_build_object('eventId',event_id);

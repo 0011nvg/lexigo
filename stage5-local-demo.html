@@ -4,7 +4,7 @@
 section{background:white;border-radius:18px;padding:24px;margin:16px 0;box-shadow:0 3px 18px #12294412}
 label{display:block;margin:14px 0}input,button{font:inherit;padding:12px;border-radius:10px}
 input{width:100%;box-sizing:border-box;border:1px solid #aab7c9}button{border:0;background:#225be0;color:white;margin:5px 4px 5px 0;cursor:pointer}
-button:disabled{opacity:.5}#choices button{display:block;width:100%;text-align:left}
+button:disabled{opacity:.5}#choices button{display:block;width:100%;text-align:left}#choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#choices button{margin:0}#choices button.selected{outline:3px solid #f4b942}#progress{font-weight:700}#arena{padding:12px;border-radius:12px;background:#eef4ff;margin:12px 0}#arena[hidden]{display:none}
 #message{min-height:30px}small{color:#52627c}</style>
 <h1>LEXIGO · безопасная локальная тренировка</h1>
 <p>Только фиктивные пользователи. API доступен исключительно на <code>127.0.0.1</code>. Это отдельный тестовый интерфейс: исходные игры не изменяются.</p>
@@ -12,14 +12,14 @@ button:disabled{opacity:.5}#choices button{display:block;width:100%;text-align:l
 <label>ID назначения<input id="assignment" autocomplete="off"></label>
 <button id="start">Начать тренировку</button><small>Токен не сохраняется и не отправляется на другие серверы.</small></section>
 <section id="round" hidden><h2 id="mode"></h2><p id="prompt"></p><div id="choices"></div>
-<label id="textLabel">Ответ<input id="answer" autocomplete="off"></label><button id="submit">Проверить</button>
+<div id="arena" hidden><div id="progress"></div><div id="hearts"></div><div id="crystals"></div></div><label id="textLabel">Ответ<input id="answer" autocomplete="off"></label><button id="submit">Проверить</button>
 <button id="hint">Подсказка</button><button id="next" hidden>Следующий вопрос</button><p id="message" role="status"></p></section>
 <script>
 'use strict';
 if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Demo runs only on localhost');
 const $=id=>document.getElementById(id);
 const API='http://127.0.0.1:54321/functions/v1/learning-api/';
-let attempt=null,question=null,busy=false;
+let attempt=null,question=null,busy=false,streak=0,completed=0,damage=0;
 async function call(route,body){const res=await fetch(API+route,{method:'POST',headers:{
  'authorization':'Bearer '+$('jwt').value.trim(),'content-type':'application/json'
 },body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error('HTTP '+res.status+': '+(data.error||'запрос отклонён'));return data}
@@ -30,10 +30,18 @@ $('start').onclick=async()=>{try{const session=crypto.randomUUID();
 async function nextQuestion(){if(busy||!attempt)return;busy=true;try{
  question=await call('next-question',{attemptId:attempt});const q=question.question;
  $('mode').textContent='Режим: '+question.mode+' · вопрос '+(question.index+1);
+ const game=['pairs','crystals','boss'].includes(question.mode);
+ $('arena').hidden=!game;
+ if(game){const phase=Number(q.phase??question.index%3);
+ $('progress').textContent=question.mode==='pairs'?'🔗 Найди пару · Раунд '+(question.index+1):
+ question.mode==='crystals'?'💎 Кристаллы · Этап '+(phase+1)+'/3':'🐉 Босс · Фаза '+(phase+1)+'/3';
+ $('hearts').textContent='❤️ '+Math.max(0,3-damage)+' · Серия: '+streak;
+ $('crystals').textContent=question.mode==='crystals'?'💎 Собрано: '+completed:question.mode==='boss'?'⚔️ Удары: '+completed:'';
+ }
  $('prompt').textContent=q.prompt+(q.proposed?' — '+q.proposed:'')+(q.instruction?' · '+q.instruction:'');
  $('choices').replaceChildren();$('answer').value='';$('next').hidden=true;$('submit').disabled=false;$('hint').disabled=Boolean(question.hinted);
  $('textLabel').hidden=['choice','pair','boolean'].includes(q.responseType);
- if(['choice','pair'].includes(q.responseType)){for(const value of q.choices){const btn=document.createElement('button');btn.textContent=value;btn.onclick=()=>submit(value);$('choices').append(btn)}}
+ if(['choice','pair'].includes(q.responseType)){for(const value of q.choices){const btn=document.createElement('button');btn.textContent=value;btn.onclick=()=>{for(const el of $('choices').children)el.classList.remove('selected');btn.classList.add('selected');submit(value)};$('choices').append(btn)}}
  if(q.responseType==='boolean'){for(const [label,value] of [['Верно','true'],['Неверно','false']]){const btn=document.createElement('button');btn.textContent=label;btn.onclick=()=>submit(value);$('choices').append(btn)}}
  if(q.responseType==='audio'){const btn=document.createElement('button');btn.textContent='🔊 Прослушать';
  btn.onclick=()=>{if(!('speechSynthesis'in window))return message('Аудио недоступно');
@@ -45,7 +53,13 @@ async function submit(answer){if(busy||!question)return;busy=true;try{
  const result=await call('answer-question',{attemptId:attempt,challengeId:question.challengeId,
  index:question.index,wordId:question.wordId,answer});
  message(result.correct?'✓ Сервер подтвердил правильный ответ':result.complete?'✕ Попытки исчерпаны':'✕ Попробуй ещё. Осталось: '+result.remaining);
- if(result.complete){$('submit').disabled=true;$('next').hidden=false;$('hint').disabled=true}
+ if(result.complete){if(result.correct){completed++;streak++}else{damage++;streak=0}
+ $('submit').disabled=true;$('next').hidden=false;$('hint').disabled=true;
+ for(const el of $('choices').querySelectorAll('button'))el.disabled=true;
+ if(['crystals','boss','pairs'].includes(question.mode)){
+ $('hearts').textContent='❤️ '+Math.max(0,3-damage)+' · Серия: '+streak;
+ $('crystals').textContent=question.mode==='crystals'?'💎 Собрано: '+completed:question.mode==='boss'?'⚔️ Удары: '+completed:'🔗 Верные пары: '+completed;
+ }}
  }catch(e){message(e.message)}finally{busy=false}}
 $('hint').onclick=async()=>{if(busy||!question)return;busy=true;try{const r=await call('hint-question',{attemptId:attempt,challengeId:question.challengeId});message(r.hint);$('hint').disabled=true}catch(e){message(e.message)}finally{busy=false}};
 $('submit').onclick=()=>submit($('answer').value);

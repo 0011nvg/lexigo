@@ -216,7 +216,7 @@ revoke all on function lexigo.gem_matches(jsonb),
  lexigo.play_challenge(uuid,uuid,uuid,uuid,text,jsonb) from public,anon,authenticated;
 grant execute on function lexigo.play_challenge(uuid,uuid,uuid,uuid,text,jsonb) to service_role;
 create or replace function lexigo.next_challenge(p_actor uuid,p_attempt uuid)
-returns jsonb language plpgsql security definer set search_path='' as $
+returns jsonb language plpgsql security definer set search_path='' as $$
 declare v_attempt lexigo.attempts%rowtype; v_section text; v_mode text;
  v_idx integer; v_word lexigo.vocabulary_words%rowtype; v_other lexigo.vocabulary_words%rowtype;
  v_id uuid; v_payload jsonb; v_expected text; v_ch lexigo.attempt_challenges%rowtype;
@@ -315,10 +315,10 @@ begin
  if v_state is not null then update lexigo.attempt_challenges set private_state=v_state where id=v_id; end if;
  return pg_catalog.jsonb_build_object('challengeId',v_id,'index',v_idx,
  'wordId',v_word.id,'mode',v_mode,'question',v_payload);
-end $;
+end $$;
 create or replace function lexigo.answer_challenge(
  p_actor uuid,p_attempt uuid,p_challenge uuid,p_index integer,p_word text,p_answer text)
-returns jsonb language plpgsql security definer set search_path='' as $
+returns jsonb language plpgsql security definer set search_path='' as $$
 declare v_attempt lexigo.attempts%rowtype; v_ch lexigo.attempt_challenges%rowtype;
  v_event lexigo.attempt_events%rowtype; v_correct boolean; v_digest bytea; v_id uuid;
 begin
@@ -349,5 +349,5 @@ begin
  returning id into v_id;
  update lexigo.attempt_challenges set answered_at=now() where id=p_challenge;
  return pg_catalog.jsonb_build_object('id',v_id,'correct',v_correct);
-end $;
+end $$;
 commit;

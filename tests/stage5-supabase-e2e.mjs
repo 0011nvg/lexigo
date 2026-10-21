@@ -187,6 +187,14 @@ async function main(){
  const pairAction=(action,payload,requestId=randomUUID(),jwt=pupil.jwt)=>
  edge('play-round',jwt,{attemptId:pairAttempt.data.id,challengeId:pairQuestion.data.challengeId,
  requestId,action,payload});
+ const teacherTamper=await pairAction('hint',{},randomUUID(),teacher.jwt);
+ assert.equal(teacherTamper.status,403,'Teacher forged pupil gameplay');
+ const foreignTamper=await pairAction('hint',{},randomUUID(),foreign.jwt);
+ assert.equal(foreignTamper.status,403,'Foreign pupil manipulated round');
+ const scoreInjection=await edge('play-round',pupil.jwt,{attemptId:pairAttempt.data.id,
+ challengeId:pairQuestion.data.challengeId,requestId:randomUUID(),action:'pair',
+ payload:{first:tiles[0].id,second:tiles[1].id,correct:true}});
+ assert.equal(scoreInjection.status,400,'Client score injection accepted');
  let pairBad=await pairAction('pair',{first:tiles[0].id,second:'00000000-0000-4000-8000-000000000099'});
  assert.equal(pairBad.status,403,'Invented tile accepted');
  const wrongPair=tiles.find(t=>t.side!==tiles[0].side&&

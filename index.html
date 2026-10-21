@@ -83,19 +83,49 @@ function gemNeighbors(a,b){return Math.abs(Math.floor(a/6)-Math.floor(b/6))+Math
 function gemPossible(board){for(let a=0;a<36;a++)for(let b of [a+1,a+6]){if(b>=36||!gemNeighbors(a,b))continue;[board[a],board[b]]=[board[b],board[a]];let ok=gemMatches(board).length>=3;[board[a],board[b]]=[board[b],board[a]];if(ok)return [a,b]}return null}
 function gemBoard(){for(let tries=0;tries<250;tries++){let board=[];for(let i=0;i<36;i++){let choices=[0,1,2,3,4,5].filter(v=>!(i%6>1&&board[i-1]===v&&board[i-2]===v)&&!(i>11&&board[i-6]===v&&board[i-12]===v));board.push(choices[Math.floor(Math.random()*choices.length)])}if(gemPossible(board))return board}throw Error('Crystal board generation failed')}
 function renderCrystalRound(){if(!game||game.mode!=='crystals')return;game.crystalPhase=true;game.crystalDone=false;game.crystalHits=0;game.crystalTarget=7;game.gemBoard=gemBoard();game.gemSelected=null;game.gemBusy=false;game.gemMuted=game.gemMuted||false;paintCrystalBoard()}
-function paintCrystalBoard(message='Поменяй местами два соседних кристалла, чтобы собрать три или больше одинаковых в ряд.'){if(!game||!game.crystalPhase)return;
-$('bar').style.width=(game.index/game.words.length*100)+'%';$('counter').textContent='💎 Кристаллы: '+game.crystals+' · Задания: '+game.index+' / '+game.words.length;
-$('play').innerHTML='<div class="crystal-arena"><h2>Кристальная экспедиция</h2><p class="crystal-instructions muted" id="gemMessage" role="status"></p><div class="crystal-score" id="crystalScore" aria-live="polite"></div><div class="crystal-board" id="crystalBoard" role="group" aria-label="Поле кристаллов 6 на 6"></div><div class="crystal-actions"><button class="btn secondary" id="crystalMute" type="button"></button><button class="btn secondary" id="crystalShuffle" type="button">↻ Новое поле</button></div></div>';
-$('gemMessage').textContent=message;$('crystalScore').textContent='Комбинации: '+game.crystalHits+' / '+game.crystalTarget+' · Всего кристаллов: '+game.crystals;
-$('crystalMute').textContent=game.gemMuted?'🔇 Звук: выкл.':'🔊 Звук: вкл.';$('crystalMute').onclick=()=>{game.gemMuted=!game.gemMuted;$('crystalMute').textContent=game.gemMuted?'🔇 Звук: выкл.':'🔊 Звук: вкл.'};
-$('crystalShuffle').onclick=()=>{if(game.gemBusy)return;game.gemBoard=gemBoard();game.gemSelected=null;paintCrystalBoard('Новое поле готово. Найди три одинаковых кристалла в ряд!')};
-const board=$('crystalBoard');game.gemBoard.forEach((v,i)=>{let tile=document.createElement('button');tile.type='button';tile.className='crystal-tile'+(game.gemSelected===i?' selected':'');tile.textContent=GEM_TYPES[v];tile.setAttribute('aria-label','Кристалл '+(i+1)+', '+GEM_TYPES[v]);tile.setAttribute('aria-pressed',String(game.gemSelected===i));tile.onclick=()=>gemClick(i);board.append(tile)})}
-function gemClick(i){if(!game||!game.crystalPhase||game.gemBusy||game.crystalDone)return;let previous=game.gemSelected;if(previous===null){game.gemSelected=i;paintCrystalBoard('Выбери соседний кристалл, чтобы поменять их местами.');return}if(previous===i){game.gemSelected=null;paintCrystalBoard();return}if(!gemNeighbors(previous,i)){game.gemSelected=i;paintCrystalBoard('Выбери кристалл рядом с выделенным.');return}
-game.gemSelected=null;let board=game.gemBoard;[board[i],board[previous]]=[board[previous],board[i]];let matches=gemMatches(board);if(matches.length<3){[board[i],board[previous]]=[board[previous],board[i]];paintCrystalBoard('Комбинации нет. Попробуй другой ход.');return}
-game.gemBusy=true;let chain=0,cleared=0;do{chain++;cleared+=matches.length;game.crystals+=matches.length;matches.forEach(k=>board[k]=null);for(let x=0;x<6;x++){let values=[];for(let y=5;y>=0;y--)if(board[y*6+x]!==null)values.push(board[y*6+x]);while(values.length<6)values.push(Math.floor(Math.random()*6));for(let y=5;y>=0;y--)board[y*6+x]=values[5-y]}matches=gemMatches(board)}while(matches.length>=3&&chain<30);
-if(!gemPossible(board))game.gemBoard=gemBoard();game.crystalHits++;game.gemBusy=false;if(!game.gemMuted)crystalSound(620+Math.min(chain,5)*110);
-paintCrystalBoard('✨ '+cleared+' кристаллов! '+(chain>1?'Цепочка ×'+chain+'. ':'')+'Комбинация '+game.crystalHits+' из 3.');
-if(game.crystalHits>=game.crystalTarget){game.crystalDone=true;let go=action('Продолжить: задания со словами →',()=>{if(game){game.crystalPhase=false;renderQuestion()}},'btn good');go.classList.add('crystal-continue');$('play').querySelector('.crystal-arena').append(go);go.focus()}}
+
+function gemScore(count,chain){return (count===3?30:count===4?60:count===5?100:100+(count-5)*40)*chain}
+function gemSwap(a,b){if(!game||!game.crystalPhase||game.gemBusy||game.crystalDone||!gemNeighbors(a,b))return false;
+ const board=game.gemBoard;[board[a],board[b]]=[board[b],board[a]];let matches=gemMatches(board);
+ if(matches.length<3){[board[a],board[b]]=[board[b],board[a]];game.gemSelected=null;paintCrystalBoard('Не получилось собрать три в ряд. Попробуй другой ход!');return false}
+ game.gemBusy=true;game.gemSelected=null;let chain=0,cleared=0,points=0;
+ do{chain++;cleared+=matches.length;points+=gemScore(matches.length,chain);game.crystals+=matches.length;
+ matches.forEach(k=>board[k]=null);
+ for(let x=0;x<6;x++){let values=[];for(let y=5;y>=0;y--)if(board[y*6+x]!==null)values.push(board[y*6+x]);while(values.length<6)values.push(Math.floor(Math.random()*6));for(let y=5;y>=0;y--)board[y*6+x]=values[5-y]}
+ matches=gemMatches(board)
+ }while(matches.length>=3&&chain<30);
+ if(!gemPossible(board))game.gemBoard=gemBoard();
+ game.crystalPoints+=points;game.crystalHits++;game.gemBusy=false;
+ if(!game.gemMuted)crystalSound(600+Math.min(chain,5)*100);
+ paintCrystalBoard('✨ +'+points+' очков! Собрано '+cleared+' кристаллов'+(chain>1?' · цепочка ×'+chain:'')+'.');
+ if(game.crystalHits>=game.crystalTarget){game.crystalDone=true;const go=action('Продолжить: 3 задания со словами →',()=>{if(game){game.crystalPhase=false;renderQuestion()}},'btn good');go.classList.add('crystal-continue');$('play').querySelector('.crystal-arena').append(go);go.focus()}
+ return true
+}
+function paintCrystalBoard(message='Проведи кристалл к соседнему, чтобы собрать три или больше одинаковых в ряд. Можно также нажать на два соседних камня.'){
+ if(!game||!game.crystalPhase)return;
+ $('bar').style.width=(game.index/game.words.length*100)+'%';
+ $('counter').textContent='💎 '+game.crystalPoints+' очков · Задания: '+game.index+' / '+game.words.length;
+ $('play').innerHTML='<div class="crystal-arena"><h2>Кристальная экспедиция</h2><p class="crystal-instructions muted" id="gemMessage" role="status"></p><div class="crystal-score" id="crystalScore" aria-live="polite"></div><div class="crystal-board" id="crystalBoard" role="group" aria-label="Поле кристаллов 6 на 6"></div><div class="crystal-actions"><button class="btn secondary" id="crystalMute" type="button"></button><button class="btn secondary" id="crystalShuffle" type="button">↻ Новое поле</button></div></div>';
+ $('gemMessage').textContent=message;
+ $('crystalScore').innerHTML='<strong>'+game.crystalPoints+' очков</strong> · Ходы: '+game.crystalHits+' / '+game.crystalTarget+' · Собрано: '+game.crystals+'<div class="tiny">3 камня = 30 очков · 4 = 60 · 5 = 100 · цепочки дают множитель</div>';
+ $('crystalMute').textContent=game.gemMuted?'🔇 Звук: выкл.':'🔊 Звук: вкл.';
+ $('crystalMute').onclick=()=>{game.gemMuted=!game.gemMuted;$('crystalMute').textContent=game.gemMuted?'🔇 Звук: выкл.':'🔊 Звук: вкл.'};
+ $('crystalShuffle').onclick=()=>{if(game.gemBusy||game.crystalDone)return;game.gemBoard=gemBoard();game.gemSelected=null;paintCrystalBoard('Новое поле готово. Проведи кристалл к соседнему!')};
+ const board=$('crystalBoard');const labels=['сапфир','аметист','изумруд','рубин','топаз','танзанит'];
+ game.gemBoard.forEach((v,i)=>{const tile=document.createElement('button');tile.type='button';tile.className='crystal-tile'+(game.gemSelected===i?' selected':'');tile.dataset.gem=String(v);tile.innerHTML='<span class="jewel" aria-hidden="true"></span>';tile.setAttribute('aria-label','Кристалл '+(i+1)+', '+labels[v]);tile.setAttribute('aria-pressed',String(game.gemSelected===i));
+ tile.onclick=()=>gemClick(i);
+ let start=null;
+ tile.addEventListener('pointerdown',e=>{if(game.gemBusy||game.crystalDone)return;start={x:e.clientX,y:e.clientY};});
+ tile.addEventListener('pointerup',e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;if(Math.max(Math.abs(dx),Math.abs(dy))<16)return;let target=i+(Math.abs(dx)>Math.abs(dy)?(dx>0?1:-1):(dy>0?6:-6));if(target<0||target>=36||!gemNeighbors(i,target))return;e.preventDefault();tile.dataset.swiped='true';gemSwap(i,target)});
+ tile.addEventListener('click',e=>{if(tile.dataset.swiped==='true'){e.stopImmediatePropagation();tile.dataset.swiped='false'}},true);
+ board.append(tile)});
+}
+function gemClick(i){if(!game||!game.crystalPhase||game.gemBusy||game.crystalDone)return;const previous=game.gemSelected;
+ if(previous===null){game.gemSelected=i;paintCrystalBoard('Теперь выбери соседний кристалл или проведи его пальцем.');return}
+ if(previous===i){game.gemSelected=null;paintCrystalBoard();return}
+ if(!gemNeighbors(previous,i)){game.gemSelected=i;paintCrystalBoard('Выбери камень рядом с выделенным.');return}
+ gemSwap(previous,i)
+}
 function renderQuestion(){if(!game)return;if(game.index>=game.words.length){finish();return}game.answered=false;game.hinted=false;game.retryActive=game.retryIndexes.has(game.index);bar();let w=game.words[game.index],mode=game.mode;if(mode==='mixed'||mode==='boss'||mode==='crystals'){let types=game.types.filter(t=>!['quiz','truefalse'].includes(t)||game.words.length>1);if(mode==='boss'&&(game.retryActive||game.index===game.words.length-1||game.words.length<=3))mode=types.find(t=>['spell','audio','fix'].includes(t))||'spell';else mode=types[game.index%types.length]||'spell'}if(game.mode==='crystals'&&!game.retryActive)game.crystalRound++;let p=$('play');p.innerHTML='';let q=document.createElement('div');q.className='question';p.append(q);if(mode==='cards'){q.innerHTML='<p class="muted">Нажми на карточку, чтобы увидеть перевод</p>';let flash=document.createElement('div');flash.className='flash';flash.innerHTML=`<h2>${escapeHTML(w.en)}</h2>`;flash.setAttribute('role','button');flash.setAttribute('tabindex','0');flash.setAttribute('aria-label','Перевернуть карточку');flash.onclick=()=>{game.flipped=!game.flipped;flash.innerHTML=`<h2>${escapeHTML(game.flipped?w.ru:w.en)}</h2>`};flash.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flash.click()}};q.append(flash);let buttons=document.createElement('div');buttons.className='buttons';buttons.append(action('🔊 Слушать',()=>speak(w.en),'btn secondary'),action('Ещё учу',()=>{record(w,false,'self');game.index++;game.flipped=false;renderQuestion()},'btn warn'),action('Знаю',()=>{record(w,true,'self');game.index++;game.flipped=false;renderQuestion()},'btn good'));q.append(buttons);return}
 if(mode==='quiz'){q.innerHTML=`<p class="muted">Выбери правильный перевод</p><h2>${escapeHTML(w.en)}</h2>`;let distract=shuffle(game.words.filter(x=>x.id!==w.id&&normalize(x.ru)!==normalize(w.ru)&&normalize(x.en)!==normalize(w.en))).filter((x,i,a)=>a.findIndex(y=>y.ru===x.ru)===i).slice(0,3);if(!distract.length){q.innerHTML=`<p class="muted">Напиши английское слово по переводу</p><h2>${escapeHTML(w.ru)}</h2>`;textAnswer(q,w);return}let opts=shuffle([w,...distract]);let list=document.createElement('div');list.className='options';opts.forEach(x=>list.append(action(x.ru,()=>answerUI(w,x.id===w.id,`${w.en} — ${w.ru}`),'option')));q.append(list)}
 else if(mode==='truefalse'){let other=shuffle(game.words.filter(x=>x.id!==w.id&&normalize(x.ru)!==normalize(w.ru)&&normalize(x.en)!==normalize(w.en)))[0];if(!other){q.innerHTML=`<p class="muted">Напиши слово по переводу</p><h2>${escapeHTML(w.ru)}</h2>`;textAnswer(q,w);return}let trueAnswer=Math.random()>.5;let proposed=trueAnswer?w.ru:other.ru;q.innerHTML=`<p class="muted">Верно ли указан перевод?</p><h2>${escapeHTML(w.en)}</h2><p style="font-size:20px">${escapeHTML(proposed)}</p>`;q.append(action('✓ Верно',()=>answerUI(w,trueAnswer,`${w.en} — ${w.ru}`),'btn good'),' ',action('✕ Неверно',()=>answerUI(w,!trueAnswer,`${w.en} — ${w.ru}`),'btn warn'))}

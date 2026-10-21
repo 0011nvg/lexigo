@@ -57,7 +57,8 @@ async function main(){
  await insert('classes',[{id:ids.classA,organization_id:ids.org,teacher_user_id:teacher.id,grade:2,title:'2A'}]);
  await insert('enrollments',[{class_id:ids.classA,pupil_user_id:pupil.id}]);
  await insert('vocabulary_sections',[{id:'fixture-section',grade:2,module:'1',title:'Test',order_index:0}]);
- await insert('vocabulary_words',[{id:'fixture-word',section_id:'fixture-section',en:'hello',ru:'привет',order_index:0}]);
+ await insert('vocabulary_words',[{id:'fixture-word',section_id:'fixture-section',en:'hello',ru:'привет',order_index:0},
+ {id:'fixture-second',section_id:'fixture-section',en:'world',ru:'мир',order_index:1}]);
  let r=await edge('create-assignment',teacher.jwt,{classId:ids.classA,sectionId:'fixture-section',mode:'quiz',dueAt:'2030-01-01T00:00:00Z',audience:'individual',recipients:[pupil.id]});
  assert.equal(r.status,200,'Teacher assignment '+JSON.stringify(r));ids.assignment=r.data.id;
  // Direct PostgREST writes must fail even for a legitimate teacher.
@@ -88,7 +89,7 @@ async function main(){
  'Concurrent challenge issuance changed identity: '+JSON.stringify(questions));
  const question=questions[0].data;
  assert.equal(question.index,0);
- assert.equal(question.wordId,'fixture-word');
+ assert.ok(['fixture-word','fixture-second'].includes(question.wordId));
  assert.equal(question.mode,'quiz');
  const forged=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
  challengeId:question.challengeId,index:0,wordId:'fake-word',answer:'hello'});
@@ -99,8 +100,9 @@ async function main(){
  const injected=await edge('answer-question',pupil.jwt,{attemptId:ids.attempt,
  challengeId:question.challengeId,index:0,wordId:question.wordId,answer:'hello',correct:true});
  assert.equal(injected.status,400,'Client correctness injected');
+ const expectedTranslation=question.wordId==='fixture-word'?'привет':'мир';
  const response={attemptId:ids.attempt,challengeId:question.challengeId,index:0,
- wordId:question.wordId,answer:'hello'};
+ wordId:question.wordId,answer:expectedTranslation};
  const concurrent=await Promise.all(Array.from({length:5},()=>edge('answer-question',pupil.jwt,response)));
  assert.ok(concurrent.every(x=>x.status===200&&x.data.id===concurrent[0].data.id),
  'Concurrent challenge answers not idempotent: '+JSON.stringify(concurrent));
@@ -142,7 +144,10 @@ async function main(){
   assert.equal(challenge.status,200,'Issue '+mode+' '+JSON.stringify(challenge));
   assert.equal(challenge.data.mode,mode);
   const prompt=challenge.data.question;
-  const answer=mode==='truefalse'?'true':'hello';
+  const en=challenge.data.wordId==='fixture-word'?'hello':'world';
+  const ru=challenge.data.wordId==='fixture-word'?'привет':'мир';
+  const answer=mode==='truefalse'?String(prompt.proposed===ru):
+   prompt.responseType==='choice'?ru:en;
   const scored=await edge('answer-question',pupil.jwt,{attemptId:started.data.id,
    challengeId:challenge.data.challengeId,index:challenge.data.index,
    wordId:challenge.data.wordId,answer});

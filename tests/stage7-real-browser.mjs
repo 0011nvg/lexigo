@@ -18,8 +18,15 @@ try{
   await page.waitForFunction(()=>!document.querySelector('#cabinet').hidden || document.querySelector('#status').classList.contains('error'),null,{timeout:15000});
   if(await page.locator('#cabinet').isHidden())throw new Error('Login failed for '+who+': '+await page.locator('#status').innerText());
  };
+ // Invalid credentials must never reveal a cabinet.
+ await page.locator('#email').fill('stage5-teacher@example.invalid');
+ await page.locator('#password').fill('incorrect-password');
+ await page.locator('#form button[type=submit]').click();
+ await page.locator('#status.error').waitFor({state:'visible',timeout:15000});
+ assert.ok(await page.locator('#cabinet').isHidden(),'Invalid password opened cabinet');
  await login('teacher');
  await page.getByText('Мои классы').waitFor();
+ assert.equal(await page.getByText('Мои назначения').count(),0,'Teacher saw pupil-only cabinet');
  await page.getByText('Назначить задание').waitFor();
  const teacherForm=page.locator('#results form');
  await teacherForm.locator('select').nth(2).selectOption('quiz');
@@ -36,6 +43,7 @@ try{
  await page.locator('#login').waitFor({state:'visible'});
  await login('pupil');
  await page.getByText('Мои назначения').waitFor();
+ assert.equal(await page.getByText('Назначить задание').count(),0,'Pupil saw teacher assignment control');
  await page.getByText('Начать игру').waitFor();
  const gameButtons=page.getByRole('button',{name:'Играть',exact:true});
  assert.ok(await gameButtons.count()>0,'No server-assigned game for pupil');

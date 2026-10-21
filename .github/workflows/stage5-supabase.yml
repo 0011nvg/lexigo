@@ -4,6 +4,8 @@ on:
     paths:
       - 'supabase/**'
       - 'tests/stage5-supabase-e2e.mjs'
+      - 'tests/stage7-real-browser.mjs'
+      - 'stage7-local-cabinet.html'
       - '.github/workflows/stage5-supabase.yml'
   workflow_dispatch:
 permissions:
@@ -16,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.54.11
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

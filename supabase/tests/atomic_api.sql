@@ -86,10 +86,10 @@ begin
  if (v_q->>'index')::integer<>0 or v_q->>'wordId'<>'fixture-word' then
   raise exception 'Unexpected challenge'; end if;
  v_r:=lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
-  a,(v_q->>'challengeId')::uuid,0,'fixture-word','привет');
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','hello');
  if (v_r->>'correct')::boolean is not true then raise exception 'Server grade wrong'; end if;
  if (lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
-  a,(v_q->>'challengeId')::uuid,0,'fixture-word','привет')->>'id')<>v_r->>'id' then
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','hello')->>'id')<>v_r->>'id' then
   raise exception 'Idempotent answer changed'; end if;
  begin
   perform lexigo.answer_challenge('00000000-0000-4000-8000-000000000103',
@@ -103,7 +103,7 @@ begin
  exception when insufficient_privilege then null; end;
  begin
   perform lexigo.answer_challenge('00000000-0000-4000-8000-000000000104',
-  a,(v_q->>'challengeId')::uuid,0,'fixture-word','привет');
+  a,(v_q->>'challengeId')::uuid,0,'fixture-word','hello');
   raise exception 'Foreign pupil answered';
  exception when insufficient_privilege then null; end;
  perform lexigo.finish_attempt_atomic('00000000-0000-4000-8000-000000000103',a);

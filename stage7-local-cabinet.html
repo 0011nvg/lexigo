@@ -138,7 +138,7 @@ async function pupilControls(root,recipients){
  const assigned=await rows('assignments','select=id,section_id,mode');
  const allowed=new Set(recipients.map(r=>r.assignment_id));
  for(const assignment of assigned.filter(a=>allowed.has(a.id))){
-  const box=el('div');box.append(el('span',assignment.section_id+' · '+assignment.mode+' '));
+  const box=el('div');box.dataset.mode=assignment.mode;box.dataset.assignmentId=assignment.id;box.append(el('span',assignment.section_id+' · '+assignment.mode+' '));
   const button=el('button','Играть');box.append(button);root.append(box);
   button.onclick=async()=>{button.disabled=true;try{const result=await edge('start-attempt',{assignmentId:assignment.id,sessionId:uuid()});const attemptId=result.id;if(typeof attemptId!=='string')throw Error('Сервер не вернул ID попытки');await play(root,assignment,attemptId)}catch(err){say(err.message,true)}finally{button.disabled=false}};
  }

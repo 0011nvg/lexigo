@@ -22,6 +22,7 @@ try{
  await page.locator('#book').selectOption(eligibleLesson.grade);
  await page.locator('#module').selectOption(eligibleLesson.module);
  await page.locator('#unit').selectOption(eligibleLesson.index);
+ console.log('Lesson fixture',eligibleLesson,await page.evaluate(()=>({grade:book.grade,module:mod,unit,scope:scope.length,selected:selectedWords().length,unique:uniquePairs(selectedWords()).length,lesson:book.sections[Number(unit)]?.words.length})));
  await page.locator('[data-mode="pairs"]').click();
  await page.locator('#play .pair-grid button').first().waitFor();
  const pairs=await page.evaluate(()=>game.words.map(w=>({en:w.en,ru:w.ru})));

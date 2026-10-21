@@ -390,9 +390,28 @@ begin
  then raise exception 'out of order' using errcode='42501'; end if;
  insert into lexigo.attempt_events(attempt_id,word_id,event_index,event_type,correct,
  hinted,retry,verified_correct,verification_source,answer_digest)
- values(p_attempt,p_word,p_index,'answer',v_correct,false,false,v_correct,'server_evaluated',v_digest)
+ values(p_attempt,p_word,p_index,'answer',v_correct,(v_ch.hint_count>0),false,v_correct,'server_evaluated',v_digest)
  returning id into v_id;
  update lexigo.attempt_challenges set answered_at=now() where id=p_challenge;
  return pg_catalog.jsonb_build_object('id',v_id,'correct',v_correct);
+end $$;
+-- Generic hint route cannot bypass stateful mode hint accounting.
+create or replace function lexigo.request_challenge_hint(p_actor uuid,p_attempt uuid,p_challenge uuid)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare a lexigo.attempts%rowtype; c lexigo.attempt_challenges%rowtype;
+begin
+ select * into a from lexigo.attempts where id=p_attempt for update;
+ if not found or a.pupil_user_id<>p_actor or a.status<>'started'
+ or not lexigo.can_see_assignment(a.assignment_id,p_actor) then
+  raise exception 'not authorized' using errcode='42501'; end if;
+ select * into c from lexigo.attempt_challenges where id=p_challenge
+ and attempt_id=p_attempt for update;
+ if not found or c.mode in ('pairs','crystals','boss') or c.answered_at is not null
+ or c.expires_at<=now() or c.event_index<>(select coalesce(max(event_index),-1)+1
+ from lexigo.attempt_events where attempt_id=p_attempt) then
+  raise exception 'hint unavailable' using errcode='42501'; end if;
+ update lexigo.attempt_challenges set hint_count=1 where id=c.id;
+ return pg_catalog.jsonb_build_object('hinted',true,
+ 'hint','Compare the prompt carefully; check the meaning and spelling.');
 end $$;
 commit;

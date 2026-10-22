@@ -85,7 +85,7 @@ async function teacherControls(root,classes,assignments){
  const sections=await rows('vocabulary_sections','select=id,title,grade&order=order_index.asc');
  const sectionName=id=>sections.find(s=>s.id===id)?.title||id;
  const modeNames={quiz:'Выбери перевод',spell:'Напиши слово',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',pairs:'Найди пару',crystals:'Кристаллы',boss:'Финальный тест',cards:'Карточки',daily:'Тренировка дня'};
- function field(parent,label,node){const wrap=el('label',label);wrap.append(node);parent.append(wrap);return node}
+ function field(parent,label,node){const wrap=el('label',label);node.setAttribute('aria-label',label);wrap.append(node);parent.append(wrap);return node}
  function select(parent,label,options){const holder=el('span');const node=choice(holder,options);field(parent,label,node);return node}
  function input(parent,label,type,value=''){const node=el('input');node.type=type;node.value=value;return field(parent,label,node)}
  function button(parent,label,action){const b=el('button',label);b.type='button';parent.append(b);b.onclick=async()=>{b.disabled=true;try{await action()}catch(e){say(e.message,true)}finally{b.disabled=false}};return b}

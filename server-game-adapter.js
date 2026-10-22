@@ -5,7 +5,8 @@ window.LexigoServerGameAdapter=Object.freeze({create({rows,edge,say,load,uuid}){
 async function selfRating(root,assignment,attemptId){
  const words=await rows('vocabulary_words','select=id,en,ru&section_id=eq.'+encodeURIComponent(assignment.section_id)+'&order=order_index.asc');
  if(!words.length)throw Error('Нет слов для самооценки');
- let index=0;
+ const saved=await rows('attempt_events','select=event_index&attempt_id=eq.'+encodeURIComponent(attemptId)+'&order=event_index.asc');
+ let index=saved.length;
  function display(){
   root.replaceChildren();const w=words[index];if(!w){root.append(el('p','Все карточки пройдены'));return}
   root.append(el('p',(index+1)+' / '+words.length));
@@ -35,10 +36,10 @@ async function statefulRound(root,c,attemptId,mode){
  };
  if(mode==='pairs'){
   const tiles=Array.isArray(q.tiles)?q.tiles:[];if(!tiles.length)throw Error('Сервер не выдал пары');
-  LexigoGameEngine.pairs(root,{tiles,onPair:(first,second)=>action('pair',{first:first.id,second:second.id}),onSelect:()=>status.textContent='Выберите вторую карточку',onError:err=>say(err.message,true)});
+  LexigoGameEngine.pairs(root,{tiles,matchedIds:q.matched||[],onPair:(first,second)=>action('pair',{first:first.id,second:second.id}),onSelect:()=>status.textContent='Выберите вторую карточку',onError:err=>say(err.message,true)});
  }else if(mode==='crystals'){
   const board=Array.isArray(q.board)?q.board:[];if(board.length!==36)throw Error('Сервер не выдал поле');
-  let current=board.slice();const cells=[];let selected=null,moves=0,done=false,busy=false;
+  let current=board.slice();const cells=[];let selected=null,moves=Number(q.moves)||0,done=!!q.boardComplete,busy=false;
   const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:420px';
   root.append(grid);
   for(let i=0;i<36;i++){const b=LexigoGameEngine.render('crystals',grid,{value:current[i],index:i,onClick:()=>{},onSwap:async(from,to)=>{if(done||busy)return;selected=from;await cells[to].onclick()},busy:()=>done||busy,neighbors:(a,b)=>Math.abs(Math.floor(a/6)-Math.floor(b/6))+Math.abs(a%6-b%6)===1});b.style.margin='0';grid.append(b);cells.push(b);
@@ -50,9 +51,11 @@ async function statefulRound(root,c,attemptId,mode){
     }catch(err){say(err.message,true)}finally{busy=false}
    }})};
   }
+  if(done){cells.forEach(cell=>cell.disabled=true);showStage({prompt:q.prompt||'Переведите слово'});answerField()}
  }else if(mode==='boss'){
   showStage(q.question||{prompt:'Ответьте на вопрос босса'});
   const {field,button}=answerField();
+  if(q.retryRequired)status.textContent='Нажмите «Повторить этап», чтобы продолжить';
   const original=button.onclick;button.onclick=async()=>{const before=root.querySelectorAll('p').length;await original();if(root.querySelectorAll('p').length>before)field.focus()};
   const retry=el('button','Повторить этап');retry.onclick=async()=>{retry.disabled=true;try{await action('retry',{});retry.disabled=false}catch(err){say(err.message,true);retry.disabled=false}};
   root.append(retry);
@@ -60,7 +63,9 @@ async function statefulRound(root,c,attemptId,mode){
 }
 
 async function play(root,assignment,attemptId){
+ root.replaceChildren();
  const box=el('section');root.prepend(box);box.append(el('h3','Игра · '+assignment.mode));
+ const back=el('button','К моим заданиям');box.append(back);back.onclick=async()=>{back.disabled=true;try{await load()}catch(err){say(err.message,true);back.disabled=false}};
  const next=el('button','Следующий вопрос');box.append(next);
  const question=el('div');box.append(question);
  const finish=el('button','Завершить попытку');box.append(finish);

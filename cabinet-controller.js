@@ -65,9 +65,7 @@ const assignments=await rows('assignments','select=id,section_id,mode,class_id,d
 await teacherControls(root,classes,assignments);await renderLessonProgress(root,profile,classes);
 }else{
 const recipients=await rows('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+encodeURIComponent(userId));
-heading(root,'Мои назначения');showRows(root,recipients,['assignment_id']);await pupilControls(root,recipients);
-const attempts=await rows('attempts','select=id,assignment_id,status,started_at&pupil_user_id=eq.'+encodeURIComponent(userId));
-heading(root,'Мои попытки');showRows(root,attempts,['assignment_id','status','started_at']);await renderLessonProgress(root,profile);
+heading(root,'Мои назначения');await pupilControls(root,recipients);await renderLessonProgress(root,profile);
 }
 $('login').hidden=true;$('cabinet').hidden=false;say('Данные загружены с сервера; браузерное демо-хранилище не используется')}
 
@@ -155,17 +153,45 @@ async function teacherControls(root,classes,assignments){
  fc.onchange=fp.onchange=fs.onchange=render;render();
 }
 async function pupilControls(root,recipients){
+ const refresh=el('button','Обновить мои задания');refresh.onclick=async()=>{refresh.disabled=true;try{await load()}catch(err){say(err.message,true);refresh.disabled=false}};root.append(refresh);
  const join=el('form');join.id='joinClassForm';const label=el('label','Код приглашения в класс');const code=el('input');code.required=true;code.pattern='[0-9a-f]{64}';label.append(code);join.append(label);const submit=el('button','Вступить в класс');submit.type='submit';join.append(submit);join.onsubmit=async e=>{e.preventDefault();submit.disabled=true;try{await edge('redeem-invitation',{token:code.value.trim()});code.value='';await load();say('Вы вступили в класс')}catch(err){say(err.message,true)}finally{submit.disabled=false}};root.append(join);
  heading(root,'Начать игру');
- const assigned=await rows('assignments','select=id,section_id,mode,audience_type');
+ const assigned=await rows('assignments','select=id,section_id,mode,audience_type,class_id,due_at,revoked_at');
+ const attempts=await rows('attempts','select=id,assignment_id,status,started_at&pupil_user_id=eq.'+encodeURIComponent(userId)+'&order=started_at.desc');
+ const progress=await rows('lesson_attempt_progress','select=attempt_id,assignment_id,covered_words,total_words,lesson_completed,accuracy_pct,ranking_eligible');
+ const sections=await rows('vocabulary_sections','select=id,title,grade,module');
+ const classes=await rows('classes','select=id,title');
+ const names={quiz:'Выбери перевод',spell:'Напиши слово',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',pairs:'Найди пару',crystals:'Кристаллы',boss:'Финальный тест',cards:'Карточки',daily:'Тренировка дня'};
+ const title=a=>{const s=sections.find(s=>s.id===a.section_id);return (s?s.grade+' класс · '+s.title:a.section_id)+' · '+names[a.mode]};
  const individual=new Set(recipients.map(r=>r.assignment_id));
- const allowed=new Set(assigned.filter(a=>a.audience_type==='class'||individual.has(a.id)).map(a=>a.id));
+ const allowed=new Set(assigned.filter(a=>!a.revoked_at&&new Date(a.due_at)>new Date()&&(a.audience_type==='class'||individual.has(a.id))).map(a=>a.id));
 if(sharedAssignment&&!allowed.has(sharedAssignment)){const warning=el('p','Это задание не назначено вашей учётной записи или доступ отозван.');warning.className='error';warning.dataset.accessDenied='true';root.append(warning)}
 else if(sharedAssignment){const info=el('p','Задание по ссылке найдено. Нажмите «Играть», чтобы начать.');info.dataset.linkAccepted='true';root.append(info)}
- for(const assignment of assigned.filter(a=>allowed.has(a.id)&&(!sharedAssignment||a.id===sharedAssignment))){
-  const box=el('div');box.dataset.mode=assignment.mode;box.dataset.assignmentId=assignment.id;box.append(el('span',assignment.section_id+' · '+assignment.mode+' '));
-  const button=el('button','Играть');box.append(button);root.append(box);
-  button.onclick=async()=>{button.disabled=true;try{const result=await edge('start-attempt',{assignmentId:assignment.id,sessionId:uuid()});const attemptId=result.id;if(typeof attemptId!=='string')throw Error('Сервер не вернул ID попытки');await gameAdapter.play(root,assignment,attemptId)}catch(err){say(err.message,true)}finally{button.disabled=false}};
+ let onlyShared=!!sharedAssignment;
+ if(sharedAssignment){const all=el('button','Все мои задания');all.onclick=()=>{onlyShared=false;draw()};root.append(all)}
+ const filterLabel=el('label','Показать задания');const filter=choice(filterLabel,[['all','Все доступные'],['new','Ещё не начаты'],['started','В процессе'],['completed','Пройдены']]);filter.setAttribute('aria-label','Показать задания');root.append(filterLabel);
+ const list=el('div');list.dataset.pupilAssignments='true';root.append(list);
+ function draw(){list.replaceChildren();let count=0;
+ for(const assignment of assigned.filter(a=>allowed.has(a.id)&&(!onlyShared||a.id===sharedAssignment))){
+  const own=attempts.filter(t=>t.assignment_id===assignment.id),active=own.find(t=>t.status==='started');
+  const done=progress.some(p=>p.assignment_id===assignment.id&&p.lesson_completed);
+  const state=done?'completed':own.length?'started':'new';if(filter.value!=='all'&&filter.value!==state)continue;count++;
+  const box=el('div');box.className='lesson-progress';box.dataset.mode=assignment.mode;box.dataset.assignmentId=assignment.id;box.dataset.assignmentState=state;
+  box.append(el('h4',title(assignment)),el('p',(classes.find(c=>c.id===assignment.class_id)?.title||'Мой класс')+' · Выполнить до '+new Date(assignment.due_at).toLocaleString('ru-RU')),el('p',done?'✓ Урок пройден':own.length?'Урок ещё не завершён':'Можно начинать'));
+  const current=active&&progress.find(p=>p.attempt_id===active.id);if(current)box.append(el('p','В текущей попытке: '+current.covered_words+'/'+current.total_words+' слов'));
+  const open=async(button,id)=>{button.disabled=true;try{if(id){const latest=await rows('attempts','select=id,status&id=eq.'+encodeURIComponent(id));if(latest[0]?.status!=='started')throw Error('Попытка уже завершена. Обновите список заданий.')}else{id=(await edge('start-attempt',{assignmentId:assignment.id,sessionId:uuid()})).id}if(typeof id!=='string')throw Error('Сервер не вернул ID попытки');await gameAdapter.play(root,assignment,id)}catch(err){say(err.message,true)}finally{button.disabled=false}};
+  if(active){const resume=el('button','Продолжить');resume.onclick=()=>open(resume,active.id);box.append(resume)}
+  const button=el('button','Играть');button.onclick=()=>open(button,null);box.append(button);
+  if(own.length)box.append(el('p','«Играть» начинает новую попытку. «Продолжить» возвращает к сохранённой. Если срок игрового вопроса истёк, начните новую попытку.'));
+  list.append(box);
+ }if(!count)list.append(el('p',filter.value==='all'?'Доступных заданий пока нет. Получите назначение от учителя или введите код приглашения.':'В этой категории пока нет заданий.'))}
+ filter.onchange=draw;draw();
+ heading(root,'Мои попытки');
+ if(!attempts.length)root.append(el('p','Здесь появятся ваши сохранённые результаты.'));
+ for(const t of attempts){const a=assigned.find(a=>a.id===t.assignment_id);if(!a)continue;const p=progress.find(p=>p.attempt_id===t.id);const row=el('div');row.className='lesson-progress';row.dataset.pupilAttempt=t.id;
+  row.append(el('h4',title(a)),el('p',new Date(t.started_at).toLocaleString('ru-RU')+' · '+(t.status==='finished'?'Попытка завершена':'Попытка не завершена')+(allowed.has(a.id)?'':a.revoked_at?' · Задание отозвано':' · Срок задания истёк')));
+  if(p)row.append(el('p',(p.lesson_completed?'✓ Урок пройден':'Урок не завершён')+' · '+p.covered_words+'/'+p.total_words+' слов · '+(p.accuracy_pct==null?'Самооценка — без оценки точности':'Точность '+p.accuracy_pct+'%')+' · '+(p.ranking_eligible?'Результат участвует в рейтинге':'Для рейтинга нужно пройти полный урок')));
+  const button=el('button','Мои ответы');const detail=el('div');button.onclick=async()=>{button.disabled=true;try{const events=await rows('attempt_events','select=word_id,event_type,verified_correct,self_rating,hinted,retry&attempt_id=eq.'+encodeURIComponent(t.id)+'&order=event_index.asc');const words=await rows('vocabulary_words','select=id,en,ru&section_id=eq.'+encodeURIComponent(a.section_id));detail.replaceChildren();if(!events.length)detail.append(el('p','Завершённых ответов пока нет'));for(const e of events){const w=words.find(w=>w.id===e.word_id);detail.append(el('p',(w?w.en+' — '+w.ru:'Слово')+' · '+(e.event_type==='card_self_rating'?'Самооценка: '+(e.self_rating==='known'?'знаю':'повторить'):e.verified_correct===true?'Верно':e.verified_correct===false?'Стоит повторить':'Не проверено')+(e.hinted?' · с подсказкой':'')+(e.retry?' · повторная попытка':'')))}}catch(err){say(err.message,true)}finally{button.disabled=false}};row.append(button,detail);root.append(row);
  }
 }
 

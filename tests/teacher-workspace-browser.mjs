@@ -63,11 +63,18 @@ try{
  assert.equal((await api('/rest/v1/rpc/save_class',teacher.access_token,{p_actor:teacher.user.id,p_class:null,p_title:'Bypass',p_grade:2})).status,403);
  assert.equal((await api('/functions/v1/learning-api/save-class',teacher.access_token,{actorId:teacher.user.id,title:'Spoof',grade:2})).status,400);
  const hidden=await api('/rest/v1/attempt_events?select=id&attempt_id=eq.'+attempt.id,other.data.access_token);assert.equal(hidden.status,200);assert.deepEqual(hidden.data,[]);
+ const expired=await api('/rest/v1/assignments?id=eq.'+assignment.id,service,{due_at:new Date(Date.now()-60000).toISOString()},'PATCH',service);assert.equal(expired.status,200);
+ await p.goto(link);await login(p,'newpupil');await p.locator('[data-access-denied]').waitFor();
+ await p.locator('[data-pupil-attempt="'+attempt.id+'"]').getByText(/Срок задания истёк/).waitFor();
+ assert.equal(await p.getByRole('button',{name:'Играть',exact:true}).count(),0);
+ assert.equal((await api('/functions/v1/learning-api/start-attempt',pupil.access_token,{assignmentId:assignment.id,sessionId:crypto.randomUUID()})).status,403);
+ const restored=await api('/rest/v1/assignments?id=eq.'+assignment.id,service,{due_at:'2030-01-01T00:00:00Z'},'PATCH',service);assert.equal(restored.status,200);
  t.on('dialog',d=>d.accept());
  await action(t,'revoke-assignment',()=>t.locator('[data-teacher-assignment="'+assignment.id+'"]').getByRole('button',{name:'Отозвать задание'}).click());await t.getByText('Задание отозвано',{exact:true}).waitFor();
  const history=t.locator('[data-attempt-id="'+attempt.id+'"]');await history.waitFor();await history.getByRole('button',{name:'Посмотреть ответы'}).click();await history.getByText(/hello — привет · Ошибка|world — мир · Ошибка/).waitFor();
  assert.equal((await api('/functions/v1/learning-api/start-attempt',pupil.access_token,{assignmentId:assignment.id,sessionId:crypto.randomUUID()})).status,403);
  await p.goto(link);await login(p,'newpupil');await p.locator('[data-access-denied]').waitFor();assert.equal(await p.getByRole('button',{name:'Играть',exact:true}).count(),0);
+ const ownHistory=p.locator('[data-pupil-attempt="'+attempt.id+'"]');await ownHistory.getByText(/Задание отозвано/).waitFor();await ownHistory.getByRole('button',{name:'Мои ответы'}).click();await ownHistory.getByText(/hello — привет · Стоит повторить|world — мир · Стоит повторить/).waitFor();
  card=t.locator('[data-class-id="'+created.id+'"]');await card.locator('summary').click();await action(t,'revoke-enrollment',()=>card.getByRole('button',{name:'Отозвать доступ'}).click());await t.getByText('Доступ к классу отозван',{exact:true}).waitFor();
  const enrollment=await api('/rest/v1/enrollments?select=status&class_id=eq.'+created.id,pupil.access_token);assert.ok(!enrollment.data.some(e=>e.status==='active'));
  await t.locator('#logout').click();await t.locator('#login').waitFor({state:'visible'});assert.equal(await t.locator('#results').innerText(),'');

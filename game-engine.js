@@ -23,8 +23,8 @@ window.LexigoGameEngine=(()=>{
   if(model.autoplay&&actions.speak)actions.speak();
   return entry;
  }
- function pairs(root,{tiles,onPair,onSelect=()=>{},onError=()=>{},highlight=true}){
-  let first=null,busy=false,disposed=false;const matched=new Set(),buttons=new Map();
+ function pairs(root,{tiles,onPair,onSelect=()=>{},onError=()=>{},highlight=true,matchedIds=[]}){
+  let first=null,busy=false,disposed=false;const matched=new Set(matchedIds),buttons=new Map();
   const apply=(a,b,result)=>{
    if(disposed)return;
    if(result.correct){matched.add(a.id);matched.add(b.id);for(const id of [a.id,b.id]){buttons.get(id).disabled=true;if(highlight)buttons.get(id).classList.add('matched')}}
@@ -40,7 +40,7 @@ window.LexigoGameEngine=(()=>{
    busy=true;
    try{const result=onPair(previous,tile);if(result?.then)result.then(value=>apply(previous,tile,value)).catch(error=>{busy=false;if(!disposed)onError(error)});else apply(previous,tile,result)}catch(error){busy=false;onError(error)}
   };
-  for(const tile of tiles){const button=C.render('pairs',root,{text:tile.text,label:tile.label,onClick:()=>choose(tile)});buttons.set(tile.id,button);root.append(button)}
+  for(const tile of tiles){const button=C.render('pairs',root,{text:tile.text,label:tile.label,onClick:()=>choose(tile)});if(matched.has(tile.id)){button.disabled=true;if(highlight)button.classList.add('matched')}buttons.set(tile.id,button);root.append(button)}
   return {dispose(){disposed=true;first=null},buttons};
  }
  function crystalSelection({selected,index,neighbors,onSelect,onSwap}){

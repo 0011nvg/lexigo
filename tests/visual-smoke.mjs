@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';

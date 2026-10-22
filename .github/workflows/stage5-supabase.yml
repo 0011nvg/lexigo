@@ -7,6 +7,11 @@ on:
       - 'tests/stage7-real-browser.mjs'
       - 'tests/integration-print.mjs'
       - 'index.html'
+      - '*-controller.js'
+      - '*-storage.js'
+      - 'game-components.js'
+      - 'tests/browser-runtime.mjs'
+      - 'tests/shared-modes-browser.mjs'
       - 'stage7-local-cabinet.html'
       - '.github/workflows/stage5-supabase.yml'
   workflow_dispatch:
@@ -69,6 +74,7 @@ jobs:
           export SUPABASE_ANON_KEY="$ANON_KEY"
           set +a
           node tests/stage7-real-browser.mjs
+          node tests/shared-modes-browser.mjs
       - name: Verify real A4 PDFs for 5, 10, 20, 25, and 30 questions
         run: node tests/integration-print.mjs
       - name: Edge diagnostics on failure

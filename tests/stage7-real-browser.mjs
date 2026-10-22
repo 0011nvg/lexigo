@@ -1,7 +1,7 @@
 // Real browser -> local Supabase Auth -> PostgREST smoke against synthetic E2E fixtures.
 // Run only after stage5-supabase-e2e.mjs has provisioned local synthetic accounts.
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage();
 const failures=[];

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const html=readFileSync(new URL('../stage7-local-cabinet.html',import.meta.url),'utf8');
+const html=['stage7-local-cabinet.html','cabinet-controller.js','server-storage.js'].map(path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')).join('\n');
 const edge=readFileSync(new URL('../supabase/functions/learning-api/index.ts',import.meta.url),'utf8');
 for(const [name,pattern] of Object.entries({
 'localhost boundary':/location\.hostname/,

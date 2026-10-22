@@ -1,4 +1,4 @@
-import {chromium} from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 import {PDFDocument} from 'pdf-lib';
 import assert from 'node:assert/strict';
 const browser=await chromium.launch({headless:true});

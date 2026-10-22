@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const store=new Map();const local={window:{},localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)}};
+vm.runInNewContext(fs.readFileSync('local-storage.js','utf8'),local);
+const adapter=local.window.LexigoLocalStorage;
+for(const malformed of ['null','[]','3','"text"','{bad']){store.set('lexigo_progress_v1',malformed);assert.equal(Object.keys(adapter.read('lexigo_progress_v1')).length,0)}
+store.set('lexigo_progress_v1','{"__proto__":{"right":999},"w":{"right":2,"wrong":1}}');
+assert.equal(adapter.read('lexigo_progress_v1').w.right,2);assert.equal(Object.hasOwn(adapter.read('lexigo_progress_v1'),'__proto__'),false);
+adapter.write('lexigo_cabinet_attempts_v1',[{id:'demo',verified:true}]);assert.equal(adapter.read('lexigo_cabinet_attempts_v1')[0].verified,false);
+assert.throws(()=>adapter.write('access_token','secret'));
+let calls=[];let respond;
+const server={window:{},URL,AbortController,atob,fetch:(url,options)=>{calls.push({url,options});return new Promise(resolve=>respond=resolve)}};
+vm.runInNewContext(fs.readFileSync('server-storage.js','utf8'),server);
+const remote=server.window.LexigoServerStorage.create();
+const key=role=>'e30.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.sig';
+for(const address of ['https://example.com','http://localhost.evil.test','http://user:pass@localhost','http://localhost/?token=x','http://localhost/path'])assert.throws(()=>remote.configure(address,key('anon')));
+assert.throws(()=>remote.configure('http://localhost:54321',key('service_role')));
+remote.configure('http://localhost:54321',key('anon'));remote.acceptSession({access_token:'ephemeral',user:{id:'pupil'}});
+const pending=remote.request('/rest/v1/profiles?select=role');
+assert.equal(calls[0].options.headers.authorization,'Bearer ephemeral');assert.equal(calls[0].options.redirect,'error');
+remote.clear();respond({ok:true,json:async()=>[{role:'teacher'}]});await assert.rejects(pending,/Сессия изменилась/);assert.equal(remote.authenticated,false);
+await assert.rejects(remote.request('//evil.test'),/маршрут/);
+assert.equal(calls.length,1);
+console.log('PASS: malformed local data, unverified local scores, origin/key restrictions, stale-response rejection and session clearing');

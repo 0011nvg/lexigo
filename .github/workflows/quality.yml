@@ -14,6 +14,7 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/verify.mjs
+      - run: node tests/storage-adapters.mjs
       - run: node tests/stage5-security.mjs
 
       - run: node tests/stage5-jwt.mjs

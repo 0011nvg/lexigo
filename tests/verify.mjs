@@ -33,3 +33,5 @@ for(const id of ['book','module','unit','words','quickStart','game','launcher','
  assert.ok(html.includes(`id="${id}"`),`Missing UI element ${id}`);
 }
 console.log('PASS: 1035 original entries, grades, unique IDs, mirrored data, JavaScript syntax and key UI controls');
+
+for(const file of ['game-components.js','practice-controller.js','local-storage.js','server-storage.js','cabinet-controller.js']) new vm.Script(fs.readFileSync(file,'utf8'),{filename:file});

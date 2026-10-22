@@ -98,7 +98,8 @@ try{
   const round=page.locator('#results section').first();
   if(mode==='pairs'){
    const buttons=round.locator('div > button');
-   assert.ok(await buttons.count()>=2,'No server-issued pair tiles');
+   await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length>=2 || document.querySelector('#status')?.classList.contains('error'),null,{timeout:15000});
+   assert.ok(await buttons.count()>=2,'No server-issued pair tiles; status: '+await page.locator('#status').innerText());
    await buttons.nth(0).click();
    await buttons.nth(1).click();
    await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});

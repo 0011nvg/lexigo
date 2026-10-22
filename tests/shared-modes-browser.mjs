@@ -60,7 +60,7 @@ try{
     }else if(mode==='boss'){
      let q=c.question.question;let result;
      for(let stage=0;stage<3;stage++){
-      const answer=stage===0?ru(c.wordId):stage===1?en(c.wordId):String(q.proposed===ru(c.wordId));
+      const answer=stage===0?ru(c.wordId):stage===1?(q.prompt==='привет'?'hello':'world'):String(q.proposed===ru(c.wordId));
       if(stage===2)await round.getByText('Вариант: '+q.proposed,{exact:true}).waitFor();
       await round.getByPlaceholder('Введите ответ').fill(answer);
       result=await response('/play-round',()=>round.getByRole('button',{name:'Ответить',exact:true}).click());assert.equal(result.correct,true);q=result.nextQuestion;

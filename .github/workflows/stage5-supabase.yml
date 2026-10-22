@@ -38,6 +38,14 @@ jobs:
         run: |
           supabase functions serve learning-api --no-verify-jwt > /tmp/lexigo-edge.log 2>&1 &
           echo $! > /tmp/lexigo-edge.pid
+      - name: Wait for Edge Function to become ready
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:54321/functions/v1/learning-api/create-assignment -H 'content-type: application/json' -d '{}' || true)
+            if [ "$code" = "401" ]; then echo 'Edge ready'; exit 0; fi
+            sleep 2
+          done
+          echo 'Edge failed to start'; tail -100 /tmp/lexigo-edge.log; exit 1
       - name: Exercise Auth-issued JWT and Edge HTTP requests
         run: |
           supabase status -o env > /tmp/lexigo-local-env

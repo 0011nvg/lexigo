@@ -9,25 +9,26 @@ page.on('pageerror',e=>failures.push(e.message));
 try{
  await page.goto('http://127.0.0.1:3000/index.html');
  await page.getByRole('button',{name:'Серверные игры'}).click();
- await page.waitForURL('**/stage7-local-cabinet.html',{timeout:15000});
- await page.getByText('Вход через Supabase Auth').waitFor({timeout:15000});
+ await page.locator('#serverWorkspace').waitFor({state:'visible',timeout:15000});
+ await page.locator('#serverWorkspace').getByText('Вход через Supabase Auth').waitFor({timeout:15000});
+ assert.ok(page.url().endsWith('/index.html'),'Server games must stay in main LEXIGO page');
  assert.equal(await page.locator('iframe').count(),0,'Server games must not be embedded in an iframe');
- await page.locator('#url').fill('http://127.0.0.1:54321');
- await page.locator('#key').fill(process.env.SUPABASE_ANON_KEY||'');
+ await page.locator('#serverWorkspace').locator('#url').fill('http://127.0.0.1:54321');
+ await page.locator('#serverWorkspace').locator('#key').fill(process.env.SUPABASE_ANON_KEY||'');
  assert.ok(process.env.SUPABASE_ANON_KEY,'local anon key missing');
  const login=async who=>{
-  await page.locator('#email').fill('stage5-'+who+'@example.invalid');
-  await page.locator('#password').fill('SyntheticTestPassword#2026');
+  await page.locator('#serverWorkspace').locator('#email').fill('stage5-'+who+'@example.invalid');
+  await page.locator('#serverWorkspace').locator('#password').fill('SyntheticTestPassword#2026');
   await page.locator('#form button[type=submit]').click();
   await page.waitForFunction(()=>!document.querySelector('#cabinet').hidden || document.querySelector('#status').classList.contains('error'),null,{timeout:15000});
-  if(await page.locator('#cabinet').isHidden())throw new Error('Login failed for '+who+': '+await page.locator('#status').innerText());
+  if(await page.locator('#serverWorkspace').locator('#cabinet').isHidden())throw new Error('Login failed for '+who+': '+await page.locator('#serverWorkspace').locator('#status').innerText());
  };
  // Invalid credentials must never reveal a cabinet.
- await page.locator('#email').fill('stage5-teacher@example.invalid');
- await page.locator('#password').fill('incorrect-password');
+ await page.locator('#serverWorkspace').locator('#email').fill('stage5-teacher@example.invalid');
+ await page.locator('#serverWorkspace').locator('#password').fill('incorrect-password');
  await page.locator('#form button[type=submit]').click();
  await page.locator('#status.error').waitFor({state:'visible',timeout:15000});
- assert.ok(await page.locator('#cabinet').isHidden(),'Invalid password opened cabinet');
+ assert.ok(await page.locator('#serverWorkspace').locator('#cabinet').isHidden(),'Invalid password opened cabinet');
  await login('teacher');
  await page.getByText('Мои классы').waitFor();
  assert.equal(await page.getByText('Мои назначения').count(),0,'Teacher saw pupil-only cabinet');
@@ -77,7 +78,7 @@ try{
  await pupilPage.getByRole('button',{name:'Завершить попытку'}).click();
  await pupilPage.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  await pupilContext.close();
- await page.locator('#logout').click();
+ await page.locator('#serverWorkspace').locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});
  await login('pupil');
  await page.getByText('Мои назначения').waitFor();
@@ -109,14 +110,14 @@ try{
   }else if(mode==='pairs'){
    const buttons=round.locator('div > button');
    await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length>=2 || document.querySelector('#status')?.classList.contains('error'),null,{timeout:15000});
-   assert.ok(await buttons.count()>=2,'No server-issued pair tiles; status: '+await page.locator('#status').innerText());
+   assert.ok(await buttons.count()>=2,'No server-issued pair tiles; status: '+await page.locator('#serverWorkspace').locator('#status').innerText());
    await buttons.nth(0).click();
    await buttons.nth(1).click();
    await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
   }else if(mode==='crystals'){
    const buttons=round.locator('div > button');
    await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length===36 || document.querySelector('#status').classList.contains('error'),null,{timeout:15000});
-   assert.equal(await buttons.count(),36,'Expected 36 server-issued crystal cells; status: '+await page.locator('#status').innerText());
+   assert.equal(await buttons.count(),36,'Expected 36 server-issued crystal cells; status: '+await page.locator('#serverWorkspace').locator('#status').innerText());
    await buttons.nth(0).click();
    await buttons.nth(1).click();
    await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
@@ -132,14 +133,14 @@ try{
   await page.locator('#results section').first().getByRole('button',{name:'Завершить попытку'}).click();
   await page.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  }
- await page.locator('#logout').click();
+ await page.locator('#serverWorkspace').locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});
  await login('teacher');
  await page.getByText('Результаты моих учеников').waitFor();
- const resultText=await page.locator('#results').innerText();
+ const resultText=await page.locator('#serverWorkspace').locator('#results').innerText();
  assert.match(resultText,/fixture-section/,'Teacher assignment not present');
  assert.match(resultText,/completed|in_progress|finished|submitted|active/i,'Teacher cannot see saved attempt');
- await page.locator('#logout').click();
+ await page.locator('#serverWorkspace').locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});
  assert.equal(failures.length,0,'browser JS errors: '+failures.join('; '));
  console.log('Real browser login/logout, teacher and pupil RLS-backed cabinet reads passed');

@@ -74,7 +74,7 @@ try{
  await pupilPage.getByRole('heading',{name:'Игра · quiz'}).waitFor({timeout:15000});
  await pupilPage.getByPlaceholder('Ответ').fill('wrong');
  await pupilPage.getByRole('button',{name:'Проверить ответ'}).click();
- await pupilPage.getByText('Неверно').waitFor({timeout:15000});
+ await pupilPage.getByText('Неверно',{exact:true}).waitFor({timeout:15000});
  await pupilPage.getByRole('button',{name:'Завершить попытку'}).click();
  await pupilPage.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  await pupilContext.close();
@@ -92,7 +92,7 @@ try{
  await page.getByRole('heading',{name:'Игра · quiz'}).waitFor({timeout:15000});
  await page.getByPlaceholder('Ответ').fill('wrong');
  await page.getByRole('button',{name:'Проверить ответ'}).click();
- await page.getByText('Неверно').waitFor({timeout:15000});
+ await page.getByText('Неверно',{exact:true}).waitFor({timeout:15000});
  await page.getByRole('button',{name:'Завершить попытку'}).click();
  await page.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  await page.getByText('Мои попытки').waitFor();
@@ -106,7 +106,7 @@ try{
    await field.waitFor({state:'visible',timeout:15000});
    await field.fill('wrong');
    await round.getByRole('button',{name:'Проверить ответ'}).click();
-   await round.getByText('Неверно').waitFor({timeout:15000});
+   await round.getByText('Неверно',{exact:true}).waitFor({timeout:15000});
   }else if(mode==='pairs'){
    const buttons=round.locator('div > button');
    await page.waitForFunction(()=>document.querySelector('#serverWorkspace').shadowRoot.querySelectorAll('#results section div > button').length>=2 || document.querySelector('#serverWorkspace').shadowRoot.querySelector('#status')?.classList.contains('error'),null,{timeout:15000});

@@ -75,74 +75,9 @@ $('login').hidden=true;$('cabinet').hidden=false;say('Данные загруж�
 
 
 
-async function selfRating(root,assignment,attemptId){
- const words=await rows('vocabulary_words','select=id,en,ru&section_id=eq.'+encodeURIComponent(assignment.section_id)+'&order=order_index.asc');
- if(!words.length)throw Error('Нет слов для самооценки');
- let index=0;
- function display(){
-  root.replaceChildren();const w=words[index];if(!w){root.append(el('p','Все карточки пройдены'));return}
-  root.append(el('p',(index+1)+' / '+words.length));
-  LexigoGameComponents.render(assignment.mode,root,{front:w.en,back:w.ru,legacy:true,onKnown:(a,b)=>rate('known',a,b),onUnknown:(a,b)=>rate('unknown',a,b)});
- }
- async function rate(rating,known,unknown){known.disabled=unknown.disabled=true;try{const w=words[index];await edge('append-event',{attemptId,wordId:w.id,index,kind:'card_self_rating',hinted:false,retry:false,rating});index++;display();say('Самооценка сохранена сервером — это не проверенный игровой балл')}catch(err){say(err.message,true)}finally{known.disabled=unknown.disabled=false}}
- display();
-}
-
-async function statefulRound(root,c,attemptId,mode){
- const q=c.question||{};
- const status=el('p','Все ходы и ответы проверяются сервером');root.append(status);
- const action=async(kind,payload)=>{
-  const data=await edge('play-round',{attemptId,challengeId:c.challengeId,requestId:uuid(),action:kind,payload});
-  status.textContent=data.complete?'Раунд завершён':data.correct===true?'Верно':data.correct===false?'Пока не получилось':'Ход сохранён';
-  if(data.complete){root.append(el('p','Раунд сохранён сервером. Выберите следующий вопрос.'))}
-  return data;
- };
- const stage=el('div');root.append(stage);
- const showStage=question=>{stage.replaceChildren();stage.append(el('p',String(question.prompt||'')));if(question.proposed!=null)stage.append(el('p','Вариант: '+String(question.proposed)))};
- const answerField=()=>{
-  const {input:field,send:button}=LexigoGameComponents.render(mode==='boss'?'boss':'spell',root,{placeholder:'Введите ответ',label:'Ответить',submit:async(field,button)=>{
-   button.disabled=true;try{const result=await action('answer',{answer:field.value});if(result.nextQuestion){field.value='';showStage(result.nextQuestion);button.disabled=false}
-   else if(result.complete){button.remove();field.disabled=true}else button.disabled=false;
-   }catch(err){say(err.message,true);button.disabled=false}
-  }});return {field,button};
- };
- if(mode==='pairs'){
-  const tiles=Array.isArray(q.tiles)?q.tiles:[];if(!tiles.length)throw Error('Сервер не выдал пары');
-  let first=null,busy=false;const matched=new Set();const buttons=[];
-  for(const tile of tiles){const b=LexigoGameComponents.render('pairs',root,{text:tile.text,onClick:()=>{}});root.append(b);buttons.push([tile,b]);b.onclick=async()=>{
-   if(busy||matched.has(tile.id))return;
-   if(!first){first=tile;status.textContent='Выберите вторую карточку';return}
-   const selected=first;first=null;if(selected.id===tile.id)return;
-   busy=true;b.disabled=true;try{const result=await action('pair',{first:selected.id,second:tile.id});
-    if(result.correct){matched.add(selected.id);matched.add(tile.id);for(const [t,btn] of buttons)if(matched.has(t.id))btn.disabled=true}
-    if(result.complete)for(const [,btn] of buttons)btn.disabled=true;
-   }catch(err){say(err.message,true)}finally{busy=false;if(!matched.has(tile.id))b.disabled=false}
-  }}
- }else if(mode==='crystals'){
-  const board=Array.isArray(q.board)?q.board:[];if(board.length!==36)throw Error('Сервер не выдал поле');
-  let current=board.slice();const cells=[];let selected=null,moves=0,done=false,busy=false;
-  const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:420px';
-  root.append(grid);
-  for(let i=0;i<36;i++){const b=LexigoGameComponents.render('crystals',grid,{value:current[i],index:i,onClick:()=>{},onSwap:async(from,to)=>{if(done||busy)return;selected=from;await cells[to].onclick()},busy:()=>done||busy,neighbors:(a,b)=>Math.abs(Math.floor(a/6)-Math.floor(b/6))+Math.abs(a%6-b%6)===1});b.style.margin='0';grid.append(b);cells.push(b);
-   b.onclick=async()=>{if(done||busy)return;if(selected==null){selected=i;status.textContent='Выберите соседний кристалл';return}
-    const from=selected;selected=null;busy=true;try{const result=await action('swap',{from,to:i});
-     if(Array.isArray(result.board)&&result.board.length===36){current=result.board;cells.forEach((cell,j)=>cell.textContent=String(current[j]))}
-     if(result.moves!=null)moves=Number(result.moves);else if(result.correct)moves++;
-     if(result.boardComplete){done=true;cells.forEach(cell=>cell.disabled=true);root.append(el('p',String(result.vocabQuestion?.prompt||q.prompt||'Переведите слово')));answerField()}
-    }catch(err){say(err.message,true)}finally{busy=false}
-   };
-  }
- }else if(mode==='boss'){
-  showStage(q.question||{prompt:'Ответьте на вопрос босса'});
-  const {field,button}=answerField();
-  const original=button.onclick;button.onclick=async()=>{const before=root.querySelectorAll('p').length;await original();if(root.querySelectorAll('p').length>before)field.focus()};
-  const retry=el('button','Повторить этап');retry.onclick=async()=>{retry.disabled=true;try{await action('retry',{});retry.disabled=false}catch(err){say(err.message,true);retry.disabled=false}};
-  root.append(retry);
- }
-}
-
 const uuid=()=>crypto.randomUUID();
 async function edge(route,payload){if(!transport.authenticated)throw Error('Войдите снова');return request('/functions/v1/learning-api/'+route,{method:'POST',body:JSON.stringify(payload)})}
+const gameAdapter=LexigoServerGameAdapter.create({rows,edge,say,load,uuid});
 function el(tag,text){const n=document.createElement(tag);if(text!=null)n.textContent=text;return n}
 function choice(parent,options){const select=el('select');for(const [value,label] of options){const o=el('option',label);o.value=value;select.append(o)}parent.append(select);return select}
 async function teacherControls(root,classes,assignments){
@@ -172,32 +107,8 @@ else if(sharedAssignment){const info=el('p','Задание по ссылке н
  for(const assignment of assigned.filter(a=>allowed.has(a.id)&&(!sharedAssignment||a.id===sharedAssignment))){
   const box=el('div');box.dataset.mode=assignment.mode;box.dataset.assignmentId=assignment.id;box.append(el('span',assignment.section_id+' · '+assignment.mode+' '));
   const button=el('button','Играть');box.append(button);root.append(box);
-  button.onclick=async()=>{button.disabled=true;try{const result=await edge('start-attempt',{assignmentId:assignment.id,sessionId:uuid()});const attemptId=result.id;if(typeof attemptId!=='string')throw Error('Сервер не вернул ID попытки');await play(root,assignment,attemptId)}catch(err){say(err.message,true)}finally{button.disabled=false}};
+  button.onclick=async()=>{button.disabled=true;try{const result=await edge('start-attempt',{assignmentId:assignment.id,sessionId:uuid()});const attemptId=result.id;if(typeof attemptId!=='string')throw Error('Сервер не вернул ID попытки');await gameAdapter.play(root,assignment,attemptId)}catch(err){say(err.message,true)}finally{button.disabled=false}};
  }
-}
-async function play(root,assignment,attemptId){
- const box=el('section');root.prepend(box);box.append(el('h3','Игра · '+assignment.mode));
- const next=el('button','Следующий вопрос');box.append(next);
- const question=el('div');box.append(question);
- const finish=el('button','Завершить попытку');box.append(finish);
- finish.onclick=async()=>{try{await edge('finish-attempt',{attemptId});await load();say('Попытка завершена на сервере')}catch(err){say(err.message,true)}};
- next.onclick=async()=>{next.disabled=true;question.replaceChildren();try{
-  if(['cards','daily'].includes(assignment.mode)){await selfRating(question,assignment,attemptId);return}
-  const c=await edge('next-question',{attemptId});
-  if(['pairs','crystals','boss'].includes(assignment.mode)){
-   await statefulRound(question,c,attemptId,assignment.mode);return;
-  }
-  question.append(el('p',String(c.question?.prompt??'Вопрос')));
-  if(c.question?.proposed!=null)question.append(el('p','Вариант: '+String(c.question.proposed)));
-  const {input:answer}=LexigoGameComponents.render(['quiz','truefalse'].includes(assignment.mode)?'spell':assignment.mode,question,{placeholder:'Ответ',label:'Проверить ответ',submit:async(answer,send)=>{
-   send.disabled=true;try{const result=await edge('answer-question',{attemptId,challengeId:c.challengeId,index:c.index,wordId:c.wordId,answer:answer.value});question.append(el('p',result.correct?'Верно':'Неверно'));if(result.complete!==false){send.remove();answer.disabled=true}else send.disabled=false}catch(err){say(err.message,true);send.disabled=false}
-  }});
-  if(assignment.mode==='truefalse')LexigoGameComponents.render('truefalse',question,{items:[{label:'✓ Верно',value:'true'},{label:'✕ Неверно',value:'false'}],onSelect:value=>answer.value=value});
-  if(c.question?.speechText){const listen=el('button','🔊 Прослушать');listen.onclick=()=>{if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){say('Озвучивание недоступно в этом браузере',true);return}const speech=new SpeechSynthesisUtterance(c.question.speechText);speech.lang='en-GB';speech.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(speech)};question.append(listen)}
-  if(Array.isArray(c.question?.choices))LexigoGameComponents.render('quiz',question,{items:c.question.choices.map(v=>({label:String(v),value:String(v)})),onSelect:value=>answer.value=value});
-
- }catch(err){say(err.message,true)}finally{next.disabled=false}};
- await next.onclick();
 }
 
 $('form').onsubmit=async e=>{e.preventDefault();transport.clear();userId='';try{config();say('Проверка входа…');const data=await request('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('email').value,password:$('password').value})});if(!data.access_token||!data.user?.id)throw Error('Auth не вернул подтверждённую сессию');transport.acceptSession(data);userId=data.user.id;await load()}catch(err){clear();say(err.message,true)}};

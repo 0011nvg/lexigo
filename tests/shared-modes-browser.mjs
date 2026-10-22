@@ -20,7 +20,7 @@ async function login(who){
 try{
  assert.ok(process.env.SUPABASE_ANON_KEY,'Local public key required');
  await page.goto('http://127.0.0.1:3000/index.html');
- await page.getByRole('button',{name:'Серверные игры',exact:true}).click();
+ await page.locator('#serverGamesOpen').click();
  assert.equal(await page.locator('iframe').count(),0);
  assert.ok(page.url().endsWith('/index.html'));
  await page.locator('#serverWorkspace').waitFor({state:'visible'});

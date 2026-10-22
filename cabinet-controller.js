@@ -190,7 +190,7 @@ async function play(root,assignment,attemptId){
   question.append(el('p',String(c.question?.prompt??'Вопрос')));
   if(c.question?.proposed!=null)question.append(el('p','Вариант: '+String(c.question.proposed)));
   const {input:answer}=LexigoGameComponents.render(['quiz','truefalse'].includes(assignment.mode)?'spell':assignment.mode,question,{placeholder:'Ответ',label:'Проверить ответ',submit:async(answer,send)=>{
-   send.disabled=true;try{const result=await edge('answer-question',{attemptId,challengeId:c.challengeId,index:c.index,wordId:c.wordId,answer:answer.value});question.append(el('p',result.correct?'Верно':'Неверно'));send.remove();answer.disabled=true}catch(err){say(err.message,true);send.disabled=false}
+   send.disabled=true;try{const result=await edge('answer-question',{attemptId,challengeId:c.challengeId,index:c.index,wordId:c.wordId,answer:answer.value});question.append(el('p',result.correct?'Верно':'Неверно'));if(result.complete!==false){send.remove();answer.disabled=true}else send.disabled=false}catch(err){say(err.message,true);send.disabled=false}
   }});
   if(assignment.mode==='truefalse')LexigoGameComponents.render('truefalse',question,{items:[{label:'✓ Верно',value:'true'},{label:'✕ Неверно',value:'false'}],onSelect:value=>answer.value=value});
   if(c.question?.speechText){const listen=el('button','🔊 Прослушать');listen.onclick=()=>{if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){say('Озвучивание недоступно в этом браузере',true);return}const speech=new SpeechSynthesisUtterance(c.question.speechText);speech.lang='en-GB';speech.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(speech)};question.append(listen)}

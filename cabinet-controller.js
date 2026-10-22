@@ -3,6 +3,7 @@ window.mountLexigoCabinet=function(root){
 'use strict';
 if(!['localhost','127.0.0.1'].includes(location.hostname)){document.body.replaceChildren(document.createTextNode('Локальный пилот недоступен вне localhost'));throw Error('localhost only')}
 const $=id=>root.getElementById(id);let userId='';
+root.querySelector('style').append(document.createTextNode('select{font:inherit;padding:10px;border:1px solid #bbc8d8;border-radius:10px;width:100%;box-sizing:border-box}summary{cursor:pointer;font-weight:700}#results form{display:grid;gap:8px}#results label{min-width:0}#results p{overflow-wrap:anywhere}'));
 const transport=LexigoServerStorage.create();
 const sharedAssignment=(()=>{const id=new URLSearchParams(location.search).get('assignment');return id&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)?id:null})();
 if(new URLSearchParams(location.search).has('assignment')){$('linkHint').hidden=false;$('linkHint').textContent=sharedAssignment?'Для открытия назначенного задания войдите под учётной записью ученика. Ссылка сама по себе не даёт доступ.':'Некорректная ссылка на задание.'}
@@ -60,10 +61,7 @@ $('identity').textContent='Кабинет: '+profile.display_name+' ('+(profile.
 const root=$('results');root.replaceChildren();
 if(profile.role==='teacher'){
 const classes=await rows('classes','select=id,title,grade&teacher_user_id=eq.'+encodeURIComponent(userId));
-heading(root,'Мои классы');showRows(root,classes,['title','grade']);
-const assignments=await rows('assignments','select=id,section_id,mode,class_id&created_by=eq.'+encodeURIComponent(userId));
-heading(root,'Созданные задания');
-for(const assignment of assignments){const line=el('div');line.append(el('span',assignment.mode+' · '+assignment.section_id+' '));const copy=el('button','Скопировать ссылку');copy.type='button';copy.dataset.assignmentId=assignment.id;const status=el('span');status.setAttribute('role','status');copy.onclick=()=>copyAssignmentLink(assignment.id,status);line.append(copy,status);root.append(line)}
+const assignments=await rows('assignments','select=id,section_id,mode,class_id,due_at,audience_type,revoked_at&created_by=eq.'+encodeURIComponent(userId)+'&order=created_at.desc');
 await teacherControls(root,classes,assignments);await renderLessonProgress(root,profile,classes);
 }else{
 const recipients=await rows('assignment_recipients','select=assignment_id&pupil_user_id=eq.'+encodeURIComponent(userId));
@@ -81,27 +79,86 @@ const gameAdapter=LexigoServerGameAdapter.create({rows,edge,say,load,uuid});
 function el(tag,text){const n=document.createElement(tag);if(text!=null)n.textContent=text;return n}
 function choice(parent,options){const select=el('select');for(const [value,label] of options){const o=el('option',label);o.value=value;select.append(o)}parent.append(select);return select}
 async function teacherControls(root,classes,assignments){
- heading(root,'Назначить задание (серверная проверка)');
- if(!classes.length){root.append(el('p','Нет доступных классов'));return}
- const form=el('form');const classSelect=choice(form,classes.map(c=>[c.id,c.title+' · '+c.grade]));
- const sections=await rows('vocabulary_sections','select=id,title,grade&order=order_index.asc');
- const sectionSelect=choice(form,sections.filter(s=>s.grade===classes[0].grade).map(s=>[s.id,s.title]));
- classSelect.onchange=()=>{sectionSelect.replaceChildren();for(const s of sections.filter(s=>s.grade===classes.find(c=>c.id===classSelect.value)?.grade)){const o=el('option',s.title);o.value=s.id;sectionSelect.append(o)}};
- const mode=choice(form,['quiz','spell','truefalse','fix','audio','pairs','crystals','boss','cards','daily'].map(m=>[m,m]));
+ const names=await rows('profiles','select=user_id,display_name&role=eq.pupil');
+ const name=id=>names.find(p=>p.user_id===id)?.display_name||'Ученик '+id.slice(0,8);
  const recipients=await rows('enrollments','select=class_id,pupil_user_id,status&status=eq.active');
- const pupil=choice(form,recipients.filter(r=>r.class_id===classes[0].id).map(r=>[r.pupil_user_id,'Тестовый ученик '+r.pupil_user_id.slice(0,8)]));
- classSelect.addEventListener('change',()=>{pupil.replaceChildren();for(const r of recipients.filter(r=>r.class_id===classSelect.value)){const o=el('option','Тестовый ученик '+r.pupil_user_id.slice(0,8));o.value=r.pupil_user_id;pupil.append(o)}});
- const button=el('button','Создать назначение');button.type='submit';form.append(button);
- form.onsubmit=async e=>{e.preventDefault();button.disabled=true;try{if(!pupil.value||!sectionSelect.value)throw Error('Нужен активный ученик и раздел');await edge('create-assignment',{classId:classSelect.value,sectionId:sectionSelect.value,mode:mode.value,dueAt:new Date(Date.now()+7*86400000).toISOString(),audience:'individual',recipients:[pupil.value]});await load();say('Задание сохранено сервером')}catch(err){say(err.message,true)}finally{button.disabled=false}};
- root.append(form);
+ const sections=await rows('vocabulary_sections','select=id,title,grade&order=order_index.asc');
+ const sectionName=id=>sections.find(s=>s.id===id)?.title||id;
+ const modeNames={quiz:'Выбери перевод',spell:'Напиши слово',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',pairs:'Найди пару',crystals:'Кристаллы',boss:'Финальный тест',cards:'Карточки',daily:'Тренировка дня'};
+ function field(parent,label,node){const wrap=el('label',label);wrap.append(node);parent.append(wrap);return node}
+ function select(parent,label,options){const holder=el('span');const node=choice(holder,options);field(parent,label,node);return node}
+ function input(parent,label,type,value=''){const node=el('input');node.type=type;node.value=value;return field(parent,label,node)}
+ function button(parent,label,action){const b=el('button',label);b.type='button';parent.append(b);b.onclick=async()=>{b.disabled=true;try{await action()}catch(e){say(e.message,true)}finally{b.disabled=false}};return b}
+ function submit(form,label,action){const b=el('button',label);b.type='submit';form.append(b);form.onsubmit=async e=>{e.preventDefault();b.disabled=true;try{await action()}catch(err){say(err.message,true)}finally{b.disabled=false}}}
+ const refresh=button(root,'Обновить данные',()=>load());refresh.dataset.teacherRefresh='true';
+ heading(root,'Мои классы');
+ const create=el('form');create.id='createClassForm';create.className='lesson-progress';
+ const title=input(create,'Название нового класса','text');title.required=true;title.maxLength=80;
+ const grade=select(create,'Параллель',[[2,'2 класс'],[3,'3 класс'],[4,'4 класс']]);
+ submit(create,'Создать класс',async()=>{await edge('save-class',{title:title.value,grade:Number(grade.value)});await load();say('Класс создан')});root.append(create);
+ if(!classes.length)root.append(el('p','Создайте первый класс и пригласите ученика.'));
+ for(const c of classes){
+  const box=el('details');box.className='lesson-progress';box.dataset.classId=c.id;
+  const members=recipients.filter(r=>r.class_id===c.id);
+  box.append(el('summary',c.title+' · '+c.grade+' класс · учеников: '+members.length));
+  const rename=el('form');const value=input(rename,'Название класса','text',c.title);value.required=true;value.maxLength=80;
+  submit(rename,'Сохранить название',async()=>{await edge('save-class',{classId:c.id,title:value.value,grade:c.grade});await load();say('Название сохранено')});box.append(rename);
+  const list=el('ul');for(const member of members){const li=el('li',name(member.pupil_user_id));
+   button(li,'Отозвать доступ',async()=>{if(!confirm('Отозвать доступ ученика '+name(member.pupil_user_id)+' к классу '+c.title+'?'))return;await edge('revoke-enrollment',{classId:c.id,childUserId:member.pupil_user_id});await load();say('Доступ к классу отозван')});list.append(li)}
+  box.append(list);
+  const invitation=el('div');invitation.setAttribute('role','status');
+  button(box,'Пригласить ученика',async()=>{const data=await edge('issue-invitation',{classId:c.id,role:'pupil',ttlHours:48});invitation.replaceChildren();const token=input(invitation,'Одноразовый код приглашения','text',data.id);token.readOnly=true;invitation.append(el('p','Действует 48 часов. Передайте код ученику лично. Нужна учётная запись ученика вашей школы. Код исчезнет при обновлении страницы.'))});
+  box.append(invitation);root.append(box);
+ }
+ heading(root,'Назначить задание (серверная проверка)');
+ if(classes.length){
+ const form=el('form');form.id='assignmentForm';form.className='lesson-progress';
+ const classSelect=select(form,'Класс',classes.map(c=>[c.id,c.title]));
+ const sectionSelect=select(form,'Раздел',[]);
+ const mode=select(form,'Режим',Object.entries(modeNames));
+ const audience=select(form,'Кому назначить',[['individual','Одному ученику'],['class','Всему классу']]);
+ const pupil=select(form,'Ученик',[]);
+ const due=input(form,'Выполнить до (местное время)','datetime-local');due.required=true;
+ const date=new Date(Date.now()+7*86400000);due.value=new Date(date-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ const update=()=>{sectionSelect.replaceChildren();for(const s of sections.filter(s=>s.grade===classes.find(c=>c.id===classSelect.value)?.grade)){const o=el('option',s.title);o.value=s.id;sectionSelect.append(o)}pupil.replaceChildren();for(const r of recipients.filter(r=>r.class_id===classSelect.value)){const o=el('option',name(r.pupil_user_id));o.value=r.pupil_user_id;pupil.append(o)}};
+ classSelect.onchange=update;audience.onchange=()=>{pupil.disabled=audience.value==='class'};update();
+ submit(form,'Создать назначение',async()=>{if(!sectionSelect.value||(audience.value==='individual'&&!pupil.value))throw Error('Нужен раздел и активный ученик');const deadline=new Date(due.value);if(!Number.isFinite(+deadline)||deadline<=new Date())throw Error('Выберите будущий срок');await edge('create-assignment',{classId:classSelect.value,sectionId:sectionSelect.value,mode:mode.value,dueAt:deadline.toISOString(),audience:audience.value,recipients:audience.value==='class'?[]:[pupil.value]});await load();say('Задание сохранено сервером')});root.append(form);
+ }
+ heading(root,'Созданные задания');
+ if(!assignments.length)root.append(el('p','Пока нет назначений'));
+ for(const a of assignments){
+  const line=el('div');line.className='lesson-progress';line.dataset.teacherAssignment=a.id;
+  const inactive=a.revoked_at||new Date(a.due_at)<=new Date();
+  line.append(el('p',(classes.find(c=>c.id===a.class_id)?.title||'Класс')+' · '+sectionName(a.section_id)+' · '+modeNames[a.mode]+' · '+(a.audience_type==='class'?'весь класс':'индивидуально')+' · до '+new Date(a.due_at).toLocaleString('ru-RU')+' · '+(a.revoked_at?'Отозвано':inactive?'Срок истёк':'Активно')));
+  if(!inactive){const status=el('span');status.setAttribute('role','status');const copy=button(line,'Скопировать ссылку',()=>copyAssignmentLink(a.id,status));copy.dataset.assignmentId=a.id;line.append(status);button(line,'Отозвать задание',async()=>{if(!confirm('Закрыть доступ к этому заданию? Сохранённые результаты останутся в отчёте.'))return;await edge('revoke-assignment',{assignmentId:a.id});await load();say('Задание отозвано')})}root.append(line);
+ }
  heading(root,'Результаты моих учеников');
  const attempts=await rows('attempts','select=id,assignment_id,pupil_user_id,status,started_at');
- const mine=new Set(assignments.map(a=>a.id));showRows(root,attempts.filter(a=>mine.has(a.assignment_id)),['pupil_user_id','assignment_id','status','started_at']);
+ const progress=await rows('lesson_attempt_progress','select=attempt_id,covered_words,total_words,lesson_completed,accuracy_pct');
+ const reviews=await rows('teacher_reviews','select=attempt_id,revoked_at');
+ const filters=el('div');filters.className='lesson-progress';
+ const fc=select(filters,'Фильтр по классу',[['','Все классы'],...classes.map(c=>[c.id,c.title])]);
+ const fp=select(filters,'Фильтр по ученику',[['','Все ученики'],...names.map(p=>[p.user_id,p.display_name])]);
+ const fs=select(filters,'Статус попытки',[['','Все попытки'],['started','В процессе'],['finished','Завершена']]);
+ const report=el('div');report.dataset.teacherReport='true';root.append(filters,report);
+ function render(){report.replaceChildren();const visible=attempts.filter(t=>{const a=assignments.find(a=>a.id===t.assignment_id);return a&&(!fc.value||a.class_id===fc.value)&&(!fp.value||t.pupil_user_id===fp.value)&&(!fs.value||t.status===fs.value)});
+ if(!visible.length)report.append(el('p','Нет попыток по выбранным условиям'));
+ for(const t of visible){const a=assignments.find(a=>a.id===t.assignment_id),p=progress.find(p=>p.attempt_id===t.id);
+ const row=el('div');row.className='lesson-progress';row.dataset.attemptId=t.id;
+ row.append(el('p',name(t.pupil_user_id)+' · '+sectionName(a.section_id)+' · '+modeNames[a.mode]+' · '+(t.status==='finished'?'Завершена':'В процессе')+' · '+new Date(t.started_at).toLocaleString('ru-RU')));
+ row.append(el('p',p?(p.lesson_completed?'✓ Урок пройден':'Урок не завершён')+' · '+p.covered_words+'/'+p.total_words+' слов · '+(p.accuracy_pct==null?'Самооценка, без оценки точности':'Точность '+p.accuracy_pct+'%'):'Пока нет ответов'));
+ const detail=el('div');
+ button(row,'Посмотреть ответы',async()=>{const events=await rows('attempt_events','select=word_id,event_index,event_type,verified_correct,hinted,retry,self_rating&attempt_id=eq.'+encodeURIComponent(t.id)+'&order=event_index.asc');const words=await rows('vocabulary_words','select=id,en,ru&section_id=eq.'+encodeURIComponent(a.section_id));detail.replaceChildren();if(!events.length)detail.append(el('p','Ответов пока нет'));for(const e of events){const w=words.find(w=>w.id===e.word_id);detail.append(el('p',(w?w.en+' — '+w.ru:e.word_id)+' · '+(e.event_type==='card_self_rating'?'Самооценка: '+(e.self_rating==='known'?'знаю':'повторить'):e.verified_correct===true?'Верно':e.verified_correct===false?'Ошибка':'Не проверено')+(e.hinted?' · с подсказкой':'')+(e.retry?' · повторная попытка':'')))}});
+ if(t.status==='finished'){const reviewed=reviews.some(r=>r.attempt_id===t.id&&!r.revoked_at);row.append(el('span',reviewed?'Просмотрено учителем':'Ожидает просмотра'));button(row,reviewed?'Снять отметку просмотра':'Отметить просмотренным',async()=>{await edge(reviewed?'revoke-review':'review-attempt',{attemptId:t.id});await load();say('Отметка просмотра сохранена')})}
+ row.append(detail);report.append(row);
+ }}
+ fc.onchange=fp.onchange=fs.onchange=render;render();
 }
 async function pupilControls(root,recipients){
+ const join=el('form');join.id='joinClassForm';const label=el('label','Код приглашения в класс');const code=el('input');code.required=true;code.pattern='[0-9a-f]{64}';label.append(code);join.append(label);const submit=el('button','Вступить в класс');submit.type='submit';join.append(submit);join.onsubmit=async e=>{e.preventDefault();submit.disabled=true;try{await edge('redeem-invitation',{token:code.value.trim()});code.value='';await load();say('Вы вступили в класс')}catch(err){say(err.message,true)}finally{submit.disabled=false}};root.append(join);
  heading(root,'Начать игру');
- const assigned=await rows('assignments','select=id,section_id,mode');
- const allowed=new Set(recipients.map(r=>r.assignment_id));
+ const assigned=await rows('assignments','select=id,section_id,mode,audience_type');
+ const allowed=new Set([...recipients.map(r=>r.assignment_id),...assigned.filter(a=>a.audience_type==='class').map(a=>a.id)]);
 if(sharedAssignment&&!allowed.has(sharedAssignment)){const warning=el('p','Это задание не назначено вашей учётной записи или доступ отозван.');warning.className='error';warning.dataset.accessDenied='true';root.append(warning)}
 else if(sharedAssignment){const info=el('p','Задание по ссылке найдено. Нажмите «Играть», чтобы начать.');info.dataset.linkAccepted='true';root.append(info)}
  for(const assignment of assigned.filter(a=>allowed.has(a.id)&&(!sharedAssignment||a.id===sharedAssignment))){

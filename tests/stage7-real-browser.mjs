@@ -40,20 +40,20 @@ try{
  await page.getByText('Мои классы').waitFor();
  assert.equal(await page.getByText('Мои назначения').count(),0,'Teacher saw pupil-only cabinet');
  await page.getByText('Назначить задание').waitFor();
- const teacherForm=page.locator('#results form');
+ const teacherForm=page.locator('#assignmentForm');
  await teacherForm.locator('select').nth(2).selectOption('quiz');
  await teacherForm.getByRole('button',{name:'Создать назначение'}).click();
  await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
  await page.getByText('Результаты моих учеников').waitFor();
  await page.getByText('Прогресс и рейтинг моих учеников').waitFor();
  for(const mode of ['spell','truefalse','fix','audio','pairs','crystals','boss','cards','daily']){
-  const form=page.locator('#results form');
+  const form=page.locator('#assignmentForm');
   await form.locator('select').nth(2).selectOption(mode);
   await form.getByRole('button',{name:'Создать назначение'}).click();
   await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
  }
  // Teacher shares an opaque server assignment URL, not credentials or a pupil identifier.
- const quizCopy=page.locator('#results button[data-assignment-id]').last();
+ const quizCopy=page.locator('[data-teacher-assignment]').filter({hasText:'Выбери перевод'}).first().locator('button[data-assignment-id]');
  const assignmentId=await quizCopy.getAttribute('data-assignment-id');
  assert.match(assignmentId,/^[0-9a-f-]{36}$/i);
  const link=await page.evaluate(id=>window.lexigoPilotAssignmentLink(id),assignmentId);
@@ -146,7 +146,7 @@ try{
  await page.getByText('Результаты моих учеников').waitFor();
  const resultText=await page.locator('#serverWorkspace').locator('#results').innerText();
  assert.match(resultText,/fixture-section/,'Teacher assignment not present');
- assert.match(resultText,/completed|in_progress|finished|submitted|active/i,'Teacher cannot see saved attempt');
+ assert.match(resultText,/Завершена|В процессе/,'Teacher cannot see saved attempt');
  await page.locator('#serverWorkspace').locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});
  assert.equal(failures.length,0,'browser JS errors: '+failures.join('; '));

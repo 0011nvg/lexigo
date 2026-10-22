@@ -15,6 +15,7 @@ on:
       - 'local-game-adapter.js'
       - 'tests/browser-runtime.mjs'
       - 'tests/shared-modes-browser.mjs'
+      - 'tests/teacher-workspace-browser.mjs'
       - 'stage7-local-cabinet.html'
       - '.github/workflows/stage5-supabase.yml'
   workflow_dispatch:
@@ -78,6 +79,7 @@ jobs:
           set +a
           node tests/stage7-real-browser.mjs
           node tests/shared-modes-browser.mjs
+          node tests/teacher-workspace-browser.mjs
       - name: Verify real A4 PDFs for 5, 10, 20, 25, and 30 questions
         run: node tests/integration-print.mjs
       - name: Edge diagnostics on failure

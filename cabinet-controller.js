@@ -158,7 +158,8 @@ async function pupilControls(root,recipients){
  const join=el('form');join.id='joinClassForm';const label=el('label','Код приглашения в класс');const code=el('input');code.required=true;code.pattern='[0-9a-f]{64}';label.append(code);join.append(label);const submit=el('button','Вступить в класс');submit.type='submit';join.append(submit);join.onsubmit=async e=>{e.preventDefault();submit.disabled=true;try{await edge('redeem-invitation',{token:code.value.trim()});code.value='';await load();say('Вы вступили в класс')}catch(err){say(err.message,true)}finally{submit.disabled=false}};root.append(join);
  heading(root,'Начать игру');
  const assigned=await rows('assignments','select=id,section_id,mode,audience_type');
- const allowed=new Set([...recipients.map(r=>r.assignment_id),...assigned.filter(a=>a.audience_type==='class').map(a=>a.id)]);
+ const individual=new Set(recipients.map(r=>r.assignment_id));
+ const allowed=new Set(assigned.filter(a=>a.audience_type==='class'||individual.has(a.id)).map(a=>a.id));
 if(sharedAssignment&&!allowed.has(sharedAssignment)){const warning=el('p','Это задание не назначено вашей учётной записи или доступ отозван.');warning.className='error';warning.dataset.accessDenied='true';root.append(warning)}
 else if(sharedAssignment){const info=el('p','Задание по ссылке найдено. Нажмите «Играть», чтобы начать.');info.dataset.linkAccepted='true';root.append(info)}
  for(const assignment of assigned.filter(a=>allowed.has(a.id)&&(!sharedAssignment||a.id===sharedAssignment))){

@@ -7,9 +7,9 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  const page=await browser.newPage({viewport});
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.getByRole('link',{name:/кабинеты/i}).waitFor();
- await page.getByRole('link',{name:/кабинеты/i}).click();
- await page.waitForURL('**/cabinet.html*');
+ // Legacy demo remains testable by direct URL; the main navigation now opens secure pilot.
+ await page.goto(new URL('cabinet.html',base).href);
+ await page.getByRole('tab',{name:/учитель/i}).waitFor();
  assert.equal(await page.getByRole('tab').count(),2);
  assert.equal(await page.getByRole('tabpanel',{name:/учитель/i}).isVisible(),true);
  const options=await page.locator('#assignSection option').count();

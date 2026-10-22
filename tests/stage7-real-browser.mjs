@@ -29,6 +29,13 @@ try{
  await page.locator('#serverWorkspace #form button[type=submit]').click();
  await page.locator('#serverWorkspace #status.error').waitFor({state:'visible',timeout:15000});
  assert.ok(await page.locator('#serverWorkspace').locator('#cabinet').isHidden(),'Invalid password opened cabinet');
+ // Parent is a real Auth/profile role, but this pilot has no parent cabinet.
+ await page.locator('#serverWorkspace #email').fill('stage5-parent@example.invalid');
+ await page.locator('#serverWorkspace #password').fill('SyntheticTestPassword#2026');
+ await page.locator('#serverWorkspace #form button[type=submit]').click();
+ await page.locator('#serverWorkspace #status.error').filter({hasText:'Эта роль пока не поддерживается в пилоте'}).waitFor({timeout:15000});
+ assert.ok(await page.locator('#serverWorkspace #cabinet').isHidden(),'Unsupported parent role opened cabinet');
+ assert.equal(await page.locator('#serverWorkspace #results').innerText(),'','Rejected role retained cabinet data');
  await login('teacher');
  await page.getByText('Мои классы').waitFor();
  assert.equal(await page.getByText('Мои назначения').count(),0,'Teacher saw pupil-only cabinet');

@@ -331,17 +331,9 @@ if(['http://127.0.0.1:3000','http://localhost:3000'].includes(location.origin)&&
 }
 </script><script>
 (()=>{'use strict';
+ const open=document.getElementById('serverGamesOpen');
  if(!['localhost','127.0.0.1'].includes(location.hostname))return;
- const open=document.getElementById('serverGamesOpen');open.hidden=false;
- const dialog=document.createElement('dialog');dialog.id='serverGamesDialog';dialog.setAttribute('aria-label','Серверные игры и прогресс');
- dialog.style.cssText='width:min(98vw,1100px);height:min(92vh,900px);padding:12px;border:1px solid #c8d4e5;border-radius:18px;background:#f5f8fc';
- const bar=document.createElement('div');bar.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px';
- const title=document.createElement('strong');title.textContent='Защищённый пилот · все 10 режимов';
- const close=document.createElement('button');close.textContent='Закрыть ×';close.type='button';close.onclick=()=>dialog.close();
- bar.append(title,close);
- const frame=document.createElement('iframe');frame.title='Серверные игры и кабинеты LEXIGO';frame.style.cssText='width:100%;height:calc(100% - 55px);border:0;border-radius:12px;background:white';
- frame.setAttribute('referrerpolicy','no-referrer');frame.src='./stage7-local-cabinet.html';
- dialog.append(bar,frame);document.body.append(dialog);
- open.onclick=()=>dialog.showModal();
+ open.hidden=false;
+ open.onclick=()=>location.assign('./stage7-local-cabinet.html');
 })();
 </script></body></html>

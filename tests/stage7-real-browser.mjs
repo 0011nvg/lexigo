@@ -20,7 +20,7 @@ try{
   await page.locator('#serverWorkspace').locator('#email').fill('stage5-'+who+'@example.invalid');
   await page.locator('#serverWorkspace').locator('#password').fill('SyntheticTestPassword#2026');
   await page.locator('#serverWorkspace #form button[type=submit]').click();
-  await page.waitForFunction(()=>!document.querySelector('#serverWorkspace').shadowRoot.querySelector('#cabinet').hidden===false || document.querySelector('#serverWorkspace').shadowRoot.querySelector('#status').classList.contains('error'),null,{timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('#serverWorkspace').shadowRoot.querySelector('#cabinet').hidden===false,null,{timeout:15000});
   if(await page.locator('#serverWorkspace').locator('#cabinet').isHidden())throw new Error('Login failed for '+who+': '+await page.locator('#serverWorkspace').locator('#status').innerText());
  };
  // Invalid credentials must never reveal a cabinet.

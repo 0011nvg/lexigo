@@ -34,7 +34,7 @@ try{
  await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
  await page.getByText('Результаты моих учеников').waitFor();
  await page.getByText('Прогресс и рейтинг моих учеников').waitFor();
- for(const mode of ['pairs','crystals','boss','cards','daily']){
+ for(const mode of ['spell','truefalse','fix','audio','pairs','crystals','boss','cards','daily']){
   const form=page.locator('#results form');
   await form.locator('select').nth(2).selectOption(mode);
   await form.getByRole('button',{name:'Создать назначение'}).click();
@@ -96,7 +96,13 @@ try{
   await tile.getByRole('button',{name:'Играть'}).click();
   await page.getByRole('heading',{name:'Игра · '+mode}).waitFor({timeout:15000});
   const round=page.locator('#results section').first();
-  if(mode==='pairs'){
+  if(['spell','truefalse','fix','audio'].includes(mode)){
+   const field=round.getByPlaceholder('Ответ');
+   await field.waitFor({state:'visible',timeout:15000});
+   await field.fill('wrong');
+   await round.getByRole('button',{name:'Проверить ответ'}).click();
+   await round.getByText('Неверно').waitFor({timeout:15000});
+  }else if(mode==='pairs'){
    const buttons=round.locator('div > button');
    await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length>=2 || document.querySelector('#status')?.classList.contains('error'),null,{timeout:15000});
    assert.ok(await buttons.count()>=2,'No server-issued pair tiles; status: '+await page.locator('#status').innerText());

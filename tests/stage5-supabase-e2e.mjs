@@ -365,7 +365,7 @@ async function main(){
  assert.equal(progress.total_words,2,'Progress must use full server vocabulary section');
  assert.equal(progress.lesson_completed,progress.covered_words===2,'Completion must require every word');
  assert.equal(progress.ranking_eligible,progress.covered_words===2,'Partial attempt must not enter ranking');
- const wordsOwn=await api('/rest/v1/lesson_word_progress?select=word_id,practiced,mastered,clean_correct_attempts,section_id&section_id=eq.fixture-section',{token:pupil.jwt,schema:'lexigo'});
+ const wordsOwn=await api('/rest/v1/lesson_word_progress?select=word_id,practiced,mastered,clean_correct_attempts,section_id&section_id=eq.fixture-section&mode=eq.quiz',{token:pupil.jwt,schema:'lexigo'});
  assert.equal(wordsOwn.status,200,'Pupil word mastery RLS '+JSON.stringify(wordsOwn));
  assert.equal(wordsOwn.data.length,2,'Both lesson words must be present in mastery view');
  assert.ok(wordsOwn.data.every(w=>w.mastered===false),'One attempt must never mark a word mastered');

@@ -36,8 +36,13 @@ try{
  await p.goto(link);await login(p,'newpupil');await p.locator('[data-link-accepted]').waitFor();
  const next=p.waitForResponse(r=>r.url().endsWith('/next-question')&&r.request().method()==='POST');
  const attempt=await action(p,'start-attempt',()=>p.getByRole('button',{name:'Играть',exact:true}).click());const challenge=await (await next).json();
- await p.getByPlaceholder('Ответ',{exact:true}).fill('deliberately wrong');
- const answer=await action(p,'answer-question',()=>p.getByRole('button',{name:'Проверить ответ',exact:true}).click());assert.equal(answer.correct,false);
+ // Server records the final evaluation after three distinct failed tries.
+ // Stopping after the first retry would deliberately leave no finalized event.
+ for(let retry=0;retry<3;retry++){
+  await p.getByPlaceholder('Ответ',{exact:true}).fill('deliberately wrong '+retry);
+  const answer=await action(p,'answer-question',()=>p.getByRole('button',{name:'Проверить ответ',exact:true}).click());
+  assert.equal(answer.correct,false);assert.equal(answer.complete,retry===2);
+ }
  await action(p,'finish-attempt',()=>p.getByRole('button',{name:'Завершить попытку'}).click());await p.getByText('Попытка завершена на сервере',{exact:true}).waitFor();
  await t.getByRole('button',{name:'Обновить данные',exact:true}).click();
  let result=t.locator('[data-attempt-id="'+attempt.id+'"]');await result.waitFor();

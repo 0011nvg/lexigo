@@ -166,7 +166,7 @@ if(['http://127.0.0.1:3000','http://localhost:3000'].includes(location.origin)&&
  const adapter=document.createElement('script');adapter.src='./stage5-local-adapter.js';
  document.body.append(adapter);
 }
-</script><script src="server-storage.js"></script><script src="server-game-adapter.js"></script><script src="cabinet-controller.js"></script><script>
+</script><script src="server-storage.js"></script><script src="server-game-adapter.js"></script><script src="progress-controller.js"></script><script src="cabinet-controller.js"></script><script>
 (()=>{'use strict';
  const open=document.getElementById('serverGamesOpen');
  if(!['localhost','127.0.0.1'].includes(location.hostname))return;

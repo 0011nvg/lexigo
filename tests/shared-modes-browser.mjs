@@ -104,6 +104,11 @@ try{
   await page.getByLabel('Показать задания',{exact:true}).selectOption('completed');
   assert.ok(await page.locator('[data-pupil-assignments] [data-mode="'+mode+'"]').count()>0,'Completed assignment absent from filter');
   await page.getByLabel('Показать задания',{exact:true}).selectOption('all');
+  const explorer=page.locator('[data-learning-progress]');
+  await explorer.getByLabel('Прогресс: класс обучения',{exact:true}).selectOption('2');
+  await explorer.getByLabel('Прогресс: модуль',{exact:true}).selectOption('1');
+  await explorer.getByLabel('Прогресс: урок',{exact:true}).selectOption('fixture-section');
+  assert.match(await explorer.locator('[data-progress-mode="'+mode+'"]').innerText(),/✓ Пройдено/);
   console.log('PASS real browser complete lesson, result, progress, ranking: '+mode);
  }
  await page.locator('#logout').click();await page.locator('#login').waitFor({state:'visible'});

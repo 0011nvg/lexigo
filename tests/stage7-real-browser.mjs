@@ -45,7 +45,7 @@ try{
  await teacherForm.getByRole('button',{name:'Создать назначение'}).click();
  await page.getByText('Задание сохранено сервером').waitFor({timeout:15000});
  await page.getByText('Результаты моих учеников').waitFor();
- await page.getByText('Прогресс и рейтинг моих учеников').waitFor();
+ await page.getByText('Освоение слов моих учеников',{exact:true}).waitFor();
  for(const mode of ['spell','truefalse','fix','audio','pairs','crystals','boss','cards','daily']){
   const form=page.locator('#assignmentForm');
   await form.locator('select').nth(2).selectOption(mode);
@@ -89,7 +89,7 @@ try{
  await page.locator('#login').waitFor({state:'visible'});
  await login('pupil');
  await page.getByText('Мои назначения').waitFor();
- await page.getByText('Мои галочки и рейтинг уроков').waitFor();
+ await page.getByText('Мой прогресс по урокам',{exact:true}).waitFor();
  assert.equal(await page.locator('#results .lesson-progress').count()>=0,true);
  assert.equal(await page.getByText('Назначить задание').count(),0,'Pupil saw teacher assignment control');
  await page.getByText('Начать игру').waitFor();

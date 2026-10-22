@@ -59,6 +59,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610220002_teacher_workspace.sql
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610220003_teacher_report_history.sql
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610220004_pupil_workspace.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202610220005_verified_mastery.sql
       - name: Verify role isolation and revocation (real PostgreSQL)
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rls_isolation.sql
       - name: Verify atomic assignments and idempotent event writes (real PostgreSQL)

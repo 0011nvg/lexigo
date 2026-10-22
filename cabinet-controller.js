@@ -15,43 +15,7 @@ function clear(){transport.clear();userId='';$('password').value='';$('cabinet')
 function config(){transport.configure($('url').value,$('key').value)}
 const request=(path,options={})=>transport.request(path,options);
 async function rows(table,params){return request('/rest/v1/'+table+'?'+params,{headers:{}})}
-async function renderLessonProgress(root,profile,classes=[]){
- const records=await rows('lesson_attempt_progress','select=attempt_id,assignment_id,pupil_user_id,section_id,mode,total_words,covered_words,lesson_completed,ranking_eligible,accuracy_pct,duration_seconds,status');
- heading(root,profile.role==='teacher'?'Прогресс и рейтинг моих учеников':'Мои галочки и рейтинг уроков');
- const words=await rows('lesson_word_progress','select=pupil_user_id,section_id,mode,word_id,en,practiced,mastered,clean_correct_attempts,self_rated_known');
- const byWordSection=new Map();
- for(const w of words){const k=w.section_id+' · '+w.mode;if(!byWordSection.has(k))byWordSection.set(k,[]);byWordSection.get(k).push(w)}
- for(const [key,items] of byWordSection){
-  const details=document.createElement('details');details.className='lesson-progress';
-  const summary=el('summary','Слова · '+key+' · освоено '+items.filter(w=>w.mastered).length+'/'+items.length);
-  details.append(summary);
-  const ul=el('ul');
-  for(const w of items.slice(0,120)){
-   const status=w.mastered?'✓ Освоено':w.practiced?'◐ Тренируется':'○ Ещё не пройдено';
-   ul.append(el('li',status+' · '+w.en+(profile.role==='teacher'?' · ученик '+w.pupil_user_id.slice(0,8):'')));
-  }details.append(ul);root.append(details)
- }
- const visible=records.filter(r=>r.total_words>0);
- if(!visible.length){root.append(el('p','Завершённых занятий пока нет'));return}
- const bySection=new Map();
- for(const r of visible){const k=r.section_id+' · '+r.mode;if(!bySection.has(k))bySection.set(k,[]);bySection.get(k).push(r)}
- for(const [key,attempts] of bySection){
-  const panel=el('div');panel.className='lesson-progress';
-  const headingNode=el('h4',key);panel.append(headingNode);
-  const ranking=attempts.filter(x=>x.ranking_eligible).sort((a,b)=>{
-   const ap=a.accuracy_pct??-1,bp=b.accuracy_pct??-1;
-   return bp-ap||(a.duration_seconds??1e9)-(b.duration_seconds??1e9)
-  });
-  const list=el('ol');for(const a of attempts){
-   const row=el('li',(a.lesson_completed?'✓ Пройдено':'○ В процессе')+' · '+a.covered_words+'/'+a.total_words+' слов'+(a.accuracy_pct==null?' · самооценка':' · точность '+a.accuracy_pct+'%')+(profile.role==='teacher'?' · ученик '+a.pupil_user_id.slice(0,8):''));
-   list.append(row)
-  }panel.append(list);
-  const label=el('p',ranking.length?'Рейтинг (только полный урок):':'В рейтинг пока никто не попал: нужно выполнить все слова урока.');panel.append(label);
-  const leaderboard=el('ol');for(const a of ranking.slice(0,10)){
-   leaderboard.append(el('li',(profile.role==='teacher'?'Ученик '+a.pupil_user_id.slice(0,8):'Мой результат')+' · '+(a.accuracy_pct==null?'самооценка':a.accuracy_pct+'%')+' · '+(a.duration_seconds??0)+' сек.'))
-  }panel.append(leaderboard);root.append(panel)
- }
-}
+async function renderLessonProgress(root,profile){return LexigoProgress.render({root,profile,rows})}
 function heading(root,text){const h=document.createElement('h4');h.textContent=text;root.append(h)}
 function showRows(root,items,fields){const ul=document.createElement('ul');if(!items.length){const li=document.createElement('li');li.textContent='Пока нет данных';ul.append(li)}
 for(const item of items){const li=document.createElement('li');li.textContent=fields.map(f=>String(item[f]??'')).join(' · ');ul.append(li)}root.append(ul)}

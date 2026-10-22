@@ -70,6 +70,6 @@ try{
  await p.goto(link);await login(p,'newpupil');await p.locator('[data-access-denied]').waitFor();assert.equal(await p.getByRole('button',{name:'Играть',exact:true}).count(),0);
  card=t.locator('[data-class-id="'+created.id+'"]');await card.locator('summary').click();await action(t,'revoke-enrollment',()=>card.getByRole('button',{name:'Отозвать доступ'}).click());await t.getByText('Доступ к классу отозван',{exact:true}).waitFor();
  const enrollment=await api('/rest/v1/enrollments?select=status&class_id=eq.'+created.id,pupil.access_token);assert.ok(!enrollment.data.some(e=>e.status==='active'));
- await t.locator('#logout').click();assert.equal(await t.locator('#results').innerText(),'');
+ await t.locator('#logout').click();await t.locator('#login').waitFor({state:'visible'});assert.equal(await t.locator('#results').innerText(),'');
  assert.deepEqual(errors,[]);console.log('PASS teacher workspace: create/rename, invitation/join, class assignment/link, saved error report, filters, review after reload, second teacher denial, RPC denial, revocation, logout, mobile');
 }finally{await browser.close()}

@@ -90,7 +90,7 @@ try{
  await login('pupil');
  await page.getByText('Мои назначения').waitFor();
  await page.getByText('Мой прогресс по урокам',{exact:true}).waitFor();
- assert.equal(await page.locator('#results .lesson-progress').count()>=0,true);
+ assert.equal(await page.locator('[data-learning-progress] [data-progress-mode]').count(),10);
  assert.equal(await page.getByText('Назначить задание').count(),0,'Pupil saw teacher assignment control');
  await page.getByText('Начать игру').waitFor();
  const gameButtons=page.getByRole('button',{name:'Играть',exact:true});
@@ -145,7 +145,9 @@ try{
  await login('teacher');
  await page.getByText('Результаты моих учеников').waitFor();
  const resultText=await page.locator('#serverWorkspace').locator('#results').innerText();
- assert.match(resultText,/fixture-section/,'Teacher assignment not present');
+ const savedAssignment=page.locator('[data-teacher-assignment="'+assignmentId+'"]');
+ await savedAssignment.waitFor();
+ assert.match(await savedAssignment.innerText(),/Test/,'Teacher assignment lesson title absent');
  assert.match(resultText,/Завершена|В процессе/,'Teacher cannot see saved attempt');
  await page.locator('#serverWorkspace').locator('#logout').click();
  await page.locator('#login').waitFor({state:'visible'});

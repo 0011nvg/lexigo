@@ -10,6 +10,8 @@ const teacher=await auth('teacher'),pupil=await auth('newpupil');
 const profile=await api('/rest/v1/profiles?select=organization_id&user_id=eq.'+teacher.user.id,teacher.access_token);
 const other=await api('/auth/v1/signup',anon,{email:'stage5-otherteacher@example.invalid',password});assert.equal(other.status,200);
 const seeded=await api('/rest/v1/profiles',service,{user_id:other.data.user.id,organization_id:profile.data[0].organization_id,role:'teacher',display_name:'Other teacher'},'POST',service);assert.equal(seeded.status,201);
+const otherClass=await api('/functions/v1/learning-api/save-class',other.data.access_token,{title:'Other class',grade:2});assert.equal(otherClass.status,200);
+const sharedPupil=await api('/rest/v1/enrollments',service,{class_id:otherClass.data.id,pupil_user_id:pupil.user.id},'POST',service);assert.equal(sharedPupil.status,201);
 const browser=await chromium.launch({headless:true});const contexts=[];const errors=[];
 async function pageFor(who){const ctx=await browser.newContext({viewport:{width:390,height:844}});contexts.push(ctx);const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto('http://127.0.0.1:3000/index.html');await p.locator('#serverGamesOpen').click();await login(p,who);return p}
 async function login(p,who){await p.locator('#key').fill(anon);await p.locator('#email').fill('stage5-'+who+'@example.invalid');await p.locator('#password').fill(password);await p.locator('#form button').click();await p.locator('#cabinet').waitFor({state:'visible'})}
@@ -58,6 +60,7 @@ try{
  const hidden=await api('/rest/v1/attempt_events?select=id&attempt_id=eq.'+attempt.id,other.data.access_token);assert.equal(hidden.status,200);assert.deepEqual(hidden.data,[]);
  t.on('dialog',d=>d.accept());
  await action(t,'revoke-assignment',()=>t.locator('[data-teacher-assignment="'+assignment.id+'"]').getByRole('button',{name:'Отозвать задание'}).click());await t.getByText('Задание отозвано',{exact:true}).waitFor();
+ const history=t.locator('[data-attempt-id="'+attempt.id+'"]');await history.waitFor();await history.getByRole('button',{name:'Посмотреть ответы'}).click();await history.getByText(/hello — привет · Ошибка|world — мир · Ошибка/).waitFor();
  assert.equal((await api('/functions/v1/learning-api/start-attempt',pupil.access_token,{assignmentId:assignment.id,sessionId:crypto.randomUUID()})).status,403);
  await p.goto(link);await login(p,'newpupil');await p.locator('[data-access-denied]').waitFor();assert.equal(await p.getByRole('button',{name:'Играть',exact:true}).count(),0);
  card=t.locator('[data-class-id="'+created.id+'"]');await card.locator('summary').click();await action(t,'revoke-enrollment',()=>card.getByRole('button',{name:'Отозвать доступ'}).click());await t.getByText('Доступ к классу отозван',{exact:true}).waitFor();

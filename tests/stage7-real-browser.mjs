@@ -7,6 +7,12 @@ const page=await browser.newPage();
 const failures=[];
 page.on('pageerror',e=>failures.push(e.message));
 try{
+ await page.goto('http://127.0.0.1:3000/index.html');
+ await page.getByRole('button',{name:'Серверные игры'}).click();
+ await page.locator('#serverGamesDialog[open]').waitFor({timeout:15000});
+ await page.frameLocator('#serverGamesDialog iframe').getByText('Вход через Supabase Auth').waitFor({timeout:15000});
+ await page.getByRole('button',{name:'Закрыть ×'}).click();
+ assert.equal(await page.locator('#serverGamesDialog[open]').count(),0,'Embedded secure pilot could not be closed');
  await page.goto('http://127.0.0.1:3000/stage7-local-cabinet.html');
  await page.locator('#url').fill('http://127.0.0.1:54321');
  await page.locator('#key').fill(process.env.SUPABASE_ANON_KEY||'');

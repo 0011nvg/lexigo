@@ -473,6 +473,17 @@ async function main(){
    if(mode==='cards'||mode==='daily')assert.equal(row.accuracy_pct,null,'Self-rating misrepresented as accuracy: '+mode);
   }
  }
+ const allWords=await api('/rest/v1/lesson_word_progress?select=mode,word_id,practiced,mastered,clean_correct_attempts&section_id=eq.fixture-section',
+ {token:pupil.jwt,schema:'lexigo'});
+ assert.equal(allWords.status,200,'Word-level progress for ten modes '+JSON.stringify(allWords));
+ for(const mode of allModes){
+  const words=allWords.data.filter(w=>w.mode===mode);
+  assert.equal(words.length,2,'Per-word checkmarks missing for '+mode);
+  for(const word of words){
+   assert.equal(word.mastered,word.clean_correct_attempts>=2,'Forged word mastery in '+mode);
+   if(mode==='cards'||mode==='daily')assert.equal(word.mastered,false,'Self-assessment became mastered in '+mode);
+  }
+ }
  const foreignModes=await api('/rest/v1/lesson_attempt_progress?select=mode&section_id=eq.fixture-section',
  {token:foreign.jwt,schema:'lexigo'});
  assert.equal(foreignModes.status,200);

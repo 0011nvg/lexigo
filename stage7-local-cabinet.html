@@ -30,6 +30,19 @@ async function rows(table,params){return request('/rest/v1/'+table+'?'+params,{h
 async function renderLessonProgress(root,profile,classes=[]){
  const records=await rows('lesson_attempt_progress','select=attempt_id,assignment_id,pupil_user_id,section_id,mode,total_words,covered_words,lesson_completed,ranking_eligible,accuracy_pct,duration_seconds,status');
  heading(root,profile.role==='teacher'?'Прогресс и рейтинг моих учеников':'Мои галочки и рейтинг уроков');
+ const words=await rows('lesson_word_progress','select=pupil_user_id,section_id,mode,word_id,en,practiced,mastered,clean_correct_attempts,self_rated_known');
+ const byWordSection=new Map();
+ for(const w of words){const k=w.section_id+' · '+w.mode;if(!byWordSection.has(k))byWordSection.set(k,[]);byWordSection.get(k).push(w)}
+ for(const [key,items] of byWordSection){
+  const details=document.createElement('details');details.className='lesson-progress';
+  const summary=el('summary','Слова · '+key+' · освоено '+items.filter(w=>w.mastered).length+'/'+items.length);
+  details.append(summary);
+  const ul=el('ul');
+  for(const w of items.slice(0,120)){
+   const status=w.mastered?'✓ Освоено':w.practiced?'◐ Тренируется':'○ Ещё не пройдено';
+   ul.append(el('li',status+' · '+w.en+(profile.role==='teacher'?' · ученик '+w.pupil_user_id.slice(0,8):'')));
+  }details.append(ul);root.append(details)
+ }
  const visible=records.filter(r=>r.total_words>0);
  if(!visible.length){root.append(el('p','Завершённых занятий пока нет'));return}
  const bySection=new Map();

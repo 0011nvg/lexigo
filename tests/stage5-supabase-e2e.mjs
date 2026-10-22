@@ -457,6 +457,27 @@ async function main(){
  assert.equal(fakeReview.status,403,'Parent forged teacher review');
  const revokedReview=await edge('revoke-review',teacher.jwt,{attemptId:ids.attempt});
  assert.equal(revokedReview.status,200,'Teacher review revocation');
+ // Mode-by-mode ranking E2E: every server attempt must appear, but unfinished or partial
+ // lessons must never receive a ranking badge. Self-assessment is never accuracy.
+ const allModes=['cards','daily','quiz','spell','pairs','truefalse','fix','audio','crystals','boss'];
+ const modeProgress=await api('/rest/v1/lesson_attempt_progress?select=attempt_id,mode,status,total_words,covered_words,ranking_eligible,lesson_completed,accuracy_pct&section_id=eq.fixture-section',
+ {token:pupil.jwt,schema:'lexigo'});
+ assert.equal(modeProgress.status,200,'Ten-mode ranking view '+JSON.stringify(modeProgress));
+ for(const mode of allModes){
+  const records=modeProgress.data.filter(a=>a.mode===mode);
+  assert.ok(records.length>0,'Missing real HTTP attempt for mode '+mode);
+  for(const row of records){
+   assert.equal(row.total_words,2,'Incorrect lesson size in '+mode);
+   assert.equal(row.lesson_completed,row.status==='finished'&&row.covered_words===2,'Wrong completion flag '+mode);
+   if(row.status!=='finished'||row.covered_words<2)assert.equal(row.ranking_eligible,false,'Unfinished/partial mode entered ranking: '+mode);
+   if(mode==='cards'||mode==='daily')assert.equal(row.accuracy_pct,null,'Self-rating misrepresented as accuracy: '+mode);
+  }
+ }
+ const foreignModes=await api('/rest/v1/lesson_attempt_progress?select=mode&section_id=eq.fixture-section',
+ {token:foreign.jwt,schema:'lexigo'});
+ assert.equal(foreignModes.status,200);
+ assert.deepEqual(foreignModes.data,[],'Foreign pupil can inspect other pupils leaderboard');
+ console.log('PASS: ten-mode real JWT ranking eligibility, partial lesson exclusion, RLS isolation, self-rating distinction.');
  console.log('Real Supabase Auth JWT, Edge HTTP, RLS, assignment and event idempotency passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

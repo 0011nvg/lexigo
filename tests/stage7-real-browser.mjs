@@ -19,15 +19,15 @@ try{
  const login=async who=>{
   await page.locator('#serverWorkspace').locator('#email').fill('stage5-'+who+'@example.invalid');
   await page.locator('#serverWorkspace').locator('#password').fill('SyntheticTestPassword#2026');
-  await page.locator('#form button[type=submit]').click();
-  await page.waitForFunction(()=>!document.querySelector('#cabinet').hidden || document.querySelector('#status').classList.contains('error'),null,{timeout:15000});
+  await page.locator('#serverWorkspace #form button[type=submit]').click();
+  await page.waitForFunction(()=>!document.querySelector('#serverWorkspace').shadowRoot.querySelector('#cabinet').hidden===false || document.querySelector('#serverWorkspace').shadowRoot.querySelector('#status').classList.contains('error'),null,{timeout:15000});
   if(await page.locator('#serverWorkspace').locator('#cabinet').isHidden())throw new Error('Login failed for '+who+': '+await page.locator('#serverWorkspace').locator('#status').innerText());
  };
  // Invalid credentials must never reveal a cabinet.
  await page.locator('#serverWorkspace').locator('#email').fill('stage5-teacher@example.invalid');
  await page.locator('#serverWorkspace').locator('#password').fill('incorrect-password');
- await page.locator('#form button[type=submit]').click();
- await page.locator('#status.error').waitFor({state:'visible',timeout:15000});
+ await page.locator('#serverWorkspace #form button[type=submit]').click();
+ await page.locator('#serverWorkspace #status.error').waitFor({state:'visible',timeout:15000});
  assert.ok(await page.locator('#serverWorkspace').locator('#cabinet').isHidden(),'Invalid password opened cabinet');
  await login('teacher');
  await page.getByText('Мои классы').waitFor();
@@ -49,7 +49,7 @@ try{
  const quizCopy=page.locator('#results button[data-assignment-id]').last();
  const assignmentId=await quizCopy.getAttribute('data-assignment-id');
  assert.match(assignmentId,/^[0-9a-f-]{36}$/i);
- const link=await page.evaluate(id=>assignmentLink(id),assignmentId);
+ const link=await page.evaluate(id=>window.lexigoPilotAssignmentLink(id),assignmentId);
  assert.ok(link.includes('assignment=')&&!link.includes('pupil=')&&!link.includes('token='));
  const pupilContext=await browser.newContext();
  const pupilPage=await pupilContext.newPage();
@@ -96,7 +96,7 @@ try{
  await page.getByRole('button',{name:'Завершить попытку'}).click();
  await page.getByText('Попытка завершена на сервере').waitFor({timeout:15000});
  await page.getByText('Мои попытки').waitFor();
- for(const mode of ['pairs','crystals','boss','cards','daily']){
+ for(const mode of ['spell','truefalse','fix','audio','pairs','crystals','boss','cards','daily']){
   const tile=page.locator('#results div[data-mode="'+mode+'"]').last();
   await tile.getByRole('button',{name:'Играть'}).click();
   await page.getByRole('heading',{name:'Игра · '+mode}).waitFor({timeout:15000});
@@ -109,14 +109,14 @@ try{
    await round.getByText('Неверно').waitFor({timeout:15000});
   }else if(mode==='pairs'){
    const buttons=round.locator('div > button');
-   await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length>=2 || document.querySelector('#status')?.classList.contains('error'),null,{timeout:15000});
+   await page.waitForFunction(()=>document.querySelector('#serverWorkspace').shadowRoot.querySelectorAll('#results section div > button').length>=2 || document.querySelector('#serverWorkspace').shadowRoot.querySelector('#status')?.classList.contains('error'),null,{timeout:15000});
    assert.ok(await buttons.count()>=2,'No server-issued pair tiles; status: '+await page.locator('#serverWorkspace').locator('#status').innerText());
    await buttons.nth(0).click();
    await buttons.nth(1).click();
    await round.getByText(/Ход сохранён|Пока не получилось|Верно|Раунд завершён/).waitFor({timeout:15000});
   }else if(mode==='crystals'){
    const buttons=round.locator('div > button');
-   await page.waitForFunction(()=>document.querySelectorAll('#results section div > button').length===36 || document.querySelector('#status').classList.contains('error'),null,{timeout:15000});
+   await page.waitForFunction(()=>document.querySelector('#serverWorkspace').shadowRoot.querySelectorAll('#results section div > button').length===36 || document.querySelector('#serverWorkspace').shadowRoot.querySelector('#status').classList.contains('error'),null,{timeout:15000});
    assert.equal(await buttons.count(),36,'Expected 36 server-issued crystal cells; status: '+await page.locator('#serverWorkspace').locator('#status').innerText());
    await buttons.nth(0).click();
    await buttons.nth(1).click();

@@ -93,9 +93,9 @@ try{
  assert.equal(await page.locator('[data-learning-progress] [data-progress-mode]').count(),10);
  assert.equal(await page.getByText('Назначить задание').count(),0,'Pupil saw teacher assignment control');
  await page.getByText('Начать игру').waitFor();
- const gameButtons=page.getByRole('button',{name:'Играть',exact:true});
- assert.ok(await gameButtons.count()>0,'No server-assigned game for pupil');
- await gameButtons.last().click();
+ const quizTask=page.locator('[data-pupil-assignments] [data-assignment-id="'+assignmentId+'"]');
+ await quizTask.waitFor();
+ await quizTask.getByRole('button',{name:'Играть',exact:true}).click();
  await page.getByRole('heading',{name:'Игра · quiz'}).waitFor({timeout:15000});
  await page.getByPlaceholder('Ответ').fill('wrong');
  await page.getByRole('button',{name:'Проверить ответ'}).click();

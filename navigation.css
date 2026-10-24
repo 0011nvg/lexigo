@@ -184,3 +184,45 @@
  .course-cover>span,.course-cover>b,.course-cover>small{color:#132b59;text-shadow:0 1px 6px #fff,0 1px 16px #fff}
  .course-cover::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#ffffffd9 0%,#ffffff55 55%,transparent 100%);z-index:1}
 }
+
+/* Refined learning screens: restrained pastels and consistent depth. */
+@media screen {
+ :root{--ink:#182957;--quiet:#617292;--accent:#168bf2;--line:#e0eafa;--canvas:#f5faff}
+ .home-intro{background:linear-gradient(115deg,#dff3ff 0%,#f0faff 62%,#efffe6 100%);border:1px solid #d9eafa;border-radius:30px;box-shadow:0 14px 35px #2c7fb512;text-align:left;position:relative;overflow:hidden}
+ .home-intro:after{content:"";position:absolute;right:-65px;bottom:-90px;width:300px;height:300px;border:35px solid #ffffff80;border-radius:50%;pointer-events:none}
+ .home-intro h1{color:#142b63;max-width:740px;position:relative;z-index:1}
+ .home-intro p{max-width:560px;position:relative;z-index:1}
+ .home-intro .btn{position:relative;z-index:1}
+ .course-card{border:1px solid #dfeaf9;border-radius:24px;overflow:hidden;box-shadow:0 9px 28px #356ba516}
+ .course-caption{background:white}
+ .course-caption h3{color:#142b63}
+ #courseTabs a[aria-current]{border-color:#168bf2;color:#168bf2}
+ .course-layout{gap:clamp(16px,3vw,42px)}
+ #moduleTabs a{border-radius:14px}
+ #moduleTabs a[aria-current]{background:#168bf2;color:white;box-shadow:0 5px 13px #168bf22e}
+ .lesson-card{border-radius:18px}
+ .modes{gap:13px}
+ .mode,.mode:nth-child(n){background:#fff;border:1px solid #e0eafa;border-radius:20px;box-shadow:0 4px 16px #345a8e0b;min-height:118px;transition:transform .18s,box-shadow .18s,border-color .18s}
+ .mode:nth-child(4n+1){background:#f2f8ff}
+ .mode:nth-child(4n+2){background:#f5faee}
+ .mode:nth-child(4n+3){background:#fff9f0}
+ .mode:nth-child(4n){background:#f8f5ff}
+ .mode:hover{border-color:#9bc7f6;box-shadow:0 9px 24px #345a8e18;transform:translateY(-2px)}
+ .mode strong{color:#172a59;font-weight:750}
+ .mode small{color:#667897}
+ .mode-arrow{color:#168bf2}
+ .mode-symbol{color:#168bf2}
+ .wordrow{border:1px solid #e0eafa;border-radius:15px}
+ .stats{flex-wrap:wrap}
+}
+@media screen and (max-width:760px){
+ .home-intro{text-align:left;padding:28px 22px}
+ .home-intro:after{width:170px;height:170px;right:-80px;bottom:-75px}
+ .home-intro h1{font-size:clamp(29px,7vw,40px)}
+ .modes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .mode{min-width:0;flex-wrap:wrap;padding:13px;gap:6px}
+ .mode>span:nth-child(2){flex-basis:calc(100% - 80px)}
+ .mode strong{font-size:14px;overflow-wrap:anywhere}
+ .mode small{font-size:11px;line-height:1.35}
+ .course-layout{grid-template-columns:clamp(82px,24vw,104px) minmax(0,1fr);gap:10px}
+}

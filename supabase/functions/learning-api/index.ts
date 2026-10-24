@@ -3,7 +3,7 @@
 // All identities are derived from auth.getUser(accessToken), never request body.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const ALLOWED = new Set(['create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','play-round','hint-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
+const ALLOWED = new Set(['save-class','revoke-assignment','create-assignment','start-attempt','append-event','submit-answer','next-question','answer-question','play-round','hint-question','finish-attempt','issue-invitation','redeem-invitation','revoke-invitation','verify-parent-link','revoke-parent-link','review-attempt','revoke-review','revoke-enrollment']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Hosted pilot origins must be explicitly configured server-side, never inferred from a request.
 const LOCAL_ORIGINS=new Set(['http://127.0.0.1:3000','http://localhost:3000']);
@@ -47,6 +47,16 @@ Deno.serve(async(req:Request)=>{
  const server=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
  let fn:string,args:Record<string,unknown>;
  switch(route){
+  case 'save-class':{
+   if((body.classId!=null&&!UUID.test(String(body.classId)))||typeof body.title!=='string'||
+    !body.title.trim()||body.title.trim().length>80||!Number.isInteger(body.grade)||Number(body.grade)<2||Number(body.grade)>4)
+    return respond(400,{error:'invalid class'});
+   fn='save_class';args={p_actor:user.id,p_class:body.classId??null,p_title:body.title,p_grade:body.grade};break;
+  }
+  case 'revoke-assignment':{
+   if(!UUID.test(String(body.assignmentId||'')))return respond(400,{error:'invalid assignment'});
+   fn='revoke_assignment';args={p_actor:user.id,p_assignment:body.assignmentId};break;
+  }
   case 'create-assignment':{
    if(!UUID.test(String(body.classId||''))||typeof body.sectionId!=='string'||
    !Array.isArray(body.recipients)||body.recipients.length>100||

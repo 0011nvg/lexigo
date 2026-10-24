@@ -5,6 +5,18 @@ on:
       - 'supabase/**'
       - 'tests/stage5-supabase-e2e.mjs'
       - 'tests/stage7-real-browser.mjs'
+      - 'tests/integration-print.mjs'
+      - 'index.html'
+      - '*-controller.js'
+      - '*-storage.js'
+      - 'game-components.js'
+      - 'game-engine.js'
+      - 'server-game-adapter.js'
+      - 'local-game-adapter.js'
+      - 'tests/browser-runtime.mjs'
+      - 'tests/shared-modes-browser.mjs'
+      - 'tests/teacher-workspace-browser.mjs'
+      - 'tests/mastery-browser.mjs'
       - 'stage7-local-cabinet.html'
       - '.github/workflows/stage5-supabase.yml'
   workflow_dispatch:
@@ -36,6 +48,14 @@ jobs:
         run: |
           supabase functions serve learning-api --no-verify-jwt > /tmp/lexigo-edge.log 2>&1 &
           echo $! > /tmp/lexigo-edge.pid
+      - name: Wait for Edge Function to become ready
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:54321/functions/v1/learning-api/create-assignment -H 'content-type: application/json' -d '{}' || true)
+            if [ "$code" = "401" ]; then echo 'Edge ready'; exit 0; fi
+            sleep 2
+          done
+          echo 'Edge failed to start'; tail -100 /tmp/lexigo-edge.log; exit 1
       - name: Exercise Auth-issued JWT and Edge HTTP requests
         run: |
           supabase status -o env > /tmp/lexigo-local-env
@@ -47,7 +67,7 @@ jobs:
           node tests/stage5-supabase-e2e.mjs
       - name: Install Chromium for real cabinet journey
         run: |
-          npm install --no-save playwright
+          npm install --no-save playwright pdf-lib
           npx playwright install --with-deps chromium
       - name: Start local cabinet web origin
         run: python3 -m http.server 3000 --bind 127.0.0.1 &
@@ -59,6 +79,11 @@ jobs:
           export SUPABASE_ANON_KEY="$ANON_KEY"
           set +a
           node tests/stage7-real-browser.mjs
+          node tests/shared-modes-browser.mjs
+          node tests/teacher-workspace-browser.mjs
+          node tests/mastery-browser.mjs
+      - name: Verify real A4 PDFs for 5, 10, 20, 25, and 30 questions
+        run: node tests/integration-print.mjs
       - name: Edge diagnostics on failure
         if: failure()
         run: tail -100 /tmp/lexigo-edge.log || true

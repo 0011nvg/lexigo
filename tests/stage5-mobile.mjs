@@ -1,4 +1,4 @@
-import {chromium} from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 const browser=await chromium.launch({headless:true});
 try{
@@ -6,7 +6,7 @@ try{
   const page=await browser.newPage({viewport:{width,height:780},isMobile:width<500,
    hasTouch:width<500});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://127.0.0.1:3000/?localDemo=1');
+  await page.goto('http://127.0.0.1:3000/?localDemo=1#/lesson/2/m0');
   await page.locator('#localDemoPanel').waitFor();
   assert.equal(await page.locator('#localJwt').count(),1);
   assert.equal(await page.locator('#localAssignment').count(),1);

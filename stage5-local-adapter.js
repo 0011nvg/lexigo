@@ -19,7 +19,7 @@ async function call(route,body){
  const data=await res.json();if(!res.ok)throw Error('HTTP '+res.status+': '+(data.error||'отказано'));
  return data;
 }
-function screen(){if($('launcher'))$('launcher').classList.add('hidden');$('game').classList.remove('hidden');
+function screen(){$('game').hidden=false;if($('launcher'))$('launcher').classList.add('hidden');$('game').classList.remove('hidden');
  $('gameTitle').textContent='🧪 Локальная проверка';$('counter').textContent='Только тестовые результаты';
  $('bar').style.width='0%';$('timer').textContent='';$('play').replaceChildren()}
 function content(){const root=$('play');root.replaceChildren();const title=document.createElement('h3');

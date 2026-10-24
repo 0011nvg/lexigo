@@ -358,6 +358,23 @@ async function main(){
  assert.equal(dailyRead.data[0]?.verified_correct,null);
  assert.equal(dailyRead.data[0]?.self_rating,'unknown');
  r=await edge('finish-attempt',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,200,'Finish '+JSON.stringify(r));
+ const progressPupil=await api('/rest/v1/lesson_attempt_progress?select=attempt_id,section_id,mode,total_words,covered_words,lesson_completed,ranking_eligible,accuracy_pct&attempt_id=eq.'+ids.attempt,{token:pupil.jwt,schema:'lexigo'});
+ assert.equal(progressPupil.status,200,'Pupil RLS progress '+JSON.stringify(progressPupil));
+ assert.equal(progressPupil.data.length,1,'Pupil must see own attempt progress');
+ const progress=progressPupil.data[0];
+ assert.equal(progress.total_words,2,'Progress must use full server vocabulary section');
+ assert.equal(progress.lesson_completed,progress.covered_words===2,'Completion must require every word');
+ assert.equal(progress.ranking_eligible,progress.covered_words===2,'Partial attempt must not enter ranking');
+ const wordsOwn=await api('/rest/v1/lesson_word_progress?select=word_id,practiced,mastered,clean_correct_attempts,section_id&section_id=eq.fixture-section&mode=eq.quiz',{token:pupil.jwt,schema:'lexigo'});
+ assert.equal(wordsOwn.status,200,'Pupil word mastery RLS '+JSON.stringify(wordsOwn));
+ assert.equal(wordsOwn.data.length,2,'Both lesson words must be present in mastery view');
+ assert.ok(wordsOwn.data.every(w=>w.mastered===false),'One attempt must never mark a word mastered');
+ const wordsForeign=await api('/rest/v1/lesson_word_progress?select=word_id&section_id=eq.fixture-section',{token:foreign.jwt,schema:'lexigo'});
+ assert.equal(wordsForeign.status,200);assert.equal(wordsForeign.data.length,0,'Unassigned pupil must not see mastery records');
+ const progressTeacher=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:teacher.jwt,schema:'lexigo'});
+ assert.equal(progressTeacher.status,200);assert.equal(progressTeacher.data.length,1,'Teacher must see enrolled pupil progress');
+ const progressOther=await api('/rest/v1/lesson_attempt_progress?select=attempt_id&attempt_id=eq.'+ids.attempt,{token:foreign.jwt,schema:'lexigo'});
+ assert.equal(progressOther.status,200);assert.equal(progressOther.data.length,0,'Unassigned pupil must not see another pupil ranking');
  r=await edge('next-question',pupil.jwt,{attemptId:ids.attempt});assert.equal(r.status,403,'Challenge after finish accepted');
  r=await edge('finish-attempt','broken.jwt',{attemptId:ids.attempt});assert.equal(r.status,401,'Invalid JWT accepted');
  const parentRead=await api('/rest/v1/attempts?select=id',{token:parent.jwt,schema:'lexigo'});
@@ -440,6 +457,38 @@ async function main(){
  assert.equal(fakeReview.status,403,'Parent forged teacher review');
  const revokedReview=await edge('revoke-review',teacher.jwt,{attemptId:ids.attempt});
  assert.equal(revokedReview.status,200,'Teacher review revocation');
+ // Mode-by-mode ranking E2E: every server attempt must appear, but unfinished or partial
+ // lessons must never receive a ranking badge. Self-assessment is never accuracy.
+ const allModes=['cards','daily','quiz','spell','pairs','truefalse','fix','audio','crystals','boss'];
+ const modeProgress=await api('/rest/v1/lesson_attempt_progress?select=attempt_id,mode,status,total_words,covered_words,ranking_eligible,lesson_completed,accuracy_pct&section_id=eq.fixture-section',
+ {token:pupil.jwt,schema:'lexigo'});
+ assert.equal(modeProgress.status,200,'Ten-mode ranking view '+JSON.stringify(modeProgress));
+ for(const mode of allModes){
+  const records=modeProgress.data.filter(a=>a.mode===mode);
+  assert.ok(records.length>0,'Missing real HTTP attempt for mode '+mode);
+  for(const row of records){
+   assert.equal(row.total_words,2,'Incorrect lesson size in '+mode);
+   assert.equal(row.lesson_completed,row.status==='finished'&&row.covered_words===2,'Wrong completion flag '+mode);
+   if(row.status!=='finished'||row.covered_words<2)assert.equal(row.ranking_eligible,false,'Unfinished/partial mode entered ranking: '+mode);
+   if(mode==='cards'||mode==='daily')assert.equal(row.accuracy_pct,null,'Self-rating misrepresented as accuracy: '+mode);
+  }
+ }
+ const allWords=await api('/rest/v1/lesson_word_progress?select=mode,word_id,practiced,mastered,clean_correct_attempts&section_id=eq.fixture-section',
+ {token:pupil.jwt,schema:'lexigo'});
+ assert.equal(allWords.status,200,'Word-level progress for ten modes '+JSON.stringify(allWords));
+ for(const mode of allModes){
+  const words=allWords.data.filter(w=>w.mode===mode);
+  assert.equal(words.length,2,'Per-word checkmarks missing for '+mode);
+  for(const word of words){
+   assert.equal(word.mastered,word.clean_correct_attempts>=2,'Forged word mastery in '+mode);
+   if(mode==='cards'||mode==='daily')assert.equal(word.mastered,false,'Self-assessment became mastered in '+mode);
+  }
+ }
+ const foreignModes=await api('/rest/v1/lesson_attempt_progress?select=mode&section_id=eq.fixture-section',
+ {token:foreign.jwt,schema:'lexigo'});
+ assert.equal(foreignModes.status,200);
+ assert.deepEqual(foreignModes.data,[],'Foreign pupil can inspect other pupils leaderboard');
+ console.log('PASS: ten-mode real JWT ranking eligibility, partial lesson exclusion, RLS isolation, self-rating distinction.');
  console.log('Real Supabase Auth JWT, Edge HTTP, RLS, assignment and event idempotency passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

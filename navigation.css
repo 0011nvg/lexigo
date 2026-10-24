@@ -22,3 +22,60 @@
  @media(max-width:480px){.course-grid{grid-template-columns:1fr}.course-card{display:grid;grid-template-columns:112px 1fr}.course-cover{height:158px;padding:14px}.course-cover>span{font-size:9px}.course-cover>small{font-size:6px}.course-caption{padding:23px}.home-section-title{margin-top:10px}.home-intro{text-align:left}.home-intro h1{font-size:39px}.modes{grid-template-columns:1fr}.mode{min-height:92px;padding:18px}.mode strong{font-size:16px}.mode small{font-size:13px}.mode .mode-symbol{width:44px;height:44px;font-size:18px}.mode .mode-arrow{display:block}.lesson-card{padding:18px 14px;gap:10px}.lesson-number{width:28px}.lesson-card strong{font-size:16px}#courseTabs{gap:20px}#courseTabs a{font-size:13px}.header-actions{gap:10px}.site-header{padding-block:14px}.site-header .logo{margin-right:auto}.text-button{font-size:13px}#gameTitle{font-size:27px}.test-config,.report{padding:18px}}
  @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 }
+
+
+/* LEXIGO 2026 bright learning UI — visual-only PR #8 redesign.
+   Preserve the existing routes, vocabulary, practice logic and A4 print rules. */
+@media screen {
+ :root{--ink:#132451;--quiet:#657596;--line:#e0eafa;--accent:#147df5;--paper:#fff;--canvas:#f5faff}
+ body{background:linear-gradient(145deg,#f4faff 0%,#ffffff 56%,#f1f8ff 100%);color:var(--ink)}
+ .site-header{background:#ffffffed;border-bottom:1px solid #e3edfc;box-shadow:0 5px 22px #3169aa0c}
+ #homeLogo .brand-word{font-weight:950;letter-spacing:-1.5px;color:#147df5}
+ #homeLogo .brand-word b{color:#98d900}
+ .header-home{color:#536786}.header-home:hover,.header-home[aria-pressed=true]{color:#147df5}
+ .btn{background:#147df5;border-color:#147df5;border-radius:16px;box-shadow:0 6px 16px #147df52b}
+ .btn:hover{background:#076bdc}.btn.secondary{border-color:#e1eafa;border-radius:16px}
+ .home-intro{background:linear-gradient(115deg,#e5f4ff,#f3faff 65%,#edffd0);border-radius:32px;text-align:left;padding:55px 50px;margin-top:16px}
+ .home-intro h1{color:#122456;font-weight:900}.home-intro>p:not(.eyebrow){color:#526b93}
+ .eyebrow{color:#167bfa}.home-section-title h2{font-weight:850}
+ .course-grid{gap:18px}.course-card{border-radius:25px;border:1px solid #dce8fa;box-shadow:0 12px 30px #2b5f9e14}
+ .course-card:hover{border-color:#2c9bff;box-shadow:0 16px 35px #2b5f9e23}
+ .course-cover{border-radius:22px 22px 0 0;background:linear-gradient(125deg,#e5ffb1,#b6edff);color:#142654}
+ .grade-3 .course-cover{background:linear-gradient(125deg,#c9f0ff,#d9d6ff);color:#142654}
+ .grade-4 .course-cover{background:linear-gradient(125deg,#e2d7ff,#c4f4ff);color:#142654}
+ .course-caption{background:white}.course-caption h3{color:#152650}
+ #courseTabs [aria-current]{color:#147df5;border-color:#147df5}
+ .course-layout{grid-template-columns:145px minmax(0,1fr);gap:20px;align-items:start}
+ #moduleTabs{position:sticky;top:12px;display:flex;flex-direction:column;gap:7px;max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;padding:4px 4px 12px 0}
+ #moduleTabs a{display:flex;align-items:center;min-height:56px;white-space:normal;overflow-wrap:anywhere;background:#eef6ff;border:1px solid #e1edfd;border-radius:15px;color:#33476c;font-weight:700;font-size:12px;line-height:1.3;padding:12px}
+ #moduleTabs a:hover{background:#e0efff}#moduleTabs [aria-current]{background:#268bf9;color:white;border-color:#268bf9;box-shadow:0 5px 12px #258af92e}
+ .lesson-card{border:1px solid #e1eafa;border-radius:18px;box-shadow:0 5px 15px #245b9b0a}
+ .lesson-card:hover{border-color:#74b6ff}.lesson-number{color:#1684fb}
+ .current-lesson{border-color:#e1eafa}.current-lesson h1{color:#172856}
+ .modes{gap:14px}.mode{border-radius:21px;border-color:#dfeafa;background:#eaf5ff;box-shadow:0 5px 14px #285c9b0a}
+ .mode:nth-child(4n+2){background:#eeffd9}.mode:nth-child(4n+3){background:#fff5d9}.mode:nth-child(4n){background:#f0eaff}
+ .mode:hover{background:#e0f0ff;border-color:#5cb0ff}
+ .mode .mode-symbol{background:#ffffffc9;color:#1683f9;border-radius:14px}.mode strong{color:#142451}.mode small{color:#57698b}
+ .wordrow{border-radius:15px;border-color:#e1eafa;box-shadow:0 3px 10px #285c9b09}
+ .wordrow input,.checks input{accent-color:#1686ff}.question,.flash{border-radius:22px;border-color:#dfeafa}
+ .progress>div{background:#a7ef31}.site-footer{border-color:#e1eafa}
+}
+@media screen and (max-width:760px){
+ .course-layout{grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:start}
+ #moduleTabs{display:flex;flex-direction:column;position:sticky;top:8px;overflow-x:hidden;overflow-y:auto;max-height:calc(100dvh - 20px);gap:6px;padding:2px 0 10px}
+ #moduleTabs a{white-space:normal;min-height:55px;font-size:11px;padding:9px 7px;border-radius:12px}
+ .home-intro{padding:34px 24px;border-radius:24px}
+ .course-grid{grid-template-columns:1fr;gap:14px}
+ .course-card{display:grid;grid-template-columns:42% 58%;min-height:145px}
+ .course-cover{height:auto;min-height:145px;border-radius:20px 0 0 20px}
+ .course-cover>b{font-size:68px}
+ .course-caption{padding:18px 12px;align-self:center}
+ .lesson-card{padding:13px 10px;gap:8px;border-radius:14px}
+ .lesson-number{width:22px;font-size:12px}.lesson-card strong{font-size:14px}
+ #moduleTitle{font-size:21px}
+}
+@media screen and (max-width:380px){
+ main#pageContent{padding-inline:12px}
+ .course-layout{grid-template-columns:83px minmax(0,1fr);gap:8px}
+ #moduleTabs a{font-size:10px}
+}

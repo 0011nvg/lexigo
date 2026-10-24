@@ -10,7 +10,7 @@ async function scenario(viewport){
  await page.locator('#book').waitFor({state:'attached'});
  assert.ok(await page.locator('#words input[type=checkbox]').count()>0,'Vocabulary loaded');
  assert.ok(await page.locator('#homeTitle').isVisible(),'Landing page headline visible');
- await page.locator('#heroStart').click();
+ await page.locator('#courseCards a').first().click();
  assert.ok(await page.locator('#coursePage').isVisible(),'CTA opens the course page');
  await page.locator('#homeNav').click();
  assert.ok(await page.locator('#homeTitle').isVisible(),'Home navigation works');

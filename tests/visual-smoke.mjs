@@ -16,7 +16,7 @@ async function run(name,viewport){
   await capture('home');
   const layout=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(layout.scroll<=layout.viewport+2,'Horizontal overflow: '+JSON.stringify(layout));
-  await page.locator('#heroStart').click();await capture('library');
+  await page.locator('#courseCards a').first().click();await capture('library');
   await page.locator('#lessonCards a').first().click();
   for(const mode of ['cards','quiz','pairs','spell','fix','truefalse','audio','boss','crystals']){
    await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));renderWords()});

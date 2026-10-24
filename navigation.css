@@ -140,3 +140,36 @@
 @media screen and (prefers-reduced-motion:reduce){
  .course-card,.lesson-card,.mode,.btn{transition:none!important;animation:none!important}
 }
+
+/* Illustrated game tiles: original SVG sprite, no emoji placeholders.
+   Accessible game labels remain unchanged and drive existing game actions. */
+@media screen {
+ .mode[data-mode] .mode-symbol{
+   display:inline-block;flex:0 0 66px;width:66px;height:84px;
+   background-image:url("assets/game-mode-icons.svg");
+   background-repeat:no-repeat;background-size:528px 106px;
+   background-position:0 0;background-color:transparent;
+   border-radius:0;overflow:hidden;text-indent:-9999px;
+ }
+ .mode[data-mode="quiz"] .mode-symbol{background-position:0 0}
+ .mode[data-mode="truefalse"] .mode-symbol{background-position:-66px 0}
+ .mode[data-mode="spell"] .mode-symbol{background-position:-132px 0}
+ .mode[data-mode="fix"] .mode-symbol{background-position:-198px 0}
+ .mode[data-mode="audio"] .mode-symbol{background-position:-264px 0}
+ .mode[data-mode="pairs"] .mode-symbol{background-position:-330px 0}
+ .mode[data-mode="crystals"] .mode-symbol{background-position:-396px 0}
+ .mode[data-mode="boss"] .mode-symbol{background-position:-462px 0}
+ .mode[data-mode="cards"] .mode-symbol{background-position:0 0}
+ .mode[data-mode="daily"] .mode-symbol{background-position:-462px 0}
+ .mode[data-mode]{align-items:center}
+}
+@media screen and (max-width:380px){
+ .mode[data-mode] .mode-symbol{flex-basis:48px;width:48px;height:66px;background-size:384px 77px}
+ .mode[data-mode="truefalse"] .mode-symbol{background-position:-48px 0}
+ .mode[data-mode="spell"] .mode-symbol{background-position:-96px 0}
+ .mode[data-mode="fix"] .mode-symbol{background-position:-144px 0}
+ .mode[data-mode="audio"] .mode-symbol{background-position:-192px 0}
+ .mode[data-mode="pairs"] .mode-symbol{background-position:-240px 0}
+ .mode[data-mode="crystals"] .mode-symbol{background-position:-288px 0}
+ .mode[data-mode="boss"],.mode[data-mode="daily"] .mode-symbol{background-position:-336px 0}
+}

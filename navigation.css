@@ -98,3 +98,45 @@
  .travel-city{font-size:8px;left:10px;bottom:7px}
  .course-cover>b{font-size:65px}
 }
+
+/* LEXIGO design-system foundation — isolated to screen; print rules unchanged.
+   Real mascot assets will replace placeholder travel emoji in a separate change. */
+@media screen {
+ :root {
+  --lexigo-blue:#118df7;--lexigo-lime:#a8ef34;
+  --lexigo-navy:#162653;--lexigo-sky:#eaf7ff;
+  --lexigo-shadow:0 9px 26px rgba(26,87,151,.10);
+ }
+ .site-header{background:#fff;border-bottom-color:#e3efff}
+ #homeLogo .brand-word{color:var(--lexigo-blue)}
+ #homeLogo .brand-word b{color:#7fce0c}
+ .btn{border-radius:15px;min-height:44px}
+ .btn:not(.secondary){background:var(--lexigo-blue);border-color:var(--lexigo-blue)}
+ .btn:not(.secondary):hover{background:#0679da;border-color:#0679da}
+ .course-card,.lesson-card,.mode{box-shadow:var(--lexigo-shadow)}
+ .course-card{border-radius:22px}
+ .mode{min-height:116px;border-radius:22px}
+ .mode:focus-visible,#moduleTabs a:focus-visible{outline:3px solid var(--lexigo-blue);outline-offset:3px}
+ #moduleTabs a{min-height:44px}
+ #moduleTabs [aria-current]{background:var(--lexigo-blue);color:#fff}
+ .course-layout>*{min-width:0}
+ .wordrow{overflow-wrap:anywhere}
+}
+@media screen and (max-width:760px) {
+ /* Keep the actual module rail visible; do not collapse into a horizontal scroller. */
+ .course-layout{grid-template-columns:clamp(82px,24vw,104px) minmax(0,1fr);gap:10px}
+ #moduleTabs{display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;max-height:calc(100dvh - 16px);position:sticky;top:8px}
+ #moduleTabs a{min-height:48px;overflow-wrap:anywhere}
+ .course-layout .lesson-card,.course-layout .current-lesson{min-width:0}
+ .course-layout .lesson-card strong,.course-layout .current-lesson h1{overflow-wrap:anywhere}
+ .course-grid{grid-template-columns:minmax(0,1fr)}
+ .course-card{min-width:0}
+}
+@media screen and (max-width:380px) {
+ .course-layout{grid-template-columns:82px minmax(0,1fr);gap:8px}
+ .mode{padding:12px;gap:8px}
+ .mode strong{font-size:14px}
+}
+@media screen and (prefers-reduced-motion:reduce){
+ .course-card,.lesson-card,.mode,.btn{transition:none!important;animation:none!important}
+}

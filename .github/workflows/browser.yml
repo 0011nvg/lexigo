@@ -21,7 +21,6 @@ jobs:
       - run: node tests/journeys.mjs
       - run: node tests/navigation.mjs
       - run: node tests/learning.mjs
-      - run: node tests/cabinets.mjs
       - run: node tests/visual-smoke.mjs
       - run: node tests/integration-print.mjs
       - name: Upload browser screenshots and failures

@@ -98,3 +98,131 @@
  .travel-city{font-size:8px;left:10px;bottom:7px}
  .course-cover>b{font-size:65px}
 }
+
+/* LEXIGO design-system foundation — isolated to screen; print rules unchanged.
+   Real mascot assets will replace placeholder travel emoji in a separate change. */
+@media screen {
+ :root {
+  --lexigo-blue:#118df7;--lexigo-lime:#a8ef34;
+  --lexigo-navy:#162653;--lexigo-sky:#eaf7ff;
+  --lexigo-shadow:0 9px 26px rgba(26,87,151,.10);
+ }
+ .site-header{background:#fff;border-bottom-color:#e3efff}
+ #homeLogo .brand-word{color:var(--lexigo-blue)}
+ #homeLogo .brand-word b{color:#7fce0c}
+ .btn{border-radius:15px;min-height:44px}
+ .btn:not(.secondary){background:var(--lexigo-blue);border-color:var(--lexigo-blue)}
+ .btn:not(.secondary):hover{background:#0679da;border-color:#0679da}
+ .course-card,.lesson-card,.mode{box-shadow:var(--lexigo-shadow)}
+ .course-card{border-radius:22px}
+ .mode{min-height:116px;border-radius:22px}
+ .mode:focus-visible,#moduleTabs a:focus-visible{outline:3px solid var(--lexigo-blue);outline-offset:3px}
+ #moduleTabs a{min-height:44px}
+ #moduleTabs [aria-current]{background:var(--lexigo-blue);color:#fff}
+ .course-layout>*{min-width:0}
+ .wordrow{overflow-wrap:anywhere}
+}
+@media screen and (max-width:760px) {
+ /* Keep the actual module rail visible; do not collapse into a horizontal scroller. */
+ .course-layout{grid-template-columns:clamp(82px,24vw,104px) minmax(0,1fr);gap:10px}
+ #moduleTabs{display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;max-height:calc(100dvh - 16px);position:sticky;top:8px}
+ #moduleTabs a{min-height:48px;overflow-wrap:anywhere}
+ .course-layout .lesson-card,.course-layout .current-lesson{min-width:0}
+ .course-layout .lesson-card strong,.course-layout .current-lesson h1{overflow-wrap:anywhere}
+ .course-grid{grid-template-columns:minmax(0,1fr)}
+ .course-card{min-width:0}
+}
+@media screen and (max-width:380px) {
+ .course-layout{grid-template-columns:82px minmax(0,1fr);gap:8px}
+ .mode{padding:12px;gap:8px}
+ .mode strong{font-size:14px}
+}
+@media screen and (prefers-reduced-motion:reduce){
+ .course-card,.lesson-card,.mode,.btn{transition:none!important;animation:none!important}
+}
+
+/* Illustrated game tiles: original SVG sprite, no emoji placeholders.
+   Accessible game labels remain unchanged and drive existing game actions. */
+@media screen {
+ .mode[data-mode] .mode-symbol{
+   display:inline-block;flex:0 0 66px;width:66px;height:84px;
+   background-image:url("assets/game-mode-icons.svg");
+   background-repeat:no-repeat;background-size:528px 106px;
+   background-position:0 0;background-color:transparent;
+   border-radius:0;overflow:hidden;text-indent:-9999px;
+ }
+ .mode[data-mode="quiz"] .mode-symbol{background-position:0 0}
+ .mode[data-mode="truefalse"] .mode-symbol{background-position:-66px 0}
+ .mode[data-mode="spell"] .mode-symbol{background-position:-132px 0}
+ .mode[data-mode="fix"] .mode-symbol{background-position:-198px 0}
+ .mode[data-mode="audio"] .mode-symbol{background-position:-264px 0}
+ .mode[data-mode="pairs"] .mode-symbol{background-position:-330px 0}
+ .mode[data-mode="crystals"] .mode-symbol{background-position:-396px 0}
+ .mode[data-mode="boss"] .mode-symbol{background-position:-462px 0}
+ .mode[data-mode="cards"] .mode-symbol{background-position:0 0}
+ .mode[data-mode="daily"] .mode-symbol{background-position:-462px 0}
+ .mode[data-mode]{align-items:center}
+}
+@media screen and (max-width:380px){
+ .mode[data-mode] .mode-symbol{flex-basis:48px;width:48px;height:66px;background-size:384px 77px}
+ .mode[data-mode="truefalse"] .mode-symbol{background-position:-48px 0}
+ .mode[data-mode="spell"] .mode-symbol{background-position:-96px 0}
+ .mode[data-mode="fix"] .mode-symbol{background-position:-144px 0}
+ .mode[data-mode="audio"] .mode-symbol{background-position:-192px 0}
+ .mode[data-mode="pairs"] .mode-symbol{background-position:-240px 0}
+ .mode[data-mode="crystals"] .mode-symbol{background-position:-288px 0}
+ .mode[data-mode="boss"] .mode-symbol,.mode[data-mode="daily"] .mode-symbol{background-position:-336px 0}
+}
+
+/* Scenic course artwork, replacing literal emoji characters.
+   London asset is implemented; NY and Sydney require approved artwork. */
+@media screen {
+ .grade-2 .course-cover{background:#bcecff url("assets/london-scene.svg") center / cover no-repeat}
+ .grade-3 .course-cover{background:linear-gradient(150deg,#b4eaff 0%,#e0e9ff 55%,#92d3e6 100%)}
+ .grade-4 .course-cover{background:linear-gradient(150deg,#e8d2ff 0%,#ffe6bd 55%,#a2e6e2 100%)}
+ .travel-landmark,.travel-cat{display:none}
+ .course-cover>span,.course-cover>b,.course-cover>small{color:#132b59;text-shadow:0 1px 6px #fff,0 1px 16px #fff}
+ .course-cover::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#ffffffd9 0%,#ffffff55 55%,transparent 100%);z-index:1}
+}
+
+/* Refined learning screens: restrained pastels and consistent depth. */
+@media screen {
+ :root{--ink:#182957;--quiet:#617292;--accent:#168bf2;--line:#e0eafa;--canvas:#f5faff}
+ .home-intro{background:linear-gradient(115deg,#dff3ff 0%,#f0faff 62%,#efffe6 100%);border:1px solid #d9eafa;border-radius:30px;box-shadow:0 14px 35px #2c7fb512;text-align:left;position:relative;overflow:hidden}
+ .home-intro:after{content:"";position:absolute;right:-65px;bottom:-90px;width:300px;height:300px;border:35px solid #ffffff80;border-radius:50%;pointer-events:none}
+ .home-intro h1{color:#142b63;max-width:740px;position:relative;z-index:1}
+ .home-intro p{max-width:560px;position:relative;z-index:1}
+ .home-intro .btn{position:relative;z-index:1}
+ .course-card{border:1px solid #dfeaf9;border-radius:24px;overflow:hidden;box-shadow:0 9px 28px #356ba516}
+ .course-caption{background:white}
+ .course-caption h3{color:#142b63}
+ #courseTabs a[aria-current]{border-color:#168bf2;color:#168bf2}
+ .course-layout{gap:clamp(16px,3vw,42px)}
+ #moduleTabs a{border-radius:14px}
+ #moduleTabs a[aria-current]{background:#168bf2;color:white;box-shadow:0 5px 13px #168bf22e}
+ .lesson-card{border-radius:18px}
+ .modes{gap:13px}
+ .mode,.mode:nth-child(n){background:#fff;border:1px solid #e0eafa;border-radius:20px;box-shadow:0 4px 16px #345a8e0b;min-height:118px;transition:transform .18s,box-shadow .18s,border-color .18s}
+ .mode:nth-child(4n+1){background:#f2f8ff}
+ .mode:nth-child(4n+2){background:#f5faee}
+ .mode:nth-child(4n+3){background:#fff9f0}
+ .mode:nth-child(4n){background:#f8f5ff}
+ .mode:hover{border-color:#9bc7f6;box-shadow:0 9px 24px #345a8e18;transform:translateY(-2px)}
+ .mode strong{color:#172a59;font-weight:750}
+ .mode small{color:#667897}
+ .mode-arrow{color:#168bf2}
+ .mode-symbol{color:#168bf2}
+ .wordrow{border:1px solid #e0eafa;border-radius:15px}
+ .stats{flex-wrap:wrap}
+}
+@media screen and (max-width:760px){
+ .home-intro{text-align:left;padding:28px 22px}
+ .home-intro:after{width:170px;height:170px;right:-80px;bottom:-75px}
+ .home-intro h1{font-size:clamp(29px,7vw,40px)}
+ .modes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .mode{min-width:0;flex-wrap:wrap;padding:13px;gap:6px}
+ .mode>span:nth-child(2){flex-basis:calc(100% - 80px)}
+ .mode strong{font-size:14px;overflow-wrap:anywhere}
+ .mode small{font-size:11px;line-height:1.35}
+ .course-layout{grid-template-columns:clamp(82px,24vw,104px) minmax(0,1fr);gap:10px}
+}

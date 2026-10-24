@@ -23,6 +23,19 @@ jobs:
       - run: node tests/learning.mjs
       - run: node tests/visual-smoke.mjs
       - run: node tests/integration-print.mjs
+      - name: Prepare isolated static preview package
+        if: success()
+        run: |
+          mkdir -p static-preview
+          cp index.html navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
+          printf '%s\n' 'LEXIGO PR #8 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'No Supabase cabinet or production deployment is included.' > static-preview/README.txt
+      - name: Upload isolated static preview (no deployment)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lexigo-pr8-static-preview
+          path: static-preview/
+          retention-days: 14
       - name: Upload browser screenshots and failures
         if: always()
         uses: actions/upload-artifact@v4

@@ -260,3 +260,45 @@
  .course-caption{padding:12px}
  .course-caption h3{font-size:18px}
 }
+
+/* Approved illustrated card layout: airy, restrained, iPhone-first. */
+@media screen {
+ #homePage .home-section-title{margin-block:25px 16px}
+ #homePage .home-section-title h2{font-size:clamp(26px,4vw,38px);letter-spacing:-.035em;color:#0b2052}
+ #homePage .course-grid{display:grid;grid-template-columns:1fr;gap:18px;max-width:1100px;margin-inline:auto}
+ #homePage .course-card{display:grid;grid-template-columns:minmax(0,62%) minmax(0,38%);min-height:220px;border-radius:29px;border:1px solid #cce6fb;box-shadow:0 12px 32px #2d82bf17;background:white}
+ #homePage .course-cover{height:auto;min-height:220px;border-radius:28px 0 0 28px;background-position:center center;background-size:cover;padding:22px}
+ #homePage .course-cover::before{background:linear-gradient(90deg,#ffffff70,transparent 45%)}
+ #homePage .course-cover>span{font-size:11px;color:#092552;letter-spacing:.15em}
+ #homePage .course-cover>b{font-size:clamp(70px,10vw,108px);color:#0a2d70}
+ #homePage .course-cover>small{font-size:9px;color:#092552}
+ #homePage .course-caption{display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:15px;padding:24px}
+ #homePage .course-caption h3{font-size:clamp(23px,3vw,31px);font-weight:850;letter-spacing:-.04em;margin:0;color:#0a1b50}
+ #homePage .course-caption p{margin:0;color:#607195;font-size:clamp(13px,1.7vw,17px)}
+ #homePage .course-caption>span:last-child{display:block;text-align:center;background:#168ef2;color:white;border-radius:17px;padding:14px 10px;font-size:clamp(12px,1.8vw,16px);font-weight:800;box-shadow:0 8px 16px #148af129}
+ #homePage .course-progress{display:flex;align-items:center;gap:9px;color:#45638e;font-weight:750}
+ #homePage .course-progress-track{display:block;flex:1;height:11px;border-radius:99px;background:#dceafa;overflow:hidden}
+ #homePage .course-progress-fill{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#62c817,#a2e32b)}
+ #homePage .course-progress small{font-size:13px;min-width:32px;text-align:right}
+ #homePage .home-footnote{background:#fff;border:1px solid #dceafb;border-radius:24px;padding:22px;color:#4d638d;text-align:center}
+}
+@media screen and (max-width:760px){
+ #homePage .course-grid{gap:14px}
+ #homePage .course-card{grid-template-columns:minmax(0,62%) minmax(0,38%);min-height:170px;border-radius:22px}
+ #homePage .course-cover{min-height:170px;border-radius:21px 0 0 21px;padding:13px;background-position:52% center}
+ #homePage .course-cover>b{font-size:clamp(57px,13vw,79px)}
+ #homePage .course-cover>span{font-size:9px}
+ #homePage .course-cover>small{font-size:7px}
+ #homePage .course-caption{gap:10px;padding:12px 10px}
+ #homePage .course-caption h3{font-size:clamp(17px,4vw,23px)}
+ #homePage .course-caption p{font-size:clamp(11px,2.7vw,14px)}
+ #homePage .course-caption>span:last-child{font-size:clamp(10px,2.5vw,13px);padding:10px 5px;border-radius:12px}
+ #homePage .course-progress-track{height:7px}
+ #homePage .course-progress small{font-size:11px;min-width:24px}
+ #homePage .home-footnote{font-size:13px;padding:15px}
+}
+@media screen and (max-width:360px){
+ #homePage .course-card{grid-template-columns:56% 44%}
+ #homePage .course-cover{min-height:164px}
+ #homePage .course-caption{padding:10px 8px;gap:8px}
+}

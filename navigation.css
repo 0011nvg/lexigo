@@ -226,3 +226,37 @@
  .mode small{font-size:11px;line-height:1.35}
  .course-layout{grid-template-columns:clamp(82px,24vw,104px) minmax(0,1fr);gap:10px}
 }
+
+/* iPhone course artwork repair: real scenes for all three books, composed without cropping landmarks. */
+@media screen {
+ .course-cover,.grade-2 .course-cover,.grade-3 .course-cover,.grade-4 .course-cover{
+   background-color:#e8f6ff;background-position:center bottom;background-repeat:no-repeat;background-size:cover;
+   isolation:isolate;
+ }
+ .grade-2 .course-cover{background-image:url("assets/london-scene.svg")}
+ .grade-3 .course-cover{background-image:url("assets/new-york-scene.svg")}
+ .grade-4 .course-cover{background-image:url("assets/sydney-scene.svg")}
+ .course-cover::before{z-index:0;background:linear-gradient(90deg,#ffffffea 0%,#ffffff9c 32%,#ffffff00 72%)}
+ .course-cover::after{display:none}
+ .course-cover>span,.course-cover>b,.course-cover>small{z-index:2;position:relative;text-shadow:0 1px 5px #fff}
+ .course-cover>b{font-weight:750}
+ .travel-scene{z-index:1}
+ .course-caption{min-width:0;padding:clamp(14px,3vw,24px)}
+ .course-caption h3{font-size:clamp(18px,3.8vw,25px);line-height:1.15;overflow-wrap:anywhere}
+ .course-caption p{font-size:clamp(12px,2.7vw,16px)}
+}
+@media screen and (max-width:760px){
+ .course-card{grid-template-columns:44% minmax(0,1fr);min-height:142px}
+ .course-cover{height:auto;min-height:160px;padding:14px}
+ .course-cover>b{font-size:clamp(54px,12vw,76px)}
+ .course-cover>span{font-size:9px}
+ .course-cover>small{font-size:7px;letter-spacing:.09em}
+ .course-caption{display:flex;flex-direction:column;justify-content:center;gap:10px}
+ .course-caption h3,.course-caption p{margin:0}
+}
+@media screen and (max-width:380px){
+ .course-card{grid-template-columns:43% minmax(0,1fr)}
+ .course-cover{padding:10px}
+ .course-caption{padding:12px}
+ .course-caption h3{font-size:18px}
+}

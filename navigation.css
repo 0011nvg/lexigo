@@ -79,3 +79,22 @@
  .course-layout{grid-template-columns:83px minmax(0,1fr);gap:8px}
  #moduleTabs a{font-size:10px}
 }
+
+
+/* Lightweight travel artwork; decorative only and safe for static preview. */
+@media screen{
+ .course-cover{isolation:isolate}
+ .course-cover>span,.course-cover>b,.course-cover>small{position:relative;z-index:2}
+ .travel-scene{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+ .travel-scene:before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:#ffffff70;right:-30px;top:18px}
+ .travel-landmark{position:absolute;right:10%;top:13%;font-size:clamp(65px,9vw,122px);filter:drop-shadow(0 10px 8px #4073aa22);line-height:1}
+ .travel-cat{position:absolute;right:5%;bottom:0;font-size:clamp(70px,9vw,122px);filter:drop-shadow(0 10px 7px #325ea33a);line-height:1}
+ .travel-city{position:absolute;left:20px;bottom:12px;font-size:10px;font-weight:900;letter-spacing:.2em;color:#294c80;opacity:.8}
+ .course-cover>b{font-size:clamp(72px,9vw,110px);text-shadow:0 3px 10px #ffffff90}
+}
+@media screen and (max-width:760px){
+ .travel-landmark{font-size:69px;right:0;top:8%}
+ .travel-cat{font-size:73px;right:0;bottom:5px}
+ .travel-city{font-size:8px;left:10px;bottom:7px}
+ .course-cover>b{font-size:65px}
+}

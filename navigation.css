@@ -302,3 +302,13 @@
  #homePage .course-cover{min-height:164px}
  #homePage .course-caption{padding:10px 8px;gap:8px}
 }
+
+/* Approved illustrated covers. WebP overlays are optional until the approved
+   binary files are uploaded to assets/; SVG scenes remain as graceful fallback. */
+@media screen {
+ #homePage .grade-2 .course-cover{background-image:url("assets/spotlight-2-3d.webp"),url("assets/london-scene.svg");background-size:cover,cover}
+ #homePage .grade-3 .course-cover{background-image:url("assets/spotlight-3-3d.webp"),url("assets/new-york-scene.svg");background-size:cover,cover}
+ #homePage .grade-4 .course-cover{background-image:url("assets/spotlight-4-3d.webp"),url("assets/sydney-scene.svg");background-size:cover,cover}
+ #homePage .course-cover::before{background:linear-gradient(90deg,#ffffff85 0%,#ffffff00 40%)}
+ #homePage .course-cover>span,#homePage .course-cover>b{color:#08275b;text-shadow:0 1px 5px #fff,0 0 14px #fff}
+}

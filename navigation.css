@@ -171,5 +171,5 @@
  .mode[data-mode="audio"] .mode-symbol{background-position:-192px 0}
  .mode[data-mode="pairs"] .mode-symbol{background-position:-240px 0}
  .mode[data-mode="crystals"] .mode-symbol{background-position:-288px 0}
- .mode[data-mode="boss"],.mode[data-mode="daily"] .mode-symbol{background-position:-336px 0}
+ .mode[data-mode="boss"] .mode-symbol,.mode[data-mode="daily"] .mode-symbol{background-position:-336px 0}
 }

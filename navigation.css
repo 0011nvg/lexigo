@@ -173,3 +173,14 @@
  .mode[data-mode="crystals"] .mode-symbol{background-position:-288px 0}
  .mode[data-mode="boss"] .mode-symbol,.mode[data-mode="daily"] .mode-symbol{background-position:-336px 0}
 }
+
+/* Scenic course artwork, replacing literal emoji characters.
+   London asset is implemented; NY and Sydney require approved artwork. */
+@media screen {
+ .grade-2 .course-cover{background:#bcecff url("assets/london-scene.svg") center / cover no-repeat}
+ .grade-3 .course-cover{background:linear-gradient(150deg,#b4eaff 0%,#e0e9ff 55%,#92d3e6 100%)}
+ .grade-4 .course-cover{background:linear-gradient(150deg,#e8d2ff 0%,#ffe6bd 55%,#a2e6e2 100%)}
+ .travel-landmark,.travel-cat{display:none}
+ .course-cover>span,.course-cover>b,.course-cover>small{color:#132b59;text-shadow:0 1px 6px #fff,0 1px 16px #fff}
+ .course-cover::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#ffffffd9 0%,#ffffff55 55%,transparent 100%);z-index:1}
+}

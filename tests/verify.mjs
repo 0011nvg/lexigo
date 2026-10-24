@@ -27,7 +27,9 @@ assert.equal(all.length,1035);
 assert.equal(new Set(all.map(w=>w.id)).size,all.length,'Duplicate word IDs');
 assert.ok(html.includes('<script src="data.js"></script>'));
 const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-assert.ok(scripts.length,'Inline script missing');
+assert.ok(html.includes('<script src="navigation-controller.js"></script>'),'Navigation entry missing');
+for(const file of ['navigation-controller.js','practice-controller.js','game-components.js','game-engine.js','local-storage.js','local-game-adapter.js']) new vm.Script(fs.readFileSync(file,'utf8'),{filename:file});
+assert.ok(!/server-storage\.js|server-game-adapter\.js|cabinet-controller\.js|Supabase Auth/.test(html),'Server-only dependencies in static entry');
 for(const match of scripts) new vm.Script(match[1],{filename:'index.html'});
 for(const id of ['book','module','unit','words','quickStart','game','launcher','showReport','exportReport','reportContent']){
  assert.ok(html.includes(`id="${id}"`),`Missing UI element ${id}`);

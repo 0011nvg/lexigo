@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
@@ -17,6 +17,7 @@ async function run(name,viewport){
   const layout=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(layout.scroll<=layout.viewport+2,'Horizontal overflow: '+JSON.stringify(layout));
   await page.locator('#heroStart').click();await capture('library');
+  await page.locator('#lessonCards a').first().click();
   for(const mode of ['cards','quiz','pairs','spell','fix','truefalse','audio','boss','crystals']){
    await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));renderWords()});
    await page.locator('[data-mode="'+mode+'"]').click();

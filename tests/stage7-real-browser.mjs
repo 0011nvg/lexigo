@@ -8,7 +8,7 @@ const failures=[];
 page.on('pageerror',e=>failures.push(e.message));
 try{
  await page.goto('http://127.0.0.1:3000/index.html');
- await page.getByRole('button',{name:'Серверные игры'}).click();
+ await page.getByRole('button',{name:'Кабинет',exact:true}).click();
  await page.locator('#serverWorkspace').waitFor({state:'visible',timeout:15000});
  await page.locator('#serverWorkspace').getByText('Вход через Supabase Auth').waitFor({timeout:15000});
  assert.ok(new URL(page.url()).pathname.endsWith('/index.html'),'Server games must stay in main LEXIGO page');

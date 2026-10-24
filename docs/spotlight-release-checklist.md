@@ -19,3 +19,9 @@ Source: PR #7, `integration/secure-lessons-growth`, reviewed head `2281d0a5d97ea
 - [ ] Request explicit approval before merging or deploying.
 
 This checklist documents release work; it does not assert that extraction or tests have been completed.
+
+## Dependency audit — 2026-10-24
+
+Inspected PR #7 source and current main repository trees. The new UI is **not** a standalone drop-in: PR #7 `index.html` loads `game-components.js`, `game-engine.js`, `local-storage.js`, `local-game-adapter.js`, `practice-controller.js`, `server-storage.js`, `server-game-adapter.js`, `progress-controller.js`, `cabinet-controller.js`, and `navigation-controller.js`. The main branch instead has a monolithic `index.html`. The new navigation controller directly references `serverWorkspace` and `serverGamesOpen` and supports a cabinet route. Therefore copying PR #7's `index.html` or `navigation-controller.js` unchanged would violate static-only isolation and risk regressions.
+
+Extraction requires removing the embedded cabinet mounting block, server scripts, cabinet route and related DOM dependencies, then adapting the practice controller and browser tests to the static-only entry point. No static-only extraction is asserted complete by this audit.

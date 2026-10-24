@@ -5,15 +5,16 @@ const browser=await chromium.launch({headless:true});
 const page=await browser.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
- await page.goto('http://127.0.0.1:3000/index.html');
+ await page.goto('http://127.0.0.1:3000/index.html#/lesson/2/m0/words');
  await page.locator('#book').waitFor();
- await page.locator('#roleSwitch').click();
  const largest=await page.evaluate(()=>DB.books.flatMap(b=>[...new Set(b.sections.map(x=>x.module))].map(m=>({grade:String(b.grade),module:m,count:uniquePairs(b.sections.filter(x=>x.module===m).flatMap(x=>x.words)).length}))).sort((a,b)=>b.count-a.count)[0]);
  assert.ok(largest.count>=20,'Need 20 real vocabulary words');
  await page.locator('#book').selectOption(largest.grade);
  await page.locator('#module').selectOption(largest.module);
  await page.locator('#unit').selectOption('__all');
  await page.locator('#all').click();
+ await page.locator('#wordsDone').click();
+ await page.locator('#lessonPrint').click();
  for(const count of [5,10,20,25,30]){
   // Only test fixtures gain synthetic entries. The canonical 1035-word database is unchanged.
   await page.evaluate(count=>{

@@ -33,7 +33,7 @@ try{
  await page.goto('http://127.0.0.1:3000/index.html');
  await page.locator('#serverGamesOpen').click();
  assert.equal(await page.locator('iframe').count(),0);
- assert.ok(page.url().endsWith('/index.html'));
+ assert.ok(new URL(page.url()).pathname.endsWith('/index.html'));
  await page.locator('#serverWorkspace').waitFor({state:'visible'});
  await login('pupil');
  const completed=[];

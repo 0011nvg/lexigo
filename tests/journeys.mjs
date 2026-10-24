@@ -11,16 +11,17 @@ async function scenario(viewport){
  assert.ok(await page.locator('#words input[type=checkbox]').count()>0,'Vocabulary loaded');
  assert.ok(await page.locator('#homeTitle').isVisible(),'Landing page headline visible');
  await page.locator('#heroStart').click();
- assert.ok(await page.locator('#catalogAside').isVisible(),'CTA reveals library on mobile and desktop');
+ assert.ok(await page.locator('#coursePage').isVisible(),'CTA opens the course page');
  await page.locator('#homeNav').click();
  assert.ok(await page.locator('#homeTitle').isVisible(),'Home navigation works');
 
+ await page.goto(base+'#/lesson/2/m0');
  await page.locator('#quickStart').click();
  await page.locator('#game:not(.hidden)').waitFor();
  assert.ok(await page.locator('#play .question').count()>0,'Daily practice starts');
  await page.locator('#gameHome').click();
- await page.locator('#launcher:not(.hidden)').waitFor();
  assert.ok(await page.locator('#homeTitle').isVisible(),'Game can return home');
+ await page.goto(base+'#/lesson/2/m0');
  await page.locator('#quickStart').click();
  await page.locator('#game:not(.hidden)').waitFor();
 
@@ -71,10 +72,10 @@ async function scenario(viewport){
  const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexigo.*csv/);
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
- if(viewport.width<=760){const toggle=page.locator('#catalogToggle');if(await toggle.getAttribute('aria-expanded')==='true')await toggle.click();await toggle.click();assert.equal(await toggle.getAttribute('aria-expanded'),'true')}
+ await page.locator('#openWords').click();
  await page.locator('#book').waitFor({state:'visible'});
  await page.locator('#book').selectOption('3');
- assert.ok((await page.locator('#currentLesson').innerText()).includes('3'));
+ assert.ok((await page.locator('#currentLessonDetail').innerText()).includes('Spotlight 3'));
  await page.close();
 }
 try{

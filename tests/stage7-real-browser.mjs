@@ -11,7 +11,7 @@ try{
  await page.getByRole('button',{name:'Серверные игры'}).click();
  await page.locator('#serverWorkspace').waitFor({state:'visible',timeout:15000});
  await page.locator('#serverWorkspace').getByText('Вход через Supabase Auth').waitFor({timeout:15000});
- assert.ok(page.url().endsWith('/index.html'),'Server games must stay in main LEXIGO page');
+ assert.ok(new URL(page.url()).pathname.endsWith('/index.html'),'Server games must stay in main LEXIGO page');
  assert.equal(await page.locator('iframe').count(),0,'Server games must not be embedded in an iframe');
  await page.locator('#serverWorkspace').locator('#url').fill('http://127.0.0.1:54321');
  await page.locator('#serverWorkspace').locator('#key').fill(process.env.SUPABASE_ANON_KEY||'');

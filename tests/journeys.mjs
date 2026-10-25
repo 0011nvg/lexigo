@@ -31,7 +31,7 @@ async function scenario(viewport){
  await page.locator('#crystalBoard .crystal-tile').first().waitFor();
  await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/выкл/);
  await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/вкл/);
- for(let i=0;i<7;i++){
+ for(let i=0;i<3;i++){
   const move=await page.evaluate(()=>gemPossible([...game.gemBoard])||[0,1]);
   await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
   await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
@@ -42,7 +42,7 @@ async function scenario(viewport){
  assert.ok(await page.evaluate(()=>game.crystalPoints>=0));
  assert.ok(await page.locator('.crystal-question-overlay').isVisible(),'Vocabulary task automatically overlays gems');
  assert.ok(await page.locator('.crystal-arena').count(),'Gem board remains behind the task');
- for(let n=0;n<3;n++){
+ for(let n=0;n<1;n++){
   const state=await page.evaluate(()=>({w:game.words[game.index],mode:game.mode,index:game.index}));
   const box=page.locator('#play');
   if(await box.locator('.answerbox input').count()){

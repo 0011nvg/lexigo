@@ -25,7 +25,7 @@ window.LexigoGameComponents=(()=>{
  function crystalTile({value,index,selected=false,art,onClick,onSwap,busy=()=>false,neighbors}){
   const tile=button('',()=>onClick(index),'crystal-tile'+(selected?' selected':''));tile.dataset.gem=String(value);
   if(art)tile.innerHTML=art(value);else tile.textContent=String(value);
-  tile.setAttribute('aria-label','Кристалл '+(index+1)+', '+(['сапфир','аметист','изумруд','рубин','топаз','янтарь'][value]||value));tile.setAttribute('aria-pressed',String(selected));
+  tile.setAttribute('aria-label','Кристалл '+(index+1)+', '+(['сапфир','аметист','изумруд','рубин','топаз','бирюза'][value]||value));tile.setAttribute('aria-pressed',String(selected));
   let start=null;
   tile.addEventListener('pointerdown',e=>{if(busy())return;start={x:e.clientX,y:e.clientY};tile.setPointerCapture(e.pointerId)});
   tile.addEventListener('pointermove',e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y,limit=tile.getBoundingClientRect().width;tile.style.zIndex='4';tile.style.transform='translate('+Math.max(-limit,Math.min(limit,dx))+'px,'+Math.max(-limit,Math.min(limit,dy))+'px) scale(1.08)'});

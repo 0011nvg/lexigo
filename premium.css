@@ -5,3 +5,15 @@
 .course-card{background-size:auto 300%!important}.course-caption{height:100%!important;width:100%!important;margin:0!important;transform:none!important}.course-caption h3{max-width:none!important}@media(max-width:600px){.course-card{height:auto!important;aspect-ratio:2/1!important;background-image:url(assets/soft-premium-worlds-mobile.webp)!important;background-size:100% 300%!important;background-position-x:center!important}.course-caption{padding:18px!important;background:none!important}.course-caption h3{font-size:20px!important}.course-caption p{font-size:13px!important}.course-caption>span{font-size:0!important;width:36px;height:36px;padding:7px!important;text-align:center}.course-caption>span:after{content:'→';font-size:20px}}
 
 }
+
+/* Crystal expedition: scoped premium sprites and touch controls. */
+@media screen {
+.crystal-arena{max-width:560px;margin:auto;padding:18px;border-radius:28px;background:linear-gradient(145deg,#f3f7ff,#eeebfa);color:#203858}
+.crystal-board{padding:12px!important;gap:5px!important;background:#dfe6f3!important;border:1px solid #fff;border-radius:22px!important}
+.crystal-tile{background:rgba(255,255,255,.65)!important;border-radius:13px!important;box-shadow:inset 0 1px 2px #fff!important;touch-action:none;min-width:0}
+.crystal-tile .crystal-sprite{display:block;width:100%;height:auto;aspect-ratio:1;min-height:35px;background-image:url('assets/crystal-atlas.webp');background-size:355.56% 200%;background-repeat:no-repeat;pointer-events:none}
+.crystal-tile.selected{outline:3px solid #347af0;outline-offset:-3px;background:#cbdfff!important}
+.crystal-score{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px;margin:14px 0}
+.letter-word{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:18px 0}.letter-word button{min-width:40px;min-height:46px;padding:8px;font-size:22px}.letter-word .selected{outline:3px solid #347af0}.options[hidden]{display:none!important}
+@media(max-width:420px){.crystal-arena{padding:8px}.crystal-board{padding:7px!important;gap:3px!important}.crystal-instructions{font-size:13px}}
+}

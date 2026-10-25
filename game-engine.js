@@ -13,6 +13,12 @@ window.LexigoGameEngine=(()=>{
   if(model.proposed!=null){const proposed=C.element('p',(model.proposedPrefix||'')+model.proposed);proposed.style.fontSize=kind==='truefalse'&&!model.headingTag?'20px':'';root.append(proposed)}
   if(kind==='cards')return C.render(model.mode==='daily'?'daily':'cards',root,{...model.card,...actions});
   if(kind==='audio'&&actions.speak)root.append(C.button('🔊 Прослушать',actions.speak,'btn secondary'));
+  if(kind==='letterfix'){
+   const word=C.element('div',null,'letter-word'),choices=C.element('div',null,'options');let selected=null;
+   model.letters.forEach((letter,index)=>{const b=C.button(letter,()=>{selected=index;for(const child of word.children)child.classList.remove('selected');b.classList.add('selected');choices.hidden=false},'btn secondary');b.setAttribute('aria-label','Буква '+letter+', позиция '+(index+1));word.append(b)});
+   choices.hidden=true;for(const letter of model.letterChoices)choices.append(C.button(letter,()=>{if(selected===null)return;const ok=actions.chooseLetter(selected,letter);if(ok)word.children[selected].textContent=letter;for(const b of [...word.children,...choices.children])b.disabled=true},'option'));
+   root.append(word,choices);return;
+  }
   const needsInput=!['quiz','truefalse'].includes(kind)||model.manualSubmit;
   let entry;
   if(needsInput){

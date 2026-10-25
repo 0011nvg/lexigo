@@ -15,10 +15,11 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save playwright pdf-lib
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
       - run: node tests/crystal-policy.mjs
+      - run: node tests/crystal-webkit.mjs
       - run: node tests/progress-model.mjs
       - run: node tests/dashboard.mjs
       - run: node tests/results.mjs

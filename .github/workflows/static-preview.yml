@@ -5,6 +5,8 @@ on:
       - 'index.html'
       - 'premium.css'
       - 'dashboard.css'
+      - 'result.css'
+      - 'result-ui.js'
       - 'progress-model.js'
       - 'progress-ui.js'
       - 'assets/**'
@@ -34,7 +36,7 @@ jobs:
       - name: Package only public local-game files (never deploy)
         run: |
           mkdir -p static-preview
-          cp index.html dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
           cp -r assets static-preview/
           printf '%s\n' 'LEXIGO static preview — PR #8' 'Extract and open index.html in a browser. For full routing support, run a local HTTP server in this folder (python3 -m http.server 4173).' 'This package contains no server cabinet or Supabase configuration.' > static-preview/README.txt
       - uses: actions/upload-artifact@v4

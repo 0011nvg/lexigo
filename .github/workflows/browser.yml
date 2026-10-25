@@ -20,6 +20,7 @@ jobs:
       - run: node tests/verify.mjs
       - run: node tests/progress-model.mjs
       - run: node tests/dashboard.mjs
+      - run: node tests/results.mjs
       - run: node tests/journeys.mjs
       - run: node tests/navigation.mjs
       - run: node tests/learning.mjs
@@ -29,7 +30,7 @@ jobs:
         if: success()
         run: |
           mkdir -p static-preview
-          cp index.html dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
           cp -r assets static-preview/
           printf '%s\n' 'LEXIGO PR #8 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'No Supabase cabinet or production deployment is included.' > static-preview/README.txt
       - name: Upload isolated static preview (no deployment)

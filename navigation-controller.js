@@ -12,6 +12,7 @@
  function focusPage(){const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
  function show(page){
   document.body.dataset.page=page;
+  LexigoDashboard.sync(page);
   for(const [id,on] of Object.entries({homePage:page==='home',coursePage:page==='course',learningArea:['lesson','words','teacher','play'].includes(page),lessonHeading:['lesson','words','teacher'].includes(page),catalogAside:['words','teacher'].includes(page),launcher:page==='lesson',teacherPage:page==='teacher',game:page==='play'})){
    const node=byId(id);node.hidden=!on;if(id==='launcher'||id==='game')node.classList.toggle('hidden',!on);node.toggleAttribute('data-route-active',on&&['homePage','coursePage','lessonHeading','game'].includes(id));
   }
@@ -51,7 +52,8 @@
     show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='words'?'Слова':page==='teacher'?'Материалы':modeNames[mode]);
     if(page==='play'){if(mode==='mixed')quickStart();else originalStart(mode);if(!game){lastURL='';history.replaceState({},'','#'+lessonPath());render();return}byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode]}
     document.title=(page==='play'?modeNames[mode]:byId('currentLesson').textContent)+' — LEXIGO';
-   }else if(parts[0]==='course'){show('course');course(parts[1],parts[2])}
+   }else if(['games','awards','profile'].includes(parts[0])){const page=parts[0];show(page);crumbs([]);LexigoDashboard.render(page,lessonPath(),'Spotlight '+book.grade+' · '+(unit==='__all'?mod:book.sections[Number(unit)].title),modeNames);document.title=({games:'Игры',awards:'Награды',profile:'Профиль'}[page])+' — LEXIGO';}
+   else if(parts[0]==='course'){show('course');course(parts[1],parts[2])}
 
    else{show('home');crumbs([]);document.title='LEXIGO — английский по шагам';if(route!=='/home'){history.replaceState({},'','#/home');lastURL='/home'}}
   }finally{applying=false}focusPage();

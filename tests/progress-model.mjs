@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const ctx={window:{}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('progress-model.js','utf8'),ctx);
+const summary=ctx.window.LexigoProgress.summarize,books=[{grade:2,sections:[{words:[{id:'a'},{id:'b'},{id:'c'}]}]}];
+assert.equal(summary(books,null).crystals,0);
+assert.equal(summary(books,{a:{selfKnown:99},unknown:{right:100}}).correct,0);
+const raw={a:{right:10,recall:2},b:{right:1},c:{wrong:2}};
+const s=summary(books,raw);assert.equal(s.practiced,3);assert.equal(s.correct,2);assert.equal(s.recalled,1);assert.equal(s.crystals,4);
+raw.a.right=100;raw.a.recall=100;assert.equal(summary(books,raw).crystals,4);
+assert.equal(summary(books,{a:{right:Infinity},b:{right:'100'},c:{right:-1}}).crystals,0);
+assert.equal(summary(books,{a:{recall:2}}).recalled,0);
+assert.equal(summary(books,raw).awards[0].earned,true);assert.equal(summary(books,raw).awards[1].earned,false);
+console.log('PASS progress: unique word rewards, self-rating exclusion, corrupt/unknown entries and repeat idempotence');

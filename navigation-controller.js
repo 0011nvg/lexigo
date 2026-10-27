@@ -35,7 +35,7 @@
   currentCourse=DB.books.find(b=>String(b.grade)===grade)||DB.books[0];const ms=modules(currentCourse);moduleIndex=Number.isInteger(Number(index))&&ms[Number(index)]?Number(index):0;
   byId('courseTitle').textContent='Spotlight '+currentCourse.grade;byId('courseSubtitle').textContent=currentCourse.sections.reduce((n,s)=>n+s.words.length,0)+' слов · Выбери модуль и урок';
   byId('courseTabs').replaceChildren(...DB.books.map(b=>{const a=link('Spotlight '+b.grade,'/course/'+b.grade+'/0');if(b===currentCourse)a.setAttribute('aria-current','page');return a}));
-  byId('moduleTabs').replaceChildren(...ms.map((m,i)=>{const a=link(m,'/course/'+currentCourse.grade+'/'+i);if(i===moduleIndex)a.setAttribute('aria-current','page');return a}));
+  byId('moduleTabs').replaceChildren(...ms.map((m,i)=>{const a=link(m,'/course/'+currentCourse.grade+'/'+i);if(i===moduleIndex)a.setAttribute('aria-current','page');return a}),byId('wholeBookExtra'),byId('wholeBookPicker'));
   byId('moduleTitle').textContent=ms[moduleIndex];const cards=byId('lessonCards');cards.replaceChildren();
   function add(title,subtitle,key,number){const a=link('','/lesson/'+currentCourse.grade+'/'+key,'lesson-card');const num=make('span',number);num.className='lesson-number';const label=make('span');label.append(make('strong',title),make('small',subtitle));a.append(num,label,make('span','→'));cards.append(a)}
   add('Все слова модуля','Общая тренировка по разделу','m'+moduleIndex,'↗');

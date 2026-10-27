@@ -2,12 +2,12 @@
 'use strict';
 const style=document.createElement('style');
 style.textContent='.whole-book-extra{margin:22px 0 0;padding:17px 19px;border:1px solid #d7e3f0;border-radius:18px;background:#f5f8fd;display:flex;align-items:center;justify-content:space-between;gap:16px;color:#19395d}.whole-book-extra strong{font-size:15px}.whole-book-extra p{margin:5px 0 0;font-size:13px;color:#63758e}.whole-book-extra button{white-space:nowrap}.whole-book-picker{margin:10px 0;padding:18px;border:1px solid #d7e3f0;border-radius:18px;background:#f8fbff;color:#19395d}.whole-book-picker>p{font-size:13px;color:#63758e}.whole-book-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:9px;margin:13px 0}.whole-book-modes button{padding:12px 14px;text-align:left;background:#fff;color:#244b7b;border:1px solid #d7e3f0;border-radius:12px;font-weight:650;cursor:pointer}.whole-book-modes button:hover,.whole-book-modes button:focus-visible{background:#e8f2ff}.whole-book-modes small{display:block;font-weight:400;color:#657b98;margin-top:4px}.whole-book-picker.hidden{display:none!important}@media(max-width:550px){.whole-book-extra{align-items:stretch;flex-direction:column}.whole-book-extra button{align-self:flex-end}}';
-document.head.append(style);
+style.textContent+=' #moduleTabs .whole-book-extra{margin-top:18px;padding:14px;display:flex;flex-direction:column;align-items:stretch}#moduleTabs .whole-book-extra button{width:100%}#moduleTabs .whole-book-picker{padding:12px}#moduleTabs .whole-book-modes{grid-template-columns:1fr}';document.head.append(style);
 const open=document.getElementById('wholeBookOpen'),close=document.getElementById('wholeBookClose'),picker=document.getElementById('wholeBookPicker'),modes=document.getElementById('wholeBookModes');
 if(!open||!close||!picker||!modes||!window.LEXIGO_DATA)return;
 const configs=[['cards','Карточки',20],['quiz','Выбери перевод',20],['spell','Напиши слово',15],['pairs','Найди пару',10],['truefalse','Верно / неверно',20],['fix','Исправь ошибку',15],['audio','Аудиодиктант',15],['crystals','Кристаллы',15],['boss','Финальный тест',15],['mixed','Смешанная тренировка',15]];
 let active=null;
-function selectedBook(){return window.LEXIGO_DATA.books.find(b=>String(b.grade)===document.getElementById('book').value)}
+function selectedBook(){const onCourse=document.body.dataset.page==='course';const grade=onCourse?(document.getElementById('courseTitle').textContent.match(/\d+/)||[])[0]:document.getElementById('book').value;return window.LEXIGO_DATA.books.find(b=>String(b.grade)===String(grade))}
 function key(grade,mode){return 'lexigo_whole_book_v1_'+grade+'_'+mode}
 function read(k){try{const x=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(x)?x:[]}catch{return []}}
 function write(k,x){try{localStorage.setItem(k,JSON.stringify(x))}catch{}}

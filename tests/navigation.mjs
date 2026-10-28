@@ -8,7 +8,7 @@ try{
   await page.goto('http://127.0.0.1:4173/');
   assert.equal(await page.locator('#homeTitle').isVisible(),true);assert.equal(await page.locator('#launcher').isVisible(),false);assert.equal(await page.locator('#words').isVisible(),false);
   await page.screenshot({path:'test-results/navigation-'+width+'-home.png',fullPage:true});
-  for(const grade of [2,3,4]){
+  for(const grade of [2,3,4,5,6,7,8,9]){
    await page.locator('#courseCards a[href="#/course/'+grade+'/0"]').click();
    assert.equal(await page.locator('#courseTitle').innerText(),'Spotlight '+grade);
    assert.equal(await page.locator('#courseTabs [aria-current]').innerText(),'Spotlight '+grade);
@@ -39,5 +39,5 @@ try{
 
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Horizontal overflow');assert.deepEqual(errors,[]);await page.close();
  }
- console.log('PASS navigation: three books, lesson isolation, chosen words, all ten routes, back/forward, reload, invalid links, desktop/mobile');
+ console.log('PASS navigation: eight books, lesson isolation, chosen words, all ten routes, back/forward, reload, invalid links, desktop/mobile');
 }finally{await browser.close()}

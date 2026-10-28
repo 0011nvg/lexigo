@@ -226,3 +226,16 @@
  .mode small{font-size:11px;line-height:1.35}
  .course-layout{grid-template-columns:clamp(82px,24vw,104px) minmax(0,1fr);gap:10px}
 }
+
+/* Expanded Spotlight 2–9 course catalogue. No fictitious landmark artwork for older grades. */
+@media screen {
+ .grade-5 .course-cover{background:linear-gradient(135deg,#d8f8eb,#b7ebdd)}
+ .grade-6 .course-cover{background:linear-gradient(135deg,#fff0d6,#ffdcb9)}
+ .grade-7 .course-cover{background:linear-gradient(135deg,#eee5ff,#d4ccff)}
+ .grade-8 .course-cover{background:linear-gradient(135deg,#dff2ff,#b8dfff)}
+ .grade-9 .course-cover{background:linear-gradient(135deg,#ffe9e6,#ffd0cb)}
+ .grade-5 .travel-scene:before,.grade-6 .travel-scene:before,.grade-7 .travel-scene:before,.grade-8 .travel-scene:before,.grade-9 .travel-scene:before{background:radial-gradient(circle,#ffffffc9,transparent 70%);top:-28px;right:-30px}
+}
+@media screen and (min-width:780px){.course-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.course-grid .course-card{display:block;min-width:0}.course-grid .course-cover{height:170px;min-height:170px;border-radius:20px 20px 0 0}.course-grid .course-cover>b{font-size:74px}.course-grid .course-caption{padding:17px}}
+@media screen and (min-width:540px) and (max-width:779px){.course-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.course-grid .course-card{display:block}.course-grid .course-cover{height:165px;min-height:165px;border-radius:20px 20px 0 0}}
+@media screen and (max-width:539px){.course-grid{grid-template-columns:minmax(0,1fr)}}

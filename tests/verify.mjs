@@ -35,6 +35,13 @@ for(const id of ['book','module','unit','words','quickStart','game','launcher','
  assert.ok(html.includes(`id="${id}"`),`Missing UI element ${id}`);
 }
 // Extended dictionaries are additive: do not replace the original 1035 records or their IDs.
+const additions='vocabulary/spotlight-2-4-additions.js';
+assert.ok(html.includes('<script src="'+additions+'"></script>'));
+vm.runInNewContext(fs.readFileSync(additions,'utf8'),context,{timeout:5000,filename:additions});
+for(const [grade,count] of Object.entries({2:257,3:432,4:384})){
+ const book=context.window.LEXIGO_DATA.books.find(b=>String(b.grade)===grade);
+ assert.equal(book.sections.flatMap(s=>s.words).length,count,'Spotlight '+grade+' update mismatch');
+}
 const extendedCounts={5:1514,6:1148,7:1222,8:2261,9:2199};
 for(const [grade,count] of Object.entries(extendedCounts)){
  const path='vocabulary/spotlight-'+grade+'.js';
@@ -48,8 +55,8 @@ for(const [grade,count] of Object.entries(extendedCounts)){
 const expanded=context.window.LEXIGO_DATA.books;
 assert.deepEqual(Array.from(expanded,b=>b.grade),[2,3,4,5,6,7,8,9]);
 const expandedWords=expanded.flatMap(b=>b.sections.flatMap(s=>s.words));
-assert.equal(expandedWords.length,9379,'Extended vocabulary total changed');
-assert.equal(new Set(expandedWords.map(w=>w.id)).size,9379,'Duplicate IDs across books');
+assert.equal(expandedWords.length,9417,'Extended vocabulary total changed');
+assert.equal(new Set(expandedWords.map(w=>w.id)).size,9417,'Duplicate IDs across books');
 assert.ok(expandedWords.every(w=>typeof w.en==='string'&&w.en.trim()&&typeof w.ru==='string'&&w.ru.trim()));
 assert.ok(html.includes('2–9 классы'),'Landing class range not updated');
-console.log('PASS: 1035 original records intact + 8344 imported records = 9379 words, Spotlight 2–9, unique IDs, mirrored legacy data and JS syntax');
+console.log('PASS: 1035 original IDs intact + 38 added + 8344 imported = 9417 words, Spotlight 2–9, unique IDs, mirrored legacy data and JS syntax');

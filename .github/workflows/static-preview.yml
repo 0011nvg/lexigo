@@ -18,6 +18,7 @@ on:
       - 'local-storage.js'
       - 'local-game-adapter.js'
       - 'data.js'
+      - 'vocabulary/**'
       - '.github/workflows/static-preview.yml'
 permissions:
   contents: read
@@ -37,10 +38,10 @@ jobs:
         run: |
           mkdir -p static-preview
           cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
-          cp -r assets static-preview/
-          printf '%s\n' 'LEXIGO static preview — PR #8' 'Extract and open index.html in a browser. For full routing support, run a local HTTP server in this folder (python3 -m http.server 4173).' 'This package contains no server cabinet or Supabase configuration.' > static-preview/README.txt
+          cp -r assets vocabulary static-preview/
+          printf '%s\n' 'LEXIGO static preview — Spotlight 2–9' 'Extract and open index.html in a browser. For full routing support, run a local HTTP server in this folder (python3 -m http.server 4173).' 'This package contains no server cabinet or Supabase configuration.' > static-preview/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: lexigo-pr8-static-preview
+          name: lexigo-spotlight-2-9-static-preview
           path: static-preview/
           retention-days: 14

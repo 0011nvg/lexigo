@@ -1,0 +1,30 @@
+name: Accounts real Auth integration
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  accounts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - run: supabase start -x studio,imgproxy,inbucket,storage-api,realtime,analytics,vector,edge-runtime
+      - run: supabase db reset --local
+      - name: Test real Auth and subscription RLS
+        shell: bash
+        run: |
+          supabase status -o env > /tmp/lexigo-accounts-env
+          set -a
+          source /tmp/lexigo-accounts-env
+          set +a
+          node tests/accounts-api.mjs
+      - if: always()
+        run: supabase stop --no-backup

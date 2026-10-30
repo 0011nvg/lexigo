@@ -18,6 +18,7 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
+      - run: node tests/inventory.mjs
       - run: node tests/crystal-policy.mjs
       - run: node tests/crystal-webkit.mjs
       - run: node tests/progress-model.mjs
@@ -28,11 +29,12 @@ jobs:
       - run: node tests/learning.mjs
       - run: node tests/visual-smoke.mjs
       - run: node tests/integration-print.mjs
+      - run: node tests/world.mjs
       - name: Prepare isolated static preview package
         if: success()
         run: |
           mkdir -p static-preview
-          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css static-preview/
           cp -r assets vocabulary static-preview/
           printf '%s\n' 'LEXIGO Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'No Supabase cabinet or production deployment is included.' > static-preview/README.txt
       - name: Upload isolated static preview (no deployment)

@@ -2,7 +2,7 @@
  * without server rewrite rules; no grade/module/game implementation is duplicated. */
 (()=>{'use strict';
  const byId=id=>document.getElementById(id),make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
- const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',crystals:'Кристаллы',boss:'Финальный тест',mixed:'Тренировка дня'};
+ const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',crystals:'Кристальная экспедиция',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
  const originalStart=start,originalStop=stop;let applying=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
  const modules=b=>[...new Set(b.sections.map(s=>s.module))];
  const currentKey=()=>unit==='__all'?'m'+modules(book).indexOf(mod):String(unit);

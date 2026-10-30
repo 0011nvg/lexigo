@@ -1,0 +1,83 @@
+{
+ "files": [
+  "data.js",
+  "vocabulary/spotlight-2-4-additions.js",
+  "vocabulary/spotlight-5.js",
+  "vocabulary/spotlight-6.js",
+  "vocabulary/spotlight-7.js",
+  "vocabulary/spotlight-8.js",
+  "vocabulary/spotlight-9.js"
+ ],
+ "books": [
+  {
+   "grade": 2,
+   "sections": 36,
+   "modules": 7,
+   "words": 257,
+   "hash": "9ebff4f0c141854290523bf0e26b53f5e21815a00246e756ed33b4179656ca81"
+  },
+  {
+   "grade": 3,
+   "sections": 51,
+   "modules": 6,
+   "words": 432,
+   "hash": "315b6e5045aec28212f2b3635e7d7d0d0e53f2b62300ae28eb3d899fd49b6a4c"
+  },
+  {
+   "grade": 4,
+   "sections": 50,
+   "modules": 9,
+   "words": 384,
+   "hash": "26a0c3b776354ef70a04f9322890965965e52c695f1196114b8bb2c9872e7f07"
+  },
+  {
+   "grade": 5,
+   "sections": 64,
+   "modules": 12,
+   "words": 1514,
+   "hash": "2466159099586f406fca99b5fa648ee601b88a544009e1412a867a5e593dee0a"
+  },
+  {
+   "grade": 6,
+   "sections": 52,
+   "modules": 11,
+   "words": 1148,
+   "hash": "c691f1e34a1e7f0fba3d0bc574568a0964ee2fea202d8bbe553d6c9db08dc61a"
+  },
+  {
+   "grade": 7,
+   "sections": 60,
+   "modules": 10,
+   "words": 1222,
+   "hash": "db78e9155ee3066adcce6be0e458ee6d4f46a2b462f366472af94cee1dd2cd2a"
+  },
+  {
+   "grade": 8,
+   "sections": 123,
+   "modules": 9,
+   "words": 2261,
+   "hash": "1aaa8650e1ce0dd874b4f6718cffcee8e712d2b9af1b4dd1c533a09a3dc92e3a"
+  },
+  {
+   "grade": 9,
+   "sections": 70,
+   "modules": 8,
+   "words": 2199,
+   "hash": "2bb2959f14573392c51dcdea5b211f7c469ead3736cd8d269523148cb7cd9abe"
+  }
+ ],
+ "totalWords": 9417,
+ "totalSections": 506,
+ "ids": "770c196fa659b663800779c5d120a063ae39640cc97260d25c2db685a40ee9e4",
+ "modes": [
+  "cards",
+  "quiz",
+  "spell",
+  "pairs",
+  "truefalse",
+  "fix",
+  "audio",
+  "crystals",
+  "boss"
+ ]
+}

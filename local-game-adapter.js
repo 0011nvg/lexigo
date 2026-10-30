@@ -32,7 +32,9 @@ function question(mode,w){
   if(audioAvailable()){Object.assign(model,{instruction:'Послушай и напиши английское слово или выражение',prompt:null,autoplay:true});actions.speak=()=>speak(w.en)}
   else{model.kind='spell';model.instruction='Озвучивание недоступно. Напиши слово по переводу.'}
  }
- return {model,actions};
+ if(mode==='builder'){const en=String(w.en).trim(),tokens=en.split(/\s+/);const letters=Array.from(en);const lettersOnly=letters.filter(c=>/[a-z]/i.test(c)).length;let tiles=null,joiner='';if(tokens.length>=2&&tokens.length<=7&&!/[\/()…\[\]=+]|\.\.\./.test(en)){tiles=tokens;joiner=' '}else if(tokens.length===1&&/^[a-z'’-]+$/i.test(en)&&lettersOnly>=3&&lettersOnly<=12){tiles=letters.map(c=>c.toLowerCase()===c?c:c);joiner=''}if(!tiles){model.kind='spell'}else{let order=shuffle(tiles);for(let k=0;k<12&&order.join(joiner)===tiles.join(joiner)&&new Set(tiles).size>1;k++)order=shuffle(tiles);Object.assign(model,{kind:'builder',instruction:joiner?'Собери фразу из слов по порядку':'Собери слово из букв',prompt:w.ru,tiles:order,joiner});actions.submitBuild=text=>answerUI(w,normalize(text)===normalize(w.en),feedback(),'recognition')}}
+else if(mode==='listen'){const others=shuffle(pool.filter(x=>x.id!==w.id&&normalize(x.en)!==normalize(w.en))).filter((x,i,a)=>a.findIndex(y=>normalize(y.en)===normalize(x.en))===i).slice(0,3);if(!audioAvailable()||!others.length){if(others.length){model.kind='quiz';model.instruction='Выбери правильный перевод';model.prompt=w.en;model.choices=shuffle([w,...others]).map(x=>({label:x.ru,value:x.id}));actions.answer=id=>answerUI(w,id===w.id,feedback())}else model.kind='spell'}else{Object.assign(model,{kind:'listen',instruction:'Послушай и выбери слово, которое прозвучало',prompt:null,autoplay:true,choices:shuffle([w,...others]).map(x=>({label:x.en,value:x.id}))});actions.speak=()=>speak(w.en);actions.answer=id=>answerUI(w,id===w.id,feedback())}}
+return {model,actions};
 }
 
 return Object.freeze({question,pairCorrect:(a,b)=>a.wordId===b.wordId&&a.side!==b.side});

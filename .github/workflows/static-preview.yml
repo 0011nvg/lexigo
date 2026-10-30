@@ -18,6 +18,8 @@ on:
       - 'local-storage.js'
       - 'local-game-adapter.js'
       - 'data.js'
+      - 'lexi-world.js'
+      - 'world.css'
       - 'vocabulary/**'
       - '.github/workflows/static-preview.yml'
 permissions:
@@ -37,7 +39,7 @@ jobs:
       - name: Package only public local-game files (never deploy)
         run: |
           mkdir -p static-preview
-          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js static-preview/
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css static-preview/
           cp -r assets vocabulary static-preview/
           printf '%s\n' 'LEXIGO static preview — Spotlight 2–9' 'Extract and open index.html in a browser. For full routing support, run a local HTTP server in this folder (python3 -m http.server 4173).' 'This package contains no server cabinet or Supabase configuration.' > static-preview/README.txt
       - uses: actions/upload-artifact@v4

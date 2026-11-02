@@ -9,7 +9,7 @@
   const joinParam = (params.get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   if (joinParam.length === 8) try { sessionStorage.setItem('lexigo_join', joinParam); } catch { /* private mode */ }
   const pendingJoin = () => { try { return sessionStorage.getItem('lexigo_join') || ''; } catch { return ''; } };
-  const safeNext = () => { const n = params.get('next') || ''; return /^(index\.html|me\.html)(\?[A-Za-z0-9=&_-]{0,120})?$/.test(n) ? n : 'me.html'; };
+  const safeNext = () => { const n = params.get('next') || ''; return /^(index\.html|me\.html)(\?[A-Za-z0-9=&_-]{0,120})?(#\/[A-Za-z0-9\/_-]{1,120})?$/.test(n) ? n : 'me.html'; };
   let sb = null, mode = location.hash === '#signup' || pendingJoin() ? 'signup' : 'login';
 
   function msgBox() { return h('p', { class: 'acc-msg', role: 'status' }); }

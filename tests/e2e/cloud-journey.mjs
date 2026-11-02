@@ -100,12 +100,12 @@ try {
   const code = (await t.locator('.group-card .code').innerText()).trim();
   assert.match(code, /^[A-HJ-NP-Z2-9]{8}$/);
   ok('teacher: registration, cabinet, class created with join code ' + code);
-  await t.getByRole('tab', { name: 'Мои уроки' }).click();
+  await t.getByRole('tab', { name: /Мои уроки/ }).click(); await t.getByRole('button', { name: '＋ Новый урок' }).first().click();
   await t.fill('#lsTitle', 'Фрукты — дополнительно');
   await t.fill('#lsWords', 'apple — яблоко\npear — груша\nplum; слива\ncherry\tвишня\nбез перевода');
   assert.match(await t.locator('#lsWords + small').innerText(), /Распознано слов: 4/);
   await t.getByRole('button', { name: 'Сохранить урок' }).click();
-  await t.locator('.row', { hasText: 'Фрукты — дополнительно' }).waitFor();
+  await t.locator('.ml-card', { hasText: 'Фрукты — дополнительно' }).waitFor();
   ok('teacher: custom lesson parsed (4 of 5 lines) and saved');
 
   /* 2. Student joins by invite link */
@@ -127,8 +127,8 @@ try {
   await t.locator('textarea[maxlength="500"]').fill('Повторите к пятнице');
   await t.getByRole('button', { name: 'Назначить' }).click();
   await t.locator('.group-card', { hasText: 'Spotlight 3' }).waitFor();
-  await t.getByRole('tab', { name: 'Мои уроки' }).click();
-  await t.locator('.row', { hasText: 'Фрукты' }).getByRole('button', { name: 'Назначить' }).click();
+  await t.getByRole('tab', { name: /Мои уроки/ }).click();
+  await t.locator('.ml-card', { hasText: 'Фрукты' }).getByRole('button', { name: /^Назначить/ }).click();
   assert.match(await t.locator('.mode-count').innerText(), /Выбрано: 12 из 12/);   // the lesson's own games are pre-selected
   await t.locator('.mode-pick .btn-link', { hasText: 'Снять все' }).click();
   await t.locator('.mode-opt[data-mode="quiz"]').click(); await t.locator('.mode-opt[data-mode="pairs"]').click();     // → quiz + pairs
@@ -138,12 +138,12 @@ try {
   ok('teacher: two assignments (Spotlight 3 lesson: quiz+spell, own lesson: quiz+pairs) in a few clicks');
 
   /* 4. Student sees tasks, completes the Spotlight one */
-  await s.reload(); await s.locator('.task-card-s').first().waitFor();
-  assert.equal(await s.locator('.task-card-s').count(), 2);
-  assert.match(await s.locator('.task-card-s', { hasText: 'Spotlight 3' }).innerText(), /Повторите к пятнице/);
-  await s.locator('.task-card-s', { hasText: 'Spotlight 3' }).getByRole('link', { name: 'Начать' }).click();
-  await s.locator('.task-overlay').waitFor();
-  await s.locator('.task-mode', { hasText: 'Выбери перевод' }).click();
+  await s.reload(); await s.locator('#lessons .tl-card').first().waitFor();
+  assert.equal(await s.locator('#lessons .tl-card').count(), 2);
+  assert.match(await s.locator('#lessons .tl-card', { hasText: 'Spotlight 3' }).innerText(), /Повторите к пятнице/);
+  await s.locator('#lessons .tl-card', { hasText: 'Spotlight 3' }).getByRole('link', { name: /Открыть урок/ }).click();
+  await s.locator('#myLessonPage .my-modes').waitFor();
+  await s.locator('#myLessonPage .mode[data-mode="quiz"]').click();
   await playToEnd(s, { mistakes: 1 });
   // ТОП-3: first result on this board → congratulation + name form
   await s.locator('.lb-claim').waitFor({ timeout: 10000 });
@@ -155,9 +155,9 @@ try {
   await s.locator('.lb-saved').waitFor();
   assert.match(await s.locator('.lb-list li.mine').innerText(), /Маша К\./);
   ok('ТОП-3: top result → congratulation, name validated, saved on the server, own row highlighted');
-  await s.getByRole('button', { name: 'Вернуться к заданию' }).click();
-  await s.locator('.task-mode.done', { hasText: 'Выбери перевод' }).waitFor();
-  await s.locator('.task-mode', { hasText: 'Напиши слово' }).click();
+  await s.getByRole('button', { name: 'Вернуться к уроку' }).click();
+  await s.locator('#myLessonPage .mode.is-done[data-mode="quiz"]').waitFor();
+  await s.locator('#myLessonPage .mode[data-mode="spell"]').click();
   await playToEnd(s);
   await s.waitForTimeout(1500);
   const done = sql(`select string_agg(mode||':'||finished, ',' order by mode) from sessions s where s.user_id='${uidOf(mail('masha'))}' and s.assignment_id is not null and s.created_at > now() - interval '10 minutes'`);
@@ -169,16 +169,16 @@ try {
   ok('student: assignment launched from cabinet, both games saved to the cloud; server XP ' + xp + ' = XP on screen');
 
   /* 5. Custom lesson with pairs */
-  await s.goto(SITE + 'me.html'); await s.locator('.task-card-s', { hasText: 'Фрукты' }).getByRole('link', { name: 'Начать' }).click();
-  await s.locator('.task-mode', { hasText: 'Найди пару' }).click();
+  await s.goto(SITE + 'me.html'); await s.locator('#lessons .tl-card', { hasText: 'Фрукты' }).getByRole('link', { name: /Открыть урок/ }).click();
+  await s.locator('#myLessonPage .mode[data-mode="pairs"]').click();
   await playToEnd(s);
   await s.waitForTimeout(1200);
   assert.equal(sql(`select count(*) from sessions where user_id='${uidOf(mail('masha'))}' and mode='pairs' and finished and lesson_id is not null`), '1');
   ok('student: own-lesson words work in existing games (pairs) and are saved with the lesson');
 
   /* 6. Cabinet shows progress, history, task status */
-  await s.goto(SITE + 'me.html'); await s.locator('.task-card-s').first().waitFor();
-  assert.match(await s.locator('.task-card-s', { hasText: 'Spotlight 3' }).innerText(), /Выполнено/);
+  await s.goto(SITE + 'me.html'); await s.locator('#lessons .tl-card').first().waitFor();
+  assert.match(await s.locator('#lessons .tl-card', { hasText: 'Spotlight 3' }).innerText(), /Завершён/);
   assert.ok(await s.locator('.hist .row').count() >= 3);
   assert.match(await s.locator('.book-row').first().innerText(), /Spotlight 3/);
   ok('student cabinet: task «Выполнено», history, book progress');

@@ -207,7 +207,7 @@
       if (shown && normalize(shown) === normalize(w.ru)) box.append(el('p', null, 'Перевод был верным: «' + w.en + '» — «' + w.ru + '».'), el('p', 'why-tip', 'Нажимай «Верно», когда перевод совпадает со значением слова.'));
       else box.append(el('p', null, '«' + w.en + '» значит «' + w.ru + '»' + (shown ? ', а не «' + shown + '».' : '.')), el('p', 'why-tip', 'Скажи пару вслух: ' + w.en + ' — ' + w.ru + '.'));
     } else if (mode === 'builder') {
-      box.append(el('p', null, 'Правильный порядок: «' + w.en + '».'), el('p', 'why-tip', 'Собери ещё раз в голове: сначала первое слово или первая буква.'));
+      box.append(el('p', null, 'Правильный порядок: «' + (window.LexiWordBuilder ? window.LexiWordBuilder.answer(w.en) : w.en) + '».'), el('p', 'why-tip', 'Собери ещё раз в голове: сначала первое слово или первая буква.'));
     } else if (mode === 'letterfix') {
       box.append(el('p', null, 'Правильно пишется: «' + w.en + '».'));
     } else return;

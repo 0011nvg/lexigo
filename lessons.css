@@ -1,0 +1,128 @@
+/* LEXI — уроки от учителя: карточки (главная, кабинеты) и страница урока (2026-11-02 v2).
+   Палитра и шрифты — переменные world.css; анимации Лекси не трогаем. */
+
+/* ---------- карточка урока ---------- */
+.tl-card{position:relative;display:flex;gap:18px;align-items:flex-start;padding:20px 22px;border-radius:var(--w-r,22px);background:#fff;box-shadow:var(--w-shadow);border:2px solid transparent;color:var(--w-ink);min-width:0}
+.tl-card.tl-new{border-color:#cfdaff}
+.tl-card.tl-grid .tl-comment{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;padding:8px 12px}
+.tl-progress{border-color:#ffe08a}
+.tl-card.tl-done{background:#fbfdf6}
+.tl-card.tl-overdue{border-color:#ffc4bc}
+.tl-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.tl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tl-kicker{font:800 11.5px/1 var(--w-text);letter-spacing:.09em;text-transform:uppercase;color:var(--w-blue)}
+.tl-status{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:999px;font:800 12.5px/1.1 var(--w-text);white-space:nowrap}
+.tl-s-new{background:#eef3ff;color:#2443c9}
+.tl-s-progress{background:#fff4cf;color:#7a5600}
+.tl-s-done{background:#e3f7ec;color:#0c7a57}
+.tl-title{margin:0;font:800 19px/1.25 var(--w-display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.tl-meta{margin:0;color:var(--w-ink2);font-weight:700;font-size:14px}
+.tl-comment{margin:0;padding:10px 14px;border-radius:14px;background:#f5f7ff;color:#26357a;font-weight:700;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.tl-progress{display:flex;flex-direction:column;gap:6px}
+.tl-progress small{color:var(--w-mute);font-weight:700;font-size:13px}
+.tl-bar{height:10px;border-radius:999px;background:#edf0fa;overflow:hidden}
+.tl-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--w-blue),#6f8dff);transition:width .4s ease}
+.tl-done .tl-bar i,.tl-s-done+.tl-bar i{background:linear-gradient(90deg,var(--w-mint),#7bdcb8)}
+.tl-btn{align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 22px;border-radius:16px;background:var(--w-lime);color:#13200a;font:800 16px/1 var(--w-text);text-decoration:none;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12);margin-top:4px}
+.tl-btn:hover{filter:brightness(1.04)}
+.tl-btn:focus-visible{outline:3px solid var(--w-blue);outline-offset:3px}
+.tl-btn.ghost{background:#eef3ff;color:#1f3bb3;box-shadow:inset 0 -3px 0 #d5ddfa}
+.tl-lexi{width:96px;height:96px;flex:none;border-radius:50%;background:#eef3ff;object-fit:cover}
+
+/* крупная карточка на главной */
+.tl-home{margin:0 0 22px;display:flex;flex-direction:column;gap:16px}
+.tl-feature{padding:24px 26px;background:linear-gradient(120deg,#fff 0%,#f1f5ff 100%);border:2px solid #b9c8ff;box-shadow:0 18px 40px -22px rgba(44,86,245,.55)}
+.tl-feature .tl-title{font-size:clamp(22px,3vw,28px)}
+.tl-feature .tl-kicker{font-size:12.5px}
+.tl-feature .tl-btn{font-size:17px;min-height:54px;padding:14px 26px}
+.tl-more{display:flex;flex-direction:column;gap:12px}
+.tl-more-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tl-more-head h2{margin:0;font:800 18px/1.2 var(--w-display)}
+.tl-count{color:var(--w-mute);font-weight:800;font-size:13px}
+.tl-more-head a{margin-left:auto;font-weight:800}
+.tl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.tl-grid .tl-card{padding:16px 18px}
+.tl-grid .tl-title{font-size:16.5px}
+
+/* ---------- страница урока ---------- */
+.my-lesson{display:flex;flex-direction:column;gap:18px}
+.my-lesson .my-head{display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px 26px!important;margin:0!important;border-radius:26px!important;background:linear-gradient(120deg,#fff,#eef2ff)!important;box-shadow:var(--w-shadow)!important;border:0}
+.my-head-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.my-head h1{margin:0;font:800 clamp(24px,4vw,36px)/1.1 var(--w-display);overflow-wrap:anywhere;outline:none}
+.my-head .eyebrow{margin:0}
+.my-meta{margin:0;color:var(--w-ink2);font-weight:700}
+.my-progress{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 12px;max-width:560px;margin-top:4px}
+.my-progress small{grid-column:1/-1;color:var(--w-mute);font-weight:700;font-size:13.5px}
+.my-head-actions{display:flex;flex-direction:column;gap:10px;align-items:stretch;flex:none}
+.my-head-actions .btn{text-decoration:none;text-align:center}
+.my-comment{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:20px;background:#fff;box-shadow:var(--w-shadow)}
+.my-comment img{width:56px;height:56px;border-radius:50%;flex:none;background:#eef3ff}
+.my-comment p{margin:0;line-height:1.45;overflow-wrap:anywhere}
+.my-lesson .task-preview-note{margin:0}
+.my-sec-head{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.my-sec-head h2{margin:0;font:800 20px/1.2 var(--w-display)}
+.my-count{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:#eef3ff;color:#2443c9;font-weight:800}
+.my-jump{margin-left:auto;font-weight:800}
+.my-word-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.my-word-list li{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 10px 8px 14px;border-radius:14px;background:#f6f8ff;border:1px solid #e6ebfa}
+.my-word-list li[hidden]{display:none}
+.my-word-list b{font-weight:800;color:var(--w-ink);overflow-wrap:break-word;min-width:0}
+.my-word-list span{color:var(--w-ink2);flex:1;min-width:0;overflow-wrap:break-word;hyphens:auto}
+.my-word-list b::after{content:'—';margin-left:8px;color:#aab2cc;font-weight:400}
+.my-word-list li.known{background:#f1fbf5;border-color:#cdeedd}
+.my-known{font-style:normal;color:var(--w-ok);font-weight:900}
+.my-say{flex:none;width:36px;height:36px;border:0;border-radius:12px;background:#fff;box-shadow:inset 0 -2px 0 #dfe5f7;cursor:pointer;font-size:16px}
+.my-more{margin-top:12px}
+.my-games .mode-heading{margin-bottom:14px}
+.my-modes .mode{position:relative}
+.my-flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.my-flag{display:inline-block;padding:3px 8px;border-radius:999px;font:800 11.5px/1.2 var(--w-text);background:#eef3ff;color:#2443c9}
+.my-flag.done{background:#e3f7ec;color:#0c7a57}
+.my-flag.task{background:#fff4cf;color:#7a5600}
+.my-flag.part,.my-flag.soft{background:#f2f3f8;color:var(--w-mute);font-weight:700}
+.my-modes .mode.is-done{box-shadow:inset 0 0 0 2px #bfe9d3!important}
+.my-modes .mode.is-soft{opacity:.62}
+.my-unfit{margin:14px 0 0;color:var(--w-mute);font-size:13.5px}
+.my-unfit summary{cursor:pointer;font-weight:700}
+.my-unfit ul{margin:8px 0 0;padding-left:20px}
+.my-loading,.my-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:40px 20px!important}
+.my-empty h1{margin:0;font:800 26px/1.2 var(--w-display);outline:none}
+.my-empty .buttons{justify-content:center}
+.my-empty .btn{text-decoration:none}
+
+/* ---------- кабинет учителя: «Мои уроки» ---------- */
+.ml-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ml-head h2{margin:0;font:800 22px/1.2 var(--w-display)}
+.ml-head .btn-acc{margin-left:auto}
+.ml-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ml-tools input{max-width:320px}
+.ml-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ml-card{display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:22px;background:#fff;box-shadow:var(--w-shadow);border:2px solid #e3e9fb;min-width:0}
+.ml-card h3{margin:0;font:800 18px/1.25 var(--w-display);overflow-wrap:anywhere}
+.ml-facts{display:flex;flex-wrap:wrap;gap:6px}
+.ml-facts span{padding:4px 10px;border-radius:999px;background:#f2f5ff;color:#33408a;font-weight:800;font-size:12.5px}
+.ml-assigned{margin:0;font-size:13.5px;color:var(--w-ink2);font-weight:700}
+.ml-assigned.none{color:var(--w-mute)}
+.ml-words{margin:0;color:var(--w-mute);font-size:13.5px;overflow-wrap:anywhere}
+.ml-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
+.ml-actions .btn-acc{justify-content:center;text-align:center;text-decoration:none}
+.ml-more{display:flex;justify-content:flex-end}
+.ml-empty{display:flex;align-items:center;gap:16px;padding:22px}
+.ml-empty img{width:84px;height:84px}
+
+/* ---------- кабинет ученика: «Уроки от учителя» ---------- */
+.st-lessons .tl-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+
+@media (max-width:720px){
+  .tl-card{padding:16px;gap:12px}
+  .tl-feature{padding:18px}
+  .tl-lexi{width:64px;height:64px}
+  .tl-btn{align-self:stretch}
+  .tl-grid,.ml-grid{grid-template-columns:1fr}
+  .my-lesson .my-head{flex-direction:column;padding:18px!important}
+  .my-head-actions{flex-direction:row;flex-wrap:wrap;width:100%}
+  .my-head-actions .btn{flex:1 1 140px}
+  .my-word-list{grid-template-columns:1fr}
+  .tl-more-head a{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){.tl-bar i{transition:none}}

@@ -4,17 +4,21 @@
  const byId=id=>document.getElementById(id),make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
  const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',crystals:'Кристальная экспедиция',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
  const originalStart=start,originalStop=stop;let applying=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
+ /* 2026-11-02 v2: уроки от учителя и свои уроки учителя — полноценные страницы #/my/a-<задание> и #/my/t-<урок>
+    (my-lessons.js). Старые ссылки index.html?task=<id> и ?lesson=<id> переводятся на них. */
+ let custom=null;const MY_KEY=/^[at]-[0-9a-f-]{36}$/i;
+ (()=>{const q=new URLSearchParams(location.search),t=q.get('task'),l=q.get('lesson'),id=t||l;if(id&&/^[0-9a-f-]{36}$/i.test(id)){q.delete('task');q.delete('lesson');const rest=q.toString();history.replaceState({},'',location.pathname+(rest?'?'+rest:'')+'#/my/'+(t?'a-':'t-')+id)}})();
  const modules=b=>[...new Set(b.sections.map(s=>s.module))];
  const currentKey=()=>unit==='__all'?'m'+modules(book).indexOf(mod):String(unit);
  const lessonPath=()=>'/lesson/'+book.grade+'/'+currentKey();
  const coursePath=()=>'/course/'+book.grade+'/'+modules(book).indexOf(mod);
- function link(label,path,className=''){const a=make('a',label);a.href='#'+path;a.className=className;return a}
+ function link(label,path,className=''){const a=make('a',label);a.href=path.startsWith('/')?'#'+path:path;a.className=className;return a}
  function focusPage(){const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
  function show(page){
   document.body.dataset.page=page;
   LexigoDashboard.sync(page);
-  for(const [id,on] of Object.entries({homePage:page==='home',coursePage:page==='course',learningArea:['lesson','words','teacher','play'].includes(page),lessonHeading:['lesson','words','teacher'].includes(page),catalogAside:['words','teacher'].includes(page),launcher:page==='lesson',teacherPage:page==='teacher',game:page==='play'})){
-   const node=byId(id);node.hidden=!on;if(id==='launcher'||id==='game')node.classList.toggle('hidden',!on);node.toggleAttribute('data-route-active',on&&['homePage','coursePage','lessonHeading','game'].includes(id));
+  for(const [id,on] of Object.entries({myLessonPage:page==='mylesson',homePage:page==='home',coursePage:page==='course',learningArea:['lesson','words','teacher','play'].includes(page),lessonHeading:['lesson','words','teacher'].includes(page),catalogAside:['words','teacher'].includes(page),launcher:page==='lesson',teacherPage:page==='teacher',game:page==='play'})){
+   const node=byId(id);node.hidden=!on;if(id==='launcher'||id==='game')node.classList.toggle('hidden',!on);node.toggleAttribute('data-route-active',on&&['myLessonPage','homePage','coursePage','lessonHeading','game'].includes(id));
   }
 
   document.body.classList.toggle('teacher-mode',page==='teacher');
@@ -47,6 +51,14 @@
   const route=location.hash.slice(1)||'/home';if(lastURL===route)return;lastURL=route;applying=true;
   try{
    if(game)originalStop();const parts=route.split('/').filter(Boolean);
+   if(parts[0]!=='my')custom=null;
+   if(parts[0]==='my'&&MY_KEY.test(parts[1]||'')){
+    const ML=window.LexigoMyLessons,mode=parts[2]==='play'&&Object.hasOwn(modeNames,parts[3])?parts[3]:null;
+    if(mode){show('play');byId('gameTitle').textContent=modeNames[mode];document.title=modeNames[mode]+' — LEXI';ML?.play(parts[1],mode)}
+    else{show('mylesson');ML?.open(parts[1],{games:parts[2]==='games'})}
+    if(!ML)byId('myLessonPage').replaceChildren(make('p','Загружаем урок…'));
+    return;
+   }
    if(parts[0]==='lesson'&&context(parts[1],parts[2])){
     const mode=parts[3]==='play'?parts[4]:null;const page=mode&&Object.hasOwn(modeNames,mode)?'play':['words','teacher'].includes(parts[3])?parts[3]:'lesson';
     show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='words'?'Слова':page==='teacher'?'Материалы':modeNames[mode]);
@@ -58,8 +70,10 @@
    else{show('home');crumbs([]);document.title='LEXI — английский по шагам';if(route!=='/home'){history.replaceState({},'','#/home');lastURL='/home'}}
   }finally{applying=false}focusPage();
  }
- start=function(...args){originalStart(...args);if(!applying&&game){const path=lessonPath()+'/play/'+game.mode;history.pushState({},'','#'+path);lastURL=path;show('play');lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage()}};
- stop=function(){originalStop();if(!applying&&document.body.dataset.page==='play')navigate(lessonPath())};
+ start=function(...args){originalStart(...args);if(!applying&&game){const path=(custom?'/my/'+custom.key:lessonPath())+'/play/'+game.mode;history[location.hash==='#'+path?'replaceState':'pushState']({},'','#'+path);lastURL=path;show('play');if(custom)crumbs([...custom.crumbs,[modeNames[game.mode],null]]);else lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage()}};
+ stop=function(){originalStop();if(!applying&&document.body.dataset.page==='play')navigate(custom?'/my/'+custom.key:lessonPath())};
+ /* для страниц уроков учителя (my-lessons.js) */
+ window.LexigoNav=Object.freeze({navigate,crumbs,show,focusPage,setCustom(ctx){custom=ctx||null},custom:()=>custom,refresh(){lastURL='';render()}});
  goHome=()=>navigate('/home');goToLibrary=()=>navigate('/course/'+book.grade+'/'+modules(book).indexOf(mod));
  for(const id of ['homeLogo','homeNav','gameHome'])byId(id).onclick=goHome;
  byId('heroStart').onclick=goToLibrary;byId('changeLesson').onclick=goToLibrary;byId('back').onclick=()=>stop();

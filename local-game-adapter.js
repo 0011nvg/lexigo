@@ -33,7 +33,11 @@ function question(mode,w){
   else if(audioAvailable()){Object.assign(model,{instruction:'Послушай и напиши английское слово',prompt:null,autoplay:true});actions.speak=()=>speak(window.wordForm(w.en))}
   else{model.kind='spell';model.instruction='Озвучивание недоступно. Напиши слово по переводу.'}
  }
- if(mode==='builder'){/* 2026-11-02: only single words (don't, ice-cream, T-shirt are single words); phrases are not split. Tiles are lower-case, so a capital letter never gives the first letter away. */const form=window.wordForm(w.en);if(!window.isBuilderWord?.(w)){model.kind='spell'}else{const tiles=Array.from(form.toLowerCase());let order=shuffle(tiles);for(let k=0;k<20&&order.join('')===tiles.join('')&&new Set(tiles).size>1;k++)order=shuffle(tiles);Object.assign(model,{kind:'builder',instruction:'Собери слово из букв',prompt:w.ru,tiles:order,joiner:''});actions.submitBuild=text=>answerUI(w,normalize(text)===normalize(form),feedback(),'recognition')}}
+ if(mode==='builder'){/* 2026-11-02 v2: word-builder.js — плитки ровно совпадают с написанием слова (повторы букв, регистр, дефис, апостроф);
+  набор проверяется перед показом; неподходящее слово (фраза, 1 буква, сбой проверки) превращается в «Напиши слово», а не ломает игру. */
+  const prep=window.LexiWordBuilder.prepare(w);
+  if(!prep.ok){model.kind='spell';model.instruction='Напиши английское слово или выражение';if(prep.reason==='tiles')console.warn('LEXI builder: tiles do not match',w.id)}
+  else{Object.assign(model,{kind:'builder',instruction:'Собери слово из букв',prompt:w.ru,tiles:prep.tiles,joiner:''});actions.submitBuild=text=>answerUI(w,window.LexiWordBuilder.check(text,prep.answer),prep.answer+' — '+w.ru,'recognition')}}
 else if(mode==='listen'){const others=shuffle(pool.filter(x=>x.id!==w.id&&normalize(x.en)!==normalize(w.en))).filter((x,i,a)=>a.findIndex(y=>normalize(y.en)===normalize(x.en))===i).slice(0,3);if(!audioAvailable()||!others.length){if(others.length){model.kind='quiz';model.instruction='Выбери правильный перевод';model.prompt=w.en;model.choices=shuffle([w,...others]).map(x=>({label:x.ru,value:x.id}));actions.answer=id=>answerUI(w,id===w.id,feedback())}else model.kind='spell'}else{Object.assign(model,{kind:'listen',instruction:'Послушай и выбери слово, которое прозвучало',prompt:null,autoplay:true,choices:shuffle([w,...others]).map(x=>({label:x.en,value:x.id}))});actions.speak=()=>speak(w.en);actions.answer=id=>answerUI(w,id===w.id,feedback())}}
 return {model,actions};
 }

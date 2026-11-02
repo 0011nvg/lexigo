@@ -4,9 +4,9 @@
  *    тренировка отправляется в submit_session. Награды пересчитывает сервер;
  *  • повторная отправка той же тренировки не начисляет XP (client_id), офлайн — очередь;
  *  • при входе прогресс слов из облака объединяется с локальным (вход с другого устройства);
- *  • задания учителя: index.html?task=<id>;
- *  • тренировка учителя по своему уроку: index.html?lesson=<id> — всё как у ученика, но ничего не уходит
- *    в облако (нет сессий, XP, ТОП-3, статистики класса);
+ *  • уроки от учителя и свои уроки учителя — полноценные страницы #/my/... (my-lessons.js); отсюда им
+ *    доступны сессия, профиль и «метка» следующей игры (LexigoCloudSession). Тренировка учителя ничего
+ *    не отправляет в облако (нет сессий, XP, ТОП-3, статистики класса);
  *  • гость: мягкое предложение создать аккаунт после первой завершённой тренировки.
  * Если облако не настроено, работают только кнопка «Войти» и гостевой режим — игры не меняются. */
 (() => {
@@ -53,7 +53,8 @@
   const origStart = start;
   start = function (...args) {
     // «Повторить» на карточке результата задания или своего урока — снова слова этого задания/урока, а не учебника
-    if (!nextMeta && !args[1] && task && game && game.cloud && game.cloud.meta && game.cloud.meta.taskKey === task.key && task.a.modes.includes(args[0])) return launch(args[0]);
+    const ML = window.LexigoMyLessons;
+    if (!nextMeta && !args[1] && ML && ML.owns(game)) return ML.launch(args[0]);
     const meta = nextMeta; nextMeta = null;
     keepUnfinished();
     origStart(...args);
@@ -99,7 +100,7 @@
   const origSave = saveLearningAttempt;
   saveLearningAttempt = function (g, finished) {
     origSave(g, finished);
-    try { if (finished && task && g && g.cloud && g.cloud.meta && g.cloud.meta.taskKey === task.key) task.done.add(g.mode); } catch { /* optimistic only */ }
+    try { if (finished) window.LexigoMyLessons?.markDone(g); } catch { /* optimistic only */ }
     if (isPreview(g)) return;   // тренировка учителя: в облако ничего не отправляем
     try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length) { g.cloud.sent = true; const snapshot = g; setTimeout(() => submit(snapshot, !!finished), finished ? 400 : 0); } } catch { /* never break practice */ }
   };
@@ -148,7 +149,7 @@
         queue = queue.slice(1); writeQueue(queue);
       }
       if (last && window.LexiQuest) window.LexiQuest.syncCloud({ xp: last.xp, streak: last.streak, streakLast: C.localDay() });
-      if (last && last.assignment_id) refreshTaskPanel();
+      if (last) window.LexigoMyLessons?.dirty();
     } catch (e) { console.warn('LEXI cloud: offline, results kept on this device', e); }
     finally { flushing = false; }
   }
@@ -187,107 +188,6 @@
       host.append(box);
     }, 600);
   }
-
-  /* ---------- teacher assignments: index.html?task=<id> ---------- */
-  let task = null, panel = null;
-  async function loadTask(id) {
-    const { data: a, error } = await sb.from('assignments').select('*').eq('id', id).maybeSingle();
-    if (error || !a) { toast('Задание не найдено или больше недоступно.', 'think'); return; }
-    let words = [], lesson = null;
-    if (a.lesson_id) {
-      const { data: l } = await sb.from('custom_lessons').select('id,title,words').eq('id', a.lesson_id).maybeSingle();
-      if (!l) { toast('Урок учителя недоступен.', 'think'); return; }
-      lesson = l; words = C.customWords(l);
-    } else {
-      const b = DB.books.find(x => Number(x.grade) === Number(a.grade)); if (!b) return;
-      for (const i of a.section_indexes || []) if (b.sections[i]) words.push(...b.sections[i].words);
-      if (a.word_ids && a.word_ids.length) { const keep = new Set(a.word_ids); words = words.filter(w => keep.has(w.id)); }
-    }
-    words = words.filter(w => typeof isLexicalEntry !== 'function' || isLexicalEntry(w));
-    const seen = new Set(); words = words.filter(w => !seen.has(w.id) && seen.add(w.id));
-    const { data: sess } = await sb.from('sessions').select('mode,finished,accuracy').eq('assignment_id', a.id).eq('user_id', user.id);
-    task = { key: 'a:' + a.id, a, lesson, words, done: new Set((sess || []).filter(s => s.finished).map(s => s.mode)) };
-    showTaskPanel();
-  }
-  /* свой урок учителя: index.html?lesson=<id> — тот же игровой интерфейс, без записи результатов */
-  async function loadPreview(id) {
-    const { data: l, error } = await sb.from('custom_lessons').select('id,owner_id,title,words,modes').eq('id', id).maybeSingle();
-    if (error || !l) { toast('Урок не найден или был удалён.', 'think'); return; }
-    if (l.owner_id !== user.id) { toast('Этот урок открывается через задание учителя.', 'think'); return; }
-    let words = C.customWords(l).filter(w => typeof isLexicalEntry !== 'function' || isLexicalEntry(w));
-    const seen = new Set(); words = words.filter(w => !seen.has(w.id) && seen.add(w.id));
-    task = { key: 'p:' + l.id, preview: true, lesson: l, words, done: new Set(), a: { id: null, lesson_id: l.id, title: l.title, modes: C.lessonModes(l), comment: null, due_at: null } };
-    try { const p = new URL(location.href); p.searchParams.delete('lesson'); history.replaceState(history.state, '', p.pathname + p.search + p.hash); } catch { /* keep url */ }
-    showTaskPanel();
-  }
-  async function refreshTaskPanel() {
-    if (!task || task.preview) return;
-    const { data: sess } = await sb.from('sessions').select('mode,finished').eq('assignment_id', task.a.id).eq('user_id', user.id);
-    for (const s of sess || []) if (s.finished) task.done.add(s.mode);
-  }
-  function showTaskPanel() {
-    if (!task) return;
-    panel?.remove();
-    const { a, words, done, preview } = task;
-    const list = h('div', { class: 'task-modes' });
-    for (const m of a.modes) {
-      const fit = C.modeFit(m, words, { runtime: true });
-      list.append(h('button', { type: 'button', class: 'task-mode' + (done.has(m) ? ' done' : '') + (fit.ok ? '' : ' unfit'), 'data-mode': m, 'aria-disabled': fit.ok ? null : 'true', title: fit.note || null,
-        onclick: () => fit.ok ? launch(m) : toast(fit.note, 'think') },
-        h('b', { text: C.MODES[m] || m }),
-        h('span', { text: !fit.ok ? 'недоступно' : done.has(m) ? '✓ ' + (preview ? 'пройдено' : 'выполнено') + ' · можно ещё раз' : preview ? 'Играть →' : 'Начать →' }),
-        !fit.ok || fit.note ? h('small', { class: 'task-mode-note', text: fit.note }) : null));
-    }
-    const playable = a.modes.filter(m => C.modeFit(m, words, { runtime: true }).ok);
-    const all = playable.length > 0 && playable.every(m => done.has(m));
-    const head = preview
-      ? [h('p', { class: 'eyebrow', text: 'МОЙ УРОК · ТРЕНИРОВКА УЧИТЕЛЯ' }), h('h2', { id: 'taskTitle', text: a.title }), h('p', { class: 'task-meta', text: words.length + ' слов · игр: ' + a.modes.length })]
-      : [h('p', { class: 'eyebrow', text: 'ЗАДАНИЕ ОТ УЧИТЕЛЯ' }), h('h2', { id: 'taskTitle', text: a.title }), h('p', { class: 'task-meta', text: words.length + ' слов' + (a.due_at ? ' · срок: ' + C.fmtDate(a.due_at, true) : '') })];
-    const actions = preview
-      ? [h('a', { class: 'btn secondary', href: 'me.html?tab=lessons', text: 'К моим урокам' }), h('a', { class: 'btn good', href: 'me.html?assign=' + encodeURIComponent(a.lesson_id), text: 'Назначить классу' }), h('button', { type: 'button', class: 'btn secondary', text: 'Закрыть', onclick: () => { panel.remove(); panel = null; } })]
-      : [h('a', { class: 'btn secondary', href: 'me.html', text: 'В кабинет' }), h('button', { type: 'button', class: 'btn secondary', text: 'Закрыть', onclick: () => { panel.remove(); panel = null; } })];
-    panel = h('div', { class: 'task-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'taskTitle' },
-      h('div', { class: 'task-card' + (preview ? ' preview' : '') },
-        h('div', { class: 'task-head' }, window.LexiQuest ? window.LexiQuest.avatar(all ? 'cheer' : 'hello', 'm') : '', h('div', null, ...head)),
-        preview ? h('p', { class: 'task-preview-note', text: '👁 Вы проходите урок как ученик. Результаты не сохраняются в статистику класса, не начисляют XP и не попадают в ТОП-3.' }) : null,
-        a.comment ? h('p', { class: 'task-comment', text: '«' + a.comment + '»' }) : null,
-        all ? h('p', { class: 'task-done', text: preview ? 'Все игры урока пройдены! Можно назначать классу.' : 'Все игры задания выполнены! Лекси тобой гордится, а учитель увидит результат.' })
-          : h('p', { class: 'task-hint', text: preview ? 'Выберите любую игру. Вернуться к списку можно в любой момент.' : 'Лекси приготовил для тебя задание! Пройди каждую игру до конца — результат сохранится автоматически.' }),
-        list,
-        h('div', { class: 'task-actions' }, ...actions)));
-    document.body.append(panel);
-    panel.querySelector('.task-mode:not(.unfit)')?.focus();
-  }
-  function launch(mode) {
-    const { a, lesson, words, preview } = task;
-    const fit = C.modeFit(mode, words, { runtime: true });
-    if (!fit.ok) { toast(fit.note, 'think'); return; }
-    let ws = words.slice();
-    if (mode === 'boss' || mode === 'crystals') ws = ws.filter(C.isSingleWord);
-    if (!preview && !lesson && a.section_indexes && a.section_indexes.length) {
-      try { const b = DB.books.find(x => Number(x.grade) === Number(a.grade)), s = b.sections[a.section_indexes[0]];
-        document.getElementById('book').value = String(a.grade); changeBook(); document.getElementById('module').value = s.module; changeModule(); document.getElementById('unit').value = String(a.section_indexes[0]); changeUnit(); } catch { /* keep current context */ }
-    }
-    const size = { pairs: 10, cards: 20, boss: 15 }[mode] || 15;
-    const picked = typeof lexiRound === 'function' ? lexiRound(ws, size) : ws.slice(0, size);
-    const types = { mixed: ['quiz', 'spell', 'truefalse', 'spell', 'fix'], boss: ['spell', 'quiz', 'spell', 'truefalse'], crystals: ['quiz', 'truefalse', 'fix'] }[mode];
-    nextMeta = preview ? { scope: 'custom', preview: true, taskKey: task.key, lesson_id: lesson.id, title: a.title }
-      : { scope: 'assignment', taskKey: task.key, assignment_id: a.id, lesson_id: a.lesson_id || null, grade: a.grade || null, section_index: a.section_indexes ? a.section_indexes[0] : null, title: a.title };
-    panel?.remove(); panel = null;
-    document.getElementById('cloudTaskBanner')?.remove();
-    start(mode, picked, types);
-    // свой урок: в «хлебных крошках» название урока, а не случайный модуль учебника
-    if (game && lesson) { const nav = document.getElementById('breadcrumbs'); if (nav) { nav.replaceChildren(h('span', { text: preview ? 'Мои уроки' : 'Задание' }), h('span', { text: '/' }), h('span', { text: a.title }), h('span', { text: '/' }), h('span', { 'aria-current': 'page', text: C.MODES[mode] || mode })); nav.hidden = false; } }
-    if (game) { const note = h('p', { id: 'cloudTaskBanner', class: 'task-banner' + (preview ? ' preview' : '') }, preview ? '👁 Тренировка учителя · «' + a.title + '» · результаты не сохраняются · ' : '📌 Задание: ' + a.title + ' · ', h('button', { type: 'button', text: preview ? 'к играм урока' : 'к списку игр', onclick: () => { try { stop(); } catch { /* */ } showTaskPanel(); } })); document.getElementById('game')?.prepend(note); }
-  }
-  // after a finished assignment round: offer to go back to the task list
-  new MutationObserver(() => {
-    const card = document.querySelector('#play .lesson-result, #play .pair-finish');
-    if (!card || card.dataset.cloudTask || !task || !game || !game.cloud || !game.cloud.meta || game.cloud.meta.taskKey !== task.key) return;
-    card.dataset.cloudTask = '1';
-    card.append(h('div', { class: 'task-return' }, h('button', { type: 'button', class: 'btn good', text: task.preview ? 'К играм урока' : 'Вернуться к заданию', onclick: async () => { await refreshTaskPanel(); try { stop(); } catch { /* */ } showTaskPanel(); } })));
-  }).observe(document.getElementById('play') || document.body, { childList: true, subtree: true });
-  window.addEventListener('popstate', () => document.getElementById('cloudTaskBanner')?.remove());
 
   /* ---------- ТОП-3 (server leaderboard) ---------- */
   const boards = (() => {
@@ -347,22 +247,24 @@
   /* ---------- start-up ---------- */
   async function init() {
     headerButton();
-    if (!C.configured) { if (Hint.uid()) { Hint.clear(); location.reload(); } return; }
-    const qs = new URLSearchParams(location.search), wantsCloud = qs.get('task') || qs.get('lesson');
+    if (!C.configured) { done(null); if (Hint.uid()) { Hint.clear(); location.reload(); } return; }
+    const wantsCloud = /^#\/my\//.test(location.hash);
     if (!Hint.uid() && !wantsCloud) {
       // a session may exist from another tab; only then load the library
-      try { if (!localStorage.getItem('lexigo-auth')) return; } catch { return; }
+      try { if (!localStorage.getItem('lexigo-auth')) return done(null); } catch { return done(null); }
     }
     try {
       sb = await C.client();
       const { data: { session } } = await sb.auth.getSession();
       user = session ? session.user : null;
       if (!user) {
+        done(null);
         if (Hint.uid()) { Hint.clear(); location.reload(); return; }
-        if (wantsCloud) location.href = 'auth.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search);
+        if (wantsCloud) location.href = 'auth.html?next=' + encodeURIComponent((location.pathname.split('/').pop() || 'index.html') + location.search + location.hash);
         return;
       }
       if (Hint.uid() !== user.id) {
+        done(null);
         if (sessionStorage.getItem('lexigo_reloaded') === user.id) return;
         sessionStorage.setItem('lexigo_reloaded', user.id);
         const { data: p } = await sb.from('profiles').select('display_name,role').eq('id', user.id).maybeSingle();
@@ -379,11 +281,11 @@
       if (st && window.LexiQuest) window.LexiQuest.syncCloud({ xp: st.xp, streak: st.streak_last && (C.localDay() === st.streak_last || C.localDay(new Date(Date.now() - 864e5)) === st.streak_last) ? st.streak_count : 0, best: st.streak_best, streakLast: st.streak_last || '', lastLesson: last && last[0] ? last[0].route : '' });
       await pullProgress().catch(e => console.warn('LEXI cloud: progress not loaded', e));
       flush();
-      const taskId = new URLSearchParams(location.search).get('task');
-      if (taskId && /^[0-9a-f-]{36}$/i.test(taskId)) await loadTask(taskId);
-      else { const lessonId = new URLSearchParams(location.search).get('lesson'); if (lessonId && /^[0-9a-f-]{36}$/i.test(lessonId)) await loadPreview(lessonId); }
-    } catch (e) { console.warn('LEXI cloud unavailable, guest mode continues', e); }
+      done({ sb, user, profile });
+    } catch (e) { console.warn('LEXI cloud unavailable, guest mode continues', e); done(null); }
   }
-  window.LexigoCloudSession = Object.freeze({ flush, signedIn: () => !!user, showTask: () => showTaskPanel() });
+  /* готовность облака: { sb, user, profile } или null (гость, нет сети, облако не настроено) */
+  let done; const ready = new Promise(r => { done = v => { r(v); done = () => {}; }; });
+  window.LexigoCloudSession = Object.freeze({ flush, ready, signedIn: () => !!user, setMeta: m => { nextMeta = m; }, toast });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

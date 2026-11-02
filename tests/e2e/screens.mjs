@@ -31,7 +31,7 @@ await t.screenshot({ path: OUT + '/acc-wizard-desk.png', fullPage: true });
 await t.getByRole('button', { name: 'Назначить' }).click(); await t.locator('article.group-card').first().waitFor();
 await t.getByRole('button', { name: 'Результаты' }).first().click(); await t.locator('.dialog .tbl').waitFor(); await t.waitForTimeout(400);
 await t.screenshot({ path: OUT + '/acc-results-desk.png' });
-await t.getByRole('tab', { name: 'Мои уроки' }).click({ force: true }).catch(() => {});
+await t.getByRole('tab', { name: /Мои уроки/ }).click({ force: true }).catch(() => {});
 // student cabinet, mobile + desktop
 await sign(s, 'student', 'Маша-моб', 'm' + run + '@x.test');
 await api(s, async code => { const sb = await window.LexigoCloud.client(); await sb.rpc('join_group', { p_code: code }); await sb.rpc('submit_session', { p: { client_id: 'demo-m-' + Date.now(), mode: 'spell', finished: true, scope: 'lesson', grade: 3, section_index: 2, route: '/lesson/3/2', title: 'Spotlight 3 · Unit 2', events: Array.from({ length: 8 }, (_, k) => ({ w: 'w' + (300 + k), ok: true, k: 'recall' })) } }); }, g.join_code);
@@ -39,6 +39,6 @@ await s.goto(SITE + 'me.html'); await s.locator('.st-hero').waitFor(); await s.w
 await s.screenshot({ path: OUT + '/acc-student-mob.png', fullPage: true });
 await s.setViewportSize(D); await s.reload(); await s.locator('.st-hero').waitFor(); await s.waitForTimeout(500);
 await s.screenshot({ path: OUT + '/acc-student-desk.png', fullPage: true });
-await s.locator('.task-card-s a').first().click(); await s.locator('.task-overlay').waitFor(); await s.waitForTimeout(300);
+await s.locator('#lessons .tl-card a').first().click(); await s.locator('#myLessonPage .my-modes').waitFor(); await s.waitForTimeout(300);
 await s.screenshot({ path: OUT + '/acc-task-desk.png' });
 await b.close(); console.log('screens done');

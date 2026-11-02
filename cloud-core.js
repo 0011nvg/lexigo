@@ -38,7 +38,7 @@
     builder: 'собери слово из букв', listen: 'выбери услышанное', review: 'повтор ошибок' };
   const wordForm = s => String(s == null ? '' : s).trim().replace(/^[¡¿"“«(\[]+|[!?.,;:…"”»)\]]+$/g, '').trim();
   const isSingle = w => /^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/.test(wordForm(w && w.en));
-  const isBuilder = w => { const n = wordForm(w && w.en).replace(/[^a-z]/gi, '').length; return isSingle(w) && n >= 2 && n <= 14; };
+  const isBuilder = w => { if (window.LexiWordBuilder) return window.LexiWordBuilder.isBuilderWord(w); const n = wordForm(w && w.en).replace(/[^a-z]/gi, '').length; return isSingle(w) && n >= 2 && n <= 14; };
   const norm = s => String(s || '').toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}' -]/gu, '').replace(/\s+/g, ' ').trim();
   function uniquePairCount(ws) { const a = new Set(), b = new Set(); let n = 0; for (const w of ws) { const x = norm(w.en), y = norm(w.ru); if (a.has(x) || b.has(y)) continue; a.add(x); b.add(y); n++; } return n; }
   const speechOK = () => typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance === 'function';
@@ -105,6 +105,83 @@
     return out;
   }
 
+  /* ---------- уроки от учителя: одна модель для главной, кабинета ученика и страницы урока (2026-11-02 v2) ----------
+   * «Урок от учителя» = назначенное задание (свой урок учителя или уроки Spotlight).
+   * Игры, которые выбрал учитель, определяют статус; на странице урока доступны и все остальные подходящие игры. */
+  const PLAY_EXTRA = ['review'];               // игры страницы урока сверх назначаемых (работа над ошибками)
+  function assignmentWords(a, lesson) {
+    let ws = [];
+    if (a && a.lesson_id) ws = lesson ? customWords(lesson) : [];
+    else if (a) {
+      const DB = window.LEXIGO_DATA, b = DB && DB.books.find(x => Number(x.grade) === Number(a.grade));
+      if (b) for (const i of a.section_indexes || []) if (b.sections[i]) ws.push(...b.sections[i].words);
+      if (a.word_ids && a.word_ids.length) { const keep = new Set(a.word_ids); ws = ws.filter(w => keep.has(w.id)); }
+    }
+    const seen = new Set();
+    return ws.filter(isLexical).filter(w => !seen.has(w.id) && seen.add(w.id));
+  }
+  const STATES = { new: 'Не начат', progress: 'В процессе', done: 'Завершён' };
+  function lessonState(modes, done, started) {
+    const total = modes.length, n = modes.filter(m => done.has(m)).length;
+    const state = total && n === total ? 'done' : (n || started) ? 'progress' : 'new';
+    return { state, label: STATES[state], doneCount: n, total, percent: total ? Math.round(n / total * 100) : 0 };
+  }
+  /* слово «знаю»: хотя бы раз отвечено верно и последний ответ верный */
+  const knownLocal = p => !!p && (Number(p.right) || 0) >= 1 && (Number(p.streak) || 0) >= 1;
+  const knownRow = r => !!r && r.right_count >= 1 && r.streak >= 1;
+  /* все уроки ученика: [{ a, title, teacher, group, words, done:Set, started, st, known, due, overdue, key }] */
+  async function loadStudentLessons(sb, uid, known = () => false) {
+    const [mem, asg, ses] = await Promise.all([
+      sb.from('group_members').select('group_id,groups(id,name,teacher_id)').eq('student_id', uid),
+      sb.from('assignments').select('*').order('created_at', { ascending: false }),
+      sb.from('sessions').select('assignment_id,mode,finished').eq('user_id', uid).not('assignment_id', 'is', null).limit(5000)
+    ]);
+    for (const r of [mem, asg, ses]) if (r.error) throw r.error;
+    const groups = new Map((mem.data || []).map(m => [m.group_id, m.groups || {}]));
+    // ученик видит только задания своих групп (на сервере это же правило — RLS)
+    const list = (asg.data || []).filter(a => groups.has(a.group_id) && (!a.student_id || a.student_id === uid));
+    const lessonIds = [...new Set(list.map(a => a.lesson_id).filter(Boolean))];
+    const teacherIds = [...new Set(list.map(a => a.teacher_id))];
+    const [les, prof] = await Promise.all([
+      lessonIds.length ? sb.from('custom_lessons').select('id,title,words').in('id', lessonIds) : { data: [] },
+      teacherIds.length ? sb.from('profiles').select('id,display_name').in('id', teacherIds) : { data: [] }
+    ]);
+    const lessons = new Map((les.data || []).map(l => [l.id, l])), names = new Map((prof.data || []).map(p => [p.id, p.display_name]));
+    const done = new Map(), started = new Set();
+    for (const s of ses.data || []) { started.add(s.assignment_id); if (s.finished) { if (!done.has(s.assignment_id)) done.set(s.assignment_id, new Set()); done.get(s.assignment_id).add(s.mode); } }
+    return sortLessons(list.filter(a => !a.lesson_id || lessons.has(a.lesson_id)).map(a => {
+      const words = assignmentWords(a, lessons.get(a.lesson_id)), d = done.get(a.id) || new Set(), st = lessonState(a.modes, d, started.has(a.id));
+      return { a, key: 'a-' + a.id, title: a.title, teacher: names.get(a.teacher_id) || 'Учитель', group: (groups.get(a.group_id) || {}).name || '', words, done: d, started: started.has(a.id), st,
+        known: words.filter(w => known(w.id)).length, due: a.due_at, overdue: st.state !== 'done' && !!a.due_at && Date.parse(a.due_at) < Date.now() };
+    }));
+  }
+  /* самый актуальный — первым: незавершённые (в процессе → с ближайшим сроком → новые), затем завершённые */
+  function sortLessons(items) {
+    const rank = x => x.st.state === 'done' ? 2 : x.st.state === 'progress' ? 0 : 1;
+    const due = x => x.due ? Date.parse(x.due) : 4e15;
+    return items.slice().sort((x, y) => (x.st.state === 'done') - (y.st.state === 'done') || due(x) - due(y) || rank(x) - rank(y) || Date.parse(y.a.created_at) - Date.parse(x.a.created_at));
+  }
+  function lessonHref(key, fromCabinet) { return (fromCabinet ? 'index.html' : '') + '#/my/' + key; }
+  const ruWords = n => ruN(n, 'слово', 'слова', 'слов');
+  /* карточка урока: «feature» — крупная на главной, «card» — в списках */
+  function lessonCard(x, opts = {}) {
+    const feature = opts.variant === 'feature', st = x.st;
+    const action = st.state === 'done' ? 'Повторить' : st.state === 'progress' ? 'Продолжить' : 'Открыть урок';
+    const meta = [x.teacher, ruWords(x.words.length), x.due ? (x.overdue ? 'срок прошёл ' : 'до ') + fmtDate(x.due, true) : null].filter(Boolean).join(' · ');
+    const pct = Math.max(st.percent, st.state === 'progress' && !st.percent ? 4 : 0);
+    return h('article', { class: 'tl-card tl-' + st.state + (feature ? ' tl-feature' : '') + (x.overdue ? ' tl-overdue' : ''), 'data-key': x.key },
+      feature ? h('img', { class: 'tl-lexi', src: 'assets/lexi-head.webp', alt: '', width: 96, height: 96, loading: 'lazy' }) : null,
+      h('div', { class: 'tl-body' },
+        h('div', { class: 'tl-top' }, h('span', { class: 'tl-kicker', text: feature ? 'Твой урок от учителя' : 'Урок от учителя' }), h('span', { class: 'tl-status tl-s-' + st.state, text: (st.state === 'done' ? '✓ ' : '') + st.label })),
+        h(feature ? 'h2' : 'h3', { class: 'tl-title', text: x.title }),
+        h('p', { class: 'tl-meta', text: meta }),
+        x.a.comment ? h('p', { class: 'tl-comment', text: '«' + x.a.comment + '»' }) : null,
+        h('div', { class: 'tl-progress' },
+          h('div', { class: 'tl-bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': st.percent, 'aria-label': 'Прогресс урока' }, h('i', { style: { width: pct + '%' } })),
+          h('small', { text: 'Игры: ' + st.doneCount + ' из ' + st.total + ' · знаю ' + x.known + ' из ' + ruWords(x.words.length) })),
+        h('a', { class: 'tl-btn' + (st.state === 'done' ? ' ghost' : ''), href: lessonHref(x.key, opts.fromCabinet), 'aria-label': action + ': ' + x.title }, action + ' →')));
+  }
+
   /* ---------- tiny safe DOM helper (text only, never innerHTML with data) ---------- */
   function h(tag, attrs, ...kids) {
     const n = document.createElement(tag);
@@ -137,5 +214,5 @@
     return 'Что-то пошло не так. Попробуй ещё раз чуть позже.';
   }
 
-  window.LexigoCloud = Object.freeze({ configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, fmtDate, localDay, clientId, authMessage });
+  window.LexigoCloud = Object.freeze({ PLAY_EXTRA, assignmentWords, lessonState, knownLocal, knownRow, loadStudentLessons, sortLessons, lessonCard, lessonHref, ruN, configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, fmtDate, localDay, clientId, authMessage });
 })();

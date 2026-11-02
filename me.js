@@ -78,13 +78,14 @@
      ===================================================================== */
   async function student() {
     const uid = me.id;
-    const [stats, sessions, wp, memberships, assignments] = await Promise.all([
+    const [stats, sessions, wp, memberships] = await Promise.all([
       sb.from('user_stats').select('*').eq('user_id', uid).maybeSingle().then(r => r.data || { xp: 0, streak_count: 0, streak_best: 0, perfect_games: 0, missions_total: 0, bosses: 0, guest_imported: false }),
       sb.from('sessions').select('id,mode,title,route,grade,scope,accuracy,correct,wrong,total,first_correct,xp,finished,created_at,assignment_id').eq('user_id', uid).order('created_at', { ascending: false }).limit(300).then(r => r.data || []),
       allRows(() => sb.from('word_progress').select('word_id,right_count,wrong_count,recall_count,streak,due_at').eq('user_id', uid)),
-      sb.from('group_members').select('group_id,joined_at,groups(id,name,teacher_id)').eq('student_id', uid).then(r => r.data || []),
-      sb.from('assignments').select('*').order('created_at', { ascending: false }).then(r => r.data || [])
+      sb.from('group_members').select('group_id,joined_at,groups(id,name,teacher_id)').eq('student_id', uid).then(r => r.data || [])
     ]);
+    const wpById = new Map(wp.map(r => [r.word_id, r]));
+    const myLessons = await C.loadStudentLessons(sb, uid, id => C.knownRow(wpById.get(id)));
     const teacherIds = [...new Set(memberships.map(m => m.groups && m.groups.teacher_id).filter(Boolean))];
     const teachers = new Map();
     if (teacherIds.length) { const { data } = await sb.from('profiles').select('id,display_name').in('id', teacherIds); (data || []).forEach(t => teachers.set(t.id, t.display_name)); }
@@ -115,26 +116,14 @@
       h('div', { class: 'tile t3' }, h('b', { text: streakAlive ? '🔥 ' + streakAlive : '0' }), h('span', { text: 'дней подряд · рекорд ' + stats.streak_best })),
       h('div', { class: 'tile t4' }, h('b', { text: sessions.filter(s => s.finished).length }), h('span', { text: 'тренировок пройдено' })));
 
-    // assignments
-    const doneModes = new Map();
-    for (const s of sessions) if (s.assignment_id && s.finished) { if (!doneModes.has(s.assignment_id)) doneModes.set(s.assignment_id, new Set()); doneModes.get(s.assignment_id).add(s.mode); }
-    const sorted = assignments.slice().sort((a, b) => {
-      const da = a.modes.every(m => doneModes.get(a.id)?.has(m)), db = b.modes.every(m => doneModes.get(b.id)?.has(m));
-      return da - db || (Date.parse(a.due_at || '2100-01-01') - Date.parse(b.due_at || '2100-01-01'));
-    });
-    const taskList = h('div', { class: 'list' });
-    if (!memberships.length) taskList.append(h('div', { class: 'empty', text: 'Здесь появятся задания от учителя. Попроси у учителя код класса и введи его ниже.' }));
-    else if (!sorted.length) taskList.append(h('div', { class: 'empty', text: 'Пока заданий нет — можно тренироваться самостоятельно!' }));
-    for (const a of sorted.slice(0, 12)) {
-      const dm = doneModes.get(a.id) || new Set(), n = a.modes.filter(m => dm.has(m)).length, all = n === a.modes.length;
-      const overdue = !all && a.due_at && Date.parse(a.due_at) < Date.now();
-      taskList.append(h('article', { class: 'task-card-s' },
-        h('header', null, h('div', null, h('h3', { text: a.title }), h('small', { class: 'acc-muted acc-small', text: (groupTeacher.get(a.group_id) || 'Учитель') + ' · ' + (groupName.get(a.group_id) || '') + (a.due_at ? ' · до ' + C.fmtDate(a.due_at, true) : '') })),
-          h('span', { class: 'chip ' + (all ? 'ok' : overdue ? 'miss' : n ? 'warn' : 'blue'), text: all ? '✓ Выполнено' : overdue ? 'Срок прошёл' : n ? n + ' из ' + a.modes.length : 'Новое' })),
-        a.comment ? h('p', { class: 'note', text: a.comment }) : null,
-        h('div', { class: 'tmodes' }, a.modes.map(m => h('span', { class: 'chip' + (dm.has(m) ? ' ok' : ''), text: (dm.has(m) ? '✓ ' : '') + (C.MODES[m] || m) }))),
-        h('div', null, h('a', { class: 'btn-acc small' + (all ? ' ghost' : ''), href: 'index.html?task=' + a.id, text: all ? 'Повторить' : n ? 'Продолжить' : 'Начать' }))));
-    }
+    // уроки от учителя: заметные карточки, самый актуальный — первым; завершённые остаются для повторения
+    const taskList = h('div', { class: 'tl-grid' });
+    if (!memberships.length) taskList.append(h('div', { class: 'empty', text: 'Здесь появятся уроки от учителя. Попроси у учителя код класса и введи его в блоке «Мои классы».' }));
+    else if (!myLessons.length) taskList.append(h('div', { class: 'empty', text: 'Пока уроков нет — можно тренироваться самостоятельно!' }));
+    const SHOW = 8;
+    myLessons.forEach((x, i) => { const card = C.lessonCard(x, { fromCabinet: true }); if (i >= SHOW) card.hidden = true; taskList.append(card); });
+    const moreLessons = myLessons.length > SHOW ? h('button', { class: 'btn-acc ghost small', type: 'button', text: 'Показать все уроки (' + myLessons.length + ')', onclick: e => { taskList.querySelectorAll('.tl-card[hidden]').forEach(c => { c.hidden = false; }); e.currentTarget.remove(); } }) : null;
+    const openLessons = myLessons.filter(x => x.st.state !== 'done').length;
 
     // books
     const byGrade = new Map();
@@ -193,9 +182,11 @@
     const joined = sessionStorage.getItem('lexigo_joined'); if (joined) { sessionStorage.removeItem('lexigo_joined'); setTimeout(() => toast('Ты в классе «' + joined + '»!'), 400); }
 
     root.replaceChildren(head('Ученик · ' + lv.title), h('div', { class: 'cab-grid' },
-      importBox, hero, tiles,
-      h('section', { class: 'acc-card span-7', 'aria-labelledby': 'tTasks' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tTasks', text: 'Задания учителя' })), taskList),
-      h('section', { class: 'acc-card span-5', 'aria-labelledby': 'tBooks' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tBooks', text: 'Мои учебники' })), books),
+      importBox, hero,
+      h('section', { class: 'acc-card span-12 st-lessons', id: 'lessons', 'aria-labelledby': 'tTasks' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tTasks', text: 'Уроки от учителя' }),
+        myLessons.length ? h('span', { class: 'chip ' + (openLessons ? 'blue' : 'ok'), text: openLessons ? 'не завершено: ' + openLessons : 'все пройдены' }) : null), taskList, moreLessons),
+      tiles,
+      h('section', { class: 'acc-card span-12', 'aria-labelledby': 'tBooks' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tBooks', text: 'Мои учебники' })), books),
       h('section', { class: 'acc-card span-12', 'aria-labelledby': 'tBadges' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tBadges', text: 'Достижения' }), h('span', { class: 'chip', text: C.BADGES.filter(b => b[4](stats)).length + ' из ' + C.BADGES.length })), badges),
       h('section', { class: 'acc-card span-7', 'aria-labelledby': 'tHist' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tHist', text: 'История занятий' })), hist),
       h('section', { class: 'acc-card span-5', 'aria-labelledby': 'tClass' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tClass', text: 'Мои классы' })), joinForm, h('div', { style: { height: '12px' } }), classes)));
@@ -204,7 +195,7 @@
   /* =====================================================================
      TEACHER
      ===================================================================== */
-  let T = null, tab = 'groups';
+  let T = null, tab = 'groups', lessonEdit = null;   // lessonEdit: null — список, 'new' — новый урок, объект — правка
   async function loadTeacher() {
     const [groups, lessons, assignments] = await Promise.all([
       sb.from('groups').select('*').eq('teacher_id', me.id).order('created_at').then(r => { if (r.error) throw r.error; return r.data; }),
@@ -225,12 +216,13 @@
     T = { groups, lessons, assignments, members, students: new Map(students.map(s => [s.id, s])), stats: new Map(stats.map(s => [s.user_id, s])), sessions };
   }
   function teacher() {
-    const tabs = [['groups', 'Классы'], ['tasks', 'Задания'], ['lessons', 'Мои уроки']];
-    const tabBar = h('div', { class: 'cab-tabs', role: 'tablist' }, tabs.map(([k, label]) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === k), onclick: () => { tab = k; teacher(); } }, label)));
-    const view = tab === 'groups' ? groupsView() : tab === 'tasks' ? tasksView() : lessonsView();
+    const tabs = [['groups', 'Классы'], ['tasks', 'Задания'], ['lessons', 'Мои уроки' + (T.lessons.length ? ' · ' + T.lessons.length : '')]];
+    const tabBar = h('div', { class: 'cab-tabs', role: 'tablist' }, tabs.map(([k, label]) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === k), onclick: () => { tab = k; lessonEdit = null; teacher(); } }, label)));
+    const view = tab === 'groups' ? groupsView() : tab === 'tasks' ? tasksView() : lessonsView(lessonEdit);
     const totalStudents = new Set(T.members.map(m => m.student_id)).size;
     root.replaceChildren(head('Учитель · ' + T.groups.length + ' ' + plural(T.groups.length, 'класс', 'класса', 'классов') + ' · ' + totalStudents + ' ' + plural(totalStudents, 'ученик', 'ученика', 'учеников'),
-      h('button', { class: 'btn-acc small', type: 'button', text: '＋ Задание', onclick: () => { tab = 'tasks'; teacher(); openWizard(); } })), tabBar, view);
+      h('span', { class: 'seg' }, h('button', { class: 'btn-acc small ghost', type: 'button', text: '＋ Урок', onclick: () => { tab = 'lessons'; lessonEdit = 'new'; teacher(); } }),
+        h('button', { class: 'btn-acc small', type: 'button', text: '＋ Задание', onclick: () => { tab = 'tasks'; teacher(); openWizard(); } }))), tabBar, view);
   }
   const studentName = id => (T.students.get(id) || {}).display_name || 'Ученик';
   function studentRow(id) {
@@ -387,7 +379,7 @@
           step2.append(det);
         }
       } else if (!T.lessons.length) {
-        step2.append(h('div', { class: 'empty', style: { marginTop: '10px' } }, 'У вас пока нет своих уроков. ', h('button', { type: 'button', class: 'btn-link', text: 'Создать урок', onclick: () => { wizard = null; tab = 'lessons'; teacher(); } })));
+        step2.append(h('div', { class: 'empty', style: { marginTop: '10px' } }, 'У вас пока нет своих уроков. ', h('button', { type: 'button', class: 'btn-link', text: 'Создать урок', onclick: () => { wizard = null; tab = 'lessons'; lessonEdit = 'new'; teacher(); } })));
       } else {
         step2.append(h('label', { class: 'acc-field', style: { marginTop: '10px' } }, h('span', { text: 'Урок' }), h('select', { onchange: e => { state.lesson = e.target.value; useLessonModes(); draw(); } }, T.lessons.map(l => h('option', { value: l.id, selected: l.id === state.lesson, text: l.title + ' (' + l.words.length + ' сл.)' })))));
       }
@@ -463,12 +455,60 @@
     box.unfit = () => { const ws = getWords(); return [...modes].filter(m => !C.modeFit(m, ws).ok); };
     return box;
   }
-  const playUrl = id => 'index.html?lesson=' + encodeURIComponent(id);
+  /* страница своего урока — та же, что видит ученик, с режимом тренировки учителя (my-lessons.js) */
+  const lessonUrl = id => 'index.html#/my/t-' + encodeURIComponent(id), playUrl = id => lessonUrl(id) + '/games';
 
-  /* ---------- custom lessons ---------- */
+  /* ---------- «Мои уроки»: карточки уроков, полноценная страница урока, создание и правка ---------- */
   function lessonsView(edit) {
+    return edit ? lessonForm(edit === 'new' ? null : edit) : lessonsList();
+  }
+  function assignedInfo(l) {
+    const list = T.assignments.filter(a => a.lesson_id === l.id);
+    if (!list.length) return { list, text: 'Ещё не назначен', none: true };
+    const parts = list.map(a => { const g = T.groups.find(x => x.id === a.group_id); return (g ? g.name : 'группа') + (a.student_id ? ' — ' + studentName(a.student_id) : ''); });
+    let targets = 0, done = 0;
+    for (const a of list) {
+      const ids = a.student_id ? [a.student_id] : T.members.filter(m => m.group_id === a.group_id).map(m => m.student_id);
+      targets += ids.length;
+      done += ids.filter(id => a.modes.every(m => T.sessions.some(s => s.assignment_id === a.id && s.user_id === id && s.finished && s.mode === m))).length;
+    }
+    return { list, text: 'Назначен: ' + [...new Set(parts)].join(', ') + (targets ? ' · выполнили ' + done + ' из ' + targets : '') };
+  }
+  function lessonsList() {
     const wrap = h('div', { class: 'list' });
-    const editing = edit || null;
+    const newBtn = h('button', { class: 'btn-acc lime', type: 'button', text: '＋ Новый урок', onclick: () => { lessonEdit = 'new'; teacher(); window.scrollTo({ top: 0 }); } });
+    wrap.append(h('div', { class: 'ml-head' }, h('h2', { text: 'Мои уроки' }), h('span', { class: 'chip', text: T.lessons.length + ' ' + plural(T.lessons.length, 'урок', 'урока', 'уроков') }), newBtn));
+    if (!T.lessons.length) {
+      wrap.append(h('section', { class: 'acc-card ml-empty' }, h('img', { src: 'assets/lexi-head.webp', alt: '' }),
+        h('div', null, h('h3', { text: 'Создайте первый урок', style: { margin: '0 0 6px' } }), h('p', { class: 'acc-muted', style: { margin: '0 0 10px' }, text: 'Свои слова → любые игры LEXI → пройдите урок сами → назначьте классу.' }), h('button', { class: 'btn-acc', type: 'button', text: '＋ Новый урок', onclick: () => newBtn.click() }))));
+      return wrap;
+    }
+    const grid = h('div', { class: 'ml-grid' });
+    const search = T.lessons.length > 6 ? h('input', { class: 'acc-input', type: 'search', placeholder: 'Найти урок по названию или слову', 'aria-label': 'Найти урок', oninput: e => {
+      const q = e.target.value.trim().toLowerCase();
+      for (const card of grid.children) card.hidden = !!q && !card.dataset.search.includes(q);
+    } }) : null;
+    if (search) wrap.append(h('div', { class: 'ml-tools' }, search));
+    for (const l of T.lessons) {
+      const info = assignedInfo(l), ms = C.lessonModes(l);
+      const card = h('article', { class: 'ml-card lesson-row', 'data-id': l.id, 'data-search': (l.title + ' ' + l.words.map(w => w.en + ' ' + w.ru).join(' ')).toLowerCase() },
+        h('h3', { text: l.title }),
+        h('div', { class: 'ml-facts' }, h('span', { text: l.words.length + ' ' + plural(l.words.length, 'слово', 'слова', 'слов') }), h('span', { text: 'создан ' + C.fmtDate(l.created_at) }), h('span', { text: 'игр в уроке: ' + ms.length })),
+        h('p', { class: 'ml-assigned' + (info.none ? ' none' : ''), text: info.text }),
+        h('p', { class: 'ml-words', text: l.words.slice(0, 6).map(w => w.en).join(', ') + (l.words.length > 6 ? '…' : '') }),
+        h('div', { class: 'ml-actions' },
+          h('a', { class: 'btn-acc small ghost', href: lessonUrl(l.id), 'aria-label': 'Открыть: ' + l.title, text: 'Открыть' }),
+          h('a', { class: 'btn-acc small lime', href: playUrl(l.id), 'aria-label': 'Играть: ' + l.title, text: '▶ Играть' }),
+          h('button', { class: 'btn-acc small ghost', type: 'button', 'aria-label': 'Редактировать: ' + l.title, text: 'Редактировать', onclick: () => { lessonEdit = l; teacher(); window.scrollTo({ top: 0 }); } }),
+          h('button', { class: 'btn-acc small', type: 'button', 'aria-label': 'Назначить: ' + l.title, text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } })),
+        h('div', { class: 'ml-more' }, h('button', { class: 'btn-link', type: 'button', style: { color: 'var(--w-miss)' }, text: 'Удалить', onclick: () => dialog('Удалить урок «' + l.title + '»?', h('p', { text: 'Задания с этим уроком тоже будут удалены.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить', onclick: async () => { const { error } = await sb.from('custom_lessons').delete().eq('id', l.id); if (error) return fail(error); close(); await refresh(); } })]) })));
+      grid.append(card);
+    }
+    wrap.append(grid, h('p', { class: 'acc-small acc-muted', text: '«Открыть» — слова урока и все подходящие игры на отдельной странице; «Играть» — сразу к играм. Ваши тренировки не попадают в статистику класса и не начисляют XP. Ученики видят урок, когда вы назначаете его.' }));
+    return wrap;
+  }
+  function lessonForm(editing) {
+    const wrap = h('div', { class: 'list' });
     const title = h('input', { class: 'acc-input', maxlength: 80, value: editing ? editing.title : '', placeholder: 'Например: Еда и напитки — дополнительные слова', id: 'lsTitle' });
     const text = h('textarea', { class: 'acc-input', id: 'lsWords', placeholder: 'apple — яблоко\nice cream — мороженое\ncarrot; морковь', value: '' });
     if (editing) text.value = editing.words.map(w => w.en + ' — ' + w.ru).join('\n');
@@ -479,14 +519,15 @@
     let timer = 0;
     const upd = () => { const ws = C.parseWordList(text.value); count.textContent = 'Распознано слов: ' + ws.length + ' (нужно от 2 до 200). Строки без перевода пропускаются.'; preview.replaceChildren(...ws.slice(0, 60).map(w => h('span', { text: w.en + ' — ' + w.ru }))); clearTimeout(timer); timer = setTimeout(picker.refresh, 250); };
     text.addEventListener('input', upd); upd();
+    const back = () => { lessonEdit = null; tab = 'lessons'; teacher(); };
     const save = h('button', { class: 'btn-acc', type: 'submit', text: editing ? 'Сохранить изменения' : 'Сохранить урок' });
     const saveAndPlay = h('button', { class: 'btn-acc lime', type: 'button', text: '▶ Сохранить и пройти' });
-    const form = h('form', { class: 'acc-card' }, h('div', { class: 'sec-title' }, h('h2', { text: editing ? 'Редактировать урок' : 'Новый урок' }), editing ? h('button', { type: 'button', class: 'btn-link', text: 'Отмена', onclick: () => { tab = 'lessons'; teacher(); } }) : null),
+    const form = h('form', { class: 'acc-card' }, h('div', { class: 'sec-title' }, h('h2', { text: editing ? 'Редактировать урок' : 'Новый урок' }), h('button', { type: 'button', class: 'btn-link', text: '← К моим урокам', onclick: back })),
       h('label', { class: 'acc-field', for: 'lsTitle' }, h('span', { text: 'Название' }), title),
       h('label', { class: 'acc-field', for: 'lsWords' }, h('span', { text: 'Слова — по одному на строку: английское слово, тире, перевод' }), text, count),
       preview,
-      h('div', { class: 'acc-field', style: { marginTop: '14px' } }, h('span', { text: 'Игры урока — сколько угодно, хоть все' }), picker),
-      h('div', { class: 'seg', style: { marginTop: '12px', alignItems: 'center' } }, save, saveAndPlay));
+      h('div', { class: 'acc-field', style: { marginTop: '14px' } }, h('span', { text: 'Игры урока — их получат ученики при назначении. Сами вы можете пройти любую подходящую игру.' }), picker),
+      h('div', { class: 'seg', style: { marginTop: '12px', alignItems: 'center' } }, save, saveAndPlay, h('button', { type: 'button', class: 'btn-acc ghost', text: 'Отмена', onclick: back })));
     async function persist(play) {
       const ws = C.parseWordList(text.value), t = title.value.trim();
       if (!t) return toast('Добавьте название урока.'); if (ws.length < 2) return toast('Нужно минимум 2 слова с переводом.');
@@ -503,20 +544,12 @@
       if (!id && play) { const r = await sb.from('custom_lessons').select('id').eq('owner_id', me.id).eq('title', t).order('created_at', { ascending: false }).limit(1); id = r.data && r.data[0] && r.data[0].id; }
       save.disabled = saveAndPlay.disabled = false;
       if (play && id) { location.href = playUrl(id); return; }
-      toast(editing ? 'Урок обновлён.' : 'Урок сохранён. Пройдите его сами («▶ Играть») или назначьте классу.'); tab = 'lessons'; await refresh();
+      toast(editing ? 'Урок обновлён.' : 'Урок сохранён. Откройте его («▶ Играть») или назначьте классу.'); lessonEdit = null; tab = 'lessons'; await refresh();
     }
     form.addEventListener('submit', e => { e.preventDefault(); persist(false); });
     saveAndPlay.addEventListener('click', () => persist(true));
     wrap.append(form);
-    wrap.append(h('p', { class: 'acc-small acc-muted', text: 'Создайте урок → выберите игры → сохраните → пройдите его сами → назначьте классу. Ваши тренировки не попадают в статистику класса и не начисляют XP. Ученики видят урок только когда вы назначаете его заданием.' }));
-    for (const l of T.lessons) {
-      const ms = C.lessonModes(l);
-      wrap.append(h('div', { class: 'row lesson-row' }, h('div', { class: 'row-main' }, h('b', { text: l.title }), h('small', { text: l.words.length + ' слов · игр: ' + ms.length + ' из ' + C.ASSIGNABLE.length + ' · изменён ' + C.fmtDate(l.updated_at) + ' · ' + l.words.slice(0, 4).map(w => w.en).join(', ') + (l.words.length > 4 ? '…' : '') })),
-        h('a', { class: 'btn-acc lime small', href: playUrl(l.id), 'aria-label': 'Играть: ' + l.title, text: '▶ Играть' }),
-        h('button', { class: 'btn-acc small', type: 'button', text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } }),
-        h('button', { class: 'btn-acc ghost small', type: 'button', text: 'Изменить', onclick: () => { root.querySelector('.cab-tabs + *').replaceWith(lessonsView(l)); window.scrollTo({ top: 0 }); } }),
-        h('button', { class: 'btn-link', type: 'button', style: { color: 'var(--w-miss)' }, text: 'Удалить', onclick: () => dialog('Удалить урок «' + l.title + '»?', h('p', { text: 'Задания с этим уроком тоже будут удалены.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить', onclick: async () => { const { error } = await sb.from('custom_lessons').delete().eq('id', l.id); if (error) return fail(error); close(); await refresh(); } })]) })));
-    }
+    wrap.append(h('p', { class: 'acc-small acc-muted', text: 'Создайте урок → выберите игры → сохраните → пройдите его сами → назначьте классу. Ваши тренировки не попадают в статистику класса и не начисляют XP.' }));
     return wrap;
   }
   async function refresh() { try { await loadTeacher(); teacher(); } catch (e) { fail(e); } }
@@ -531,7 +564,9 @@
         // ссылки из режима тренировки: me.html?tab=lessons, me.html?assign=<id урока>
         const q = new URLSearchParams(location.search), assign = q.get('assign'), t = q.get('tab');
         if (t && ['groups', 'tasks', 'lessons'].includes(t)) tab = t;
-        if (q.has('assign') || q.has('tab')) history.replaceState(null, '', location.pathname);
+        const edit = q.get('edit'), el = edit && T.lessons.find(l => l.id === edit);
+        if (el) { tab = 'lessons'; lessonEdit = el; }
+        if (q.has('assign') || q.has('tab') || q.has('edit')) history.replaceState(null, '', location.pathname);
         teacher();
         if (assign && T.lessons.some(l => l.id === assign)) { tab = 'tasks'; openWizard({ lesson: assign }); }
       } else await student();

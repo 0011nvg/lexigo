@@ -31,9 +31,9 @@ try {
   assert.ok(b.single && b.words.every(id => !lesson.phrases.includes(id)), 'builder: no phrases');
   for (let i = 0; i < 3; i++) {
     const t = await page.evaluate(() => [...document.querySelectorAll('#play .builder-bank .builder-token')].map(x => x.textContent));
-    assert.ok(t.length && t.every(x => x === x.toLowerCase()), 'tiles are lower-case: a capital never gives away the first letter');
+    const en = await page.evaluate(() => LexiWordBuilder.answer(game.words[game.index].en));
+    assert.deepEqual([...t].sort(), [...en].sort(), 'tiles are exactly the letters of the word (case included): ' + en);
     assert.equal(await page.locator('#play .builder-line .builder-token').count(), 0, 'nothing is placed in advance');
-    const en = await page.evaluate(() => wordForm(game.words[game.index].en).toLowerCase());
     for (const ch of en) await page.locator('#play .builder-bank .builder-token:not([hidden])').filter({ hasText: new RegExp('^' + ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') }).first().click();
     await page.locator('#play .builder-tools button', { hasText: 'Проверить' }).click();
     await page.locator('#play .feedback').waitFor();
@@ -49,7 +49,7 @@ try {
   for (let i = 0; i < 8 && !phraseInQuiz; i++) { await page.goto(BASE + '#/home'); await page.goto(BASE + '#/lesson/2/0/play/quiz'); phraseInQuiz = await page.evaluate(ids => game.words.some(w => ids.includes(w.id)), lesson.phrases); }
   assert.ok(phraseInQuiz, 'phrases are still used in «Выбери перевод»');
   assert.equal(await page.evaluate(n => selectedWords().length === n, lesson.all), true, 'phrases are not removed from the lesson');
-  ok('builder and audio dictation: single words only, lower-case tiles, nothing pre-placed; phrases stay in the lesson and in other games');
+  ok('builder and audio dictation: single words only, tiles = letters of the word, nothing pre-placed; phrases stay in the lesson and in other games');
 
   /* 3. only phrases selected → friendly message, no game, a way back to the games */
   await page.goto(BASE + '#/lesson/2/0/words'); await page.locator('#none').click();

@@ -10,6 +10,6 @@
  * НИКОГДА не вставляйте сюда ключ service_role / Secret key — он даёт полный доступ к базе.
  * Пока поля пустые, сайт работает в гостевом режиме: прогресс хранится только на устройстве. */
 window.LEXIGO_CLOUD = Object.freeze({
-  url: '',
-  anonKey: ''
+  url: 'https://ajzfspevzlhsfduwrlzu.supabase.co',
+  anonKey: 'sb_publishable_Z4LfEMsYuKh8szLcNfefNg_MNWryiBt'
 });

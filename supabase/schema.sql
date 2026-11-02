@@ -537,3 +537,9 @@ revoke all on function public.create_group(text), public.regenerate_join_code(uu
 grant execute on function public.create_group(text), public.regenerate_join_code(uuid), public.join_group(text),
   public.submit_session(jsonb), public.import_guest_progress(jsonb), public.delete_my_account() to authenticated;
 revoke all on function public.new_join_code() from authenticated;
+-- служебные функции проверки прав: только для вошедших пользователей (их вызывают правила RLS), не для анонимов
+revoke all on function public.my_role(), public.owns_group(uuid), public.is_member_of(uuid), public.is_teacher_of(uuid),
+  public.is_my_teacher(uuid), public.can_see_assignment(uuid), public.can_see_lesson(uuid) from public, anon;
+grant execute on function public.my_role(), public.owns_group(uuid), public.is_member_of(uuid), public.is_teacher_of(uuid),
+  public.is_my_teacher(uuid), public.can_see_assignment(uuid), public.can_see_lesson(uuid) to authenticated;
+revoke all on function public.handle_new_user() from public, anon, authenticated;

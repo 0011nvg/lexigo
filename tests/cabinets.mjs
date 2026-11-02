@@ -180,7 +180,7 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  const dl=page.waitForEvent('download');
  await page.locator('#exportResults').click();
  const downloaded=await dl;
- assert.equal(downloaded.suggestedFilename(),'lexigo-demo-results.csv');
+ assert.equal(downloaded.suggestedFilename(),'lexi-demo-results.csv');
  const fs=await import('node:fs/promises');
  const csv=await fs.readFile(await downloaded.path(),'utf8');
  assert.match(csv,/pupil_id,assignment_id/);

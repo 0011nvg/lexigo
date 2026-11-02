@@ -1,4 +1,4 @@
-// LEXIGO cloud accounts — end-to-end journey against a LOCAL Supabase stack
+// LEXI cloud accounts — end-to-end journey against a LOCAL Supabase stack
 // (real Supabase Auth/GoTrue + PostgREST + PostgreSQL with supabase/schema.sql).
 // Start the stack first (see tests/e2e/README.md). Env: LEXIGO_URL, CLOUD_URL, CLOUD_ANON, PSQL.
 import assert from 'node:assert/strict';

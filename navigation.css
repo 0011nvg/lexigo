@@ -24,7 +24,7 @@
 }
 
 
-/* LEXIGO 2026 bright learning UI — visual-only PR #8 redesign.
+/* LEXI 2026 bright learning UI — visual-only PR #8 redesign.
    Preserve the existing routes, vocabulary, practice logic and A4 print rules. */
 @media screen {
  :root{--ink:#132451;--quiet:#657596;--line:#e0eafa;--accent:#147df5;--paper:#fff;--canvas:#f5faff}
@@ -99,7 +99,7 @@
  .course-cover>b{font-size:65px}
 }
 
-/* LEXIGO design-system foundation — isolated to screen; print rules unchanged.
+/* LEXI design-system foundation — isolated to screen; print rules unchanged.
    Real mascot assets will replace placeholder travel emoji in a separate change. */
 @media screen {
  :root {

@@ -1,4 +1,4 @@
-/* LEXIGO Cloud ↔ игры (2026-11-02). Подключается последним на index.html.
+/* LEXI Cloud ↔ игры (2026-11-02). Подключается последним на index.html.
  *  • кнопка «Войти» / аккаунт в шапке;
  *  • единая фиксация результатов: каждый ответ любой игры → событие; по завершении (или выходе)
  *    тренировка отправляется в submit_session. Награды пересчитывает сервер;
@@ -135,13 +135,13 @@
         const { data, error } = await sb.rpc('submit_session', { p: item });
         if (error) {
           if (/fetch|network|timeout/i.test(error.message || '') || error.code === '54000') break;   // keep for later
-          console.warn('LEXIGO cloud: result rejected', error.message);
+          console.warn('LEXI cloud: result rejected', error.message);
         } else { last = data; if (item.board_key && item.finished && data && data.session_id && !data.duplicate) boards.saved(item.client_id, data.session_id, item.board_key); }
         queue = queue.slice(1); writeQueue(queue);
       }
       if (last && window.LexiQuest) window.LexiQuest.syncCloud({ xp: last.xp, streak: last.streak, streakLast: C.localDay() });
       if (last && last.assignment_id) refreshTaskPanel();
-    } catch (e) { console.warn('LEXIGO cloud: offline, results kept on this device', e); }
+    } catch (e) { console.warn('LEXI cloud: offline, results kept on this device', e); }
     finally { flushing = false; }
   }
   window.addEventListener('online', flush);
@@ -220,7 +220,7 @@
           h('p', { class: 'eyebrow', text: 'ЗАДАНИЕ ОТ УЧИТЕЛЯ' }), h('h2', { id: 'taskTitle', text: a.title }),
           h('p', { class: 'task-meta', text: words.length + ' слов' + (a.due_at ? ' · срок: ' + C.fmtDate(a.due_at, true) : '') }))),
         a.comment ? h('p', { class: 'task-comment', text: '«' + a.comment + '»' }) : null,
-        all ? h('p', { class: 'task-done', text: 'Все игры задания выполнены! Учитель увидит результат.' }) : h('p', { class: 'task-hint', text: 'Пройди каждую игру до конца — результат сохранится автоматически.' }),
+        all ? h('p', { class: 'task-done', text: 'Все игры задания выполнены! Лекси тобой гордится, а учитель увидит результат.' }) : h('p', { class: 'task-hint', text: 'Лекси приготовил для тебя задание! Пройди каждую игру до конца — результат сохранится автоматически.' }),
         list,
         h('div', { class: 'task-actions' }, h('a', { class: 'btn secondary', href: 'me.html', text: 'В кабинет' }), h('button', { type: 'button', class: 'btn secondary', text: 'Закрыть', onclick: () => { panel.remove(); panel = null; } }))));
     document.body.append(panel);
@@ -271,7 +271,7 @@
     function better(key, a, b) { const k = r => key.startsWith('pairs|') ? [r.seconds ?? 99999, r.mistakes ?? 99999] : [-(r.accuracy ?? -1), r.seconds ?? 99999]; const x = k(a), y = k(b); return x[0] < y[0] || (x[0] === y[0] && x[1] < y[1]); }
     async function showGuest(card, g, key) {
       try { const rows = await top(key); const cand = guestCandidate(g); const would = rows.length < 3 || better(key, cand, rows[rows.length - 1]);
-        paint(box(card), key, rows, would ? h('p', { class: 'lb-cta' }, 'Твой результат попал бы в ТОП-3! ', h('a', { href: 'auth.html#signup', text: 'Войди или создай аккаунт' }), ', чтобы записать своё имя в таблицу.') : h('p', { class: 'lb-note', text: 'Рейтинг общий для всех учеников LEXIGO. Чтобы попасть в него, нужен аккаунт.' }));
+        paint(box(card), key, rows, would ? h('p', { class: 'lb-cta' }, 'Твой результат попал бы в ТОП-3! ', h('a', { href: 'auth.html#signup', text: 'Войди или создай аккаунт' }), ', чтобы записать своё имя в таблицу.') : h('p', { class: 'lb-note', text: 'Рейтинг общий для всех учеников LEXI. Чтобы попасть в него, нужен аккаунт.' }));
       } catch { /* leaderboard is optional */ }
     }
     async function saved(clientId, sessionId, key) {
@@ -296,7 +296,7 @@
           toast('Ты в ТОП-3! Место: ' + data.place, 'cheer');
         });
         paint(b, key, rows, form); try { window.LexiQuest?.toast('Новый рекорд! Ты в ТОП-3!', 'cheer'); } catch { /* */ }
-      } catch (e) { console.warn('LEXIGO leaderboard', e); }
+      } catch (e) { console.warn('LEXI leaderboard', e); }
     }
     // a finished round with a result card: remember it, or show the board to a guest
     new MutationObserver(() => {
@@ -341,11 +341,11 @@
       if (p && p.display_name !== Hint.name()) Hint.set({ uid: user.id, name: p.display_name, role: p.role });
       headerButton(); emit();
       if (st && window.LexiQuest) window.LexiQuest.syncCloud({ xp: st.xp, streak: st.streak_last && (C.localDay() === st.streak_last || C.localDay(new Date(Date.now() - 864e5)) === st.streak_last) ? st.streak_count : 0, best: st.streak_best, streakLast: st.streak_last || '', lastLesson: last && last[0] ? last[0].route : '' });
-      await pullProgress().catch(e => console.warn('LEXIGO cloud: progress not loaded', e));
+      await pullProgress().catch(e => console.warn('LEXI cloud: progress not loaded', e));
       flush();
       const taskId = new URLSearchParams(location.search).get('task');
       if (taskId && /^[0-9a-f-]{36}$/i.test(taskId)) await loadTask(taskId);
-    } catch (e) { console.warn('LEXIGO cloud unavailable, guest mode continues', e); }
+    } catch (e) { console.warn('LEXI cloud unavailable, guest mode continues', e); }
   }
   window.LexigoCloudSession = Object.freeze({ flush, signedIn: () => !!user, showTask: () => showTaskPanel() });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

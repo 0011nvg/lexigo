@@ -1,4 +1,4 @@
-/* LEXIGO — подключение облачных аккаунтов (Supabase).
+/* LEXI — подключение облачных аккаунтов (Supabase).
  *
  * Сюда вставляются ДВА публичных значения из Supabase → Project Settings → API:
  *   url      — Project URL, например https://abcdefghijklm.supabase.co

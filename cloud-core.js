@@ -1,4 +1,4 @@
-/* LEXIGO Cloud core — общий модуль для главной, входа и кабинетов (2026-11-02).
+/* LEXI Cloud core — общий модуль для главной, входа и кабинетов (2026-11-02).
  * Подключается после config.js и account-hint.js. Библиотека Supabase загружается
  * только если облако настроено (config.js), поэтому гостевой режим ничего лишнего не грузит. */
 (() => {
@@ -26,7 +26,7 @@
   }
 
   /* ---------- game vocabulary shared with the cabinets ---------- */
-  const LEVEL_TITLES = ['Новичок', 'Путешественник', 'Исследователь', 'Следопыт', 'Знаток слов', 'Мастер слов', 'Капитан LEXIGO', 'Легенда LEXIGO'];
+  const LEVEL_TITLES = ['Новичок', 'Путешественник', 'Исследователь', 'Следопыт', 'Знаток слов', 'Мастер слов', 'Капитан LEXI', 'Легенда LEXI'];
   const levelStart = l => 50 * l * (l - 1);
   function levelOf(xp) { xp = Math.max(0, Number(xp) || 0); let l = 1; while (xp >= levelStart(l + 1)) l++; return { level: l, title: LEVEL_TITLES[Math.min(l - 1, LEVEL_TITLES.length - 1)], from: levelStart(l), to: levelStart(l + 1), xp }; }
   const MODES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристаллы', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
@@ -94,7 +94,7 @@
   function authMessage(err) {
     const m = String(err && (err.message || err.error_description || err) || '').toLowerCase();
     if (m.includes('invalid login')) return 'Неверная почта или пароль.';
-    if (m.includes('email not confirmed')) return 'Почта ещё не подтверждена. Открой письмо от LEXIGO и нажми ссылку.';
+    if (m.includes('email not confirmed')) return 'Почта ещё не подтверждена. Открой письмо от LEXI и нажми ссылку.';
     if (m.includes('already registered') || m.includes('already been registered')) return 'Аккаунт с этой почтой уже есть. Попробуй войти или восстановить пароль.';
     if (m.includes('password') && (m.includes('at least') || m.includes('weak') || m.includes('short'))) return 'Пароль слишком простой: нужно минимум 8 символов, лучше с цифрами.';
     if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) return 'Слишком много попыток. Подожди минуту и попробуй снова.';

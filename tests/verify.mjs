@@ -1,4 +1,4 @@
-// LEXIGO repository integrity checks. Run: node tests/verify.mjs
+// LEXI repository integrity checks. Run: node tests/verify.mjs
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';

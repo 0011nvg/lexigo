@@ -1,4 +1,4 @@
-// LEXIGO+ (2026-11-02): chosen words, several games / route, configurable final test, honest storage notes, mobile.
+// LEXI+ (2026-11-02): chosen words, several games / route, configurable final test, honest storage notes, mobile.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';

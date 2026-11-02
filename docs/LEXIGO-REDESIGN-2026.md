@@ -1,4 +1,4 @@
-# LEXIGO visual redesign — implementation contract (2026-10-24)
+# LEXI visual redesign — implementation contract (2026-10-24)
 
 Branch: design/lexigo-illustrated-experience. This is an unmerged design/development branch. Production must not be modified without explicit approval.
 

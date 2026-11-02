@@ -1,4 +1,4 @@
-/* LEXIGO — личные кабинеты ученика и учителя (Supabase, 2026-11-02).
+/* LEXI — личные кабинеты ученика и учителя (Supabase, 2026-11-02).
  * Все данные выводятся только через textContent (функция h), права проверяет сервер (RLS). */
 (() => {
   'use strict';
@@ -10,7 +10,7 @@
 
   const toastHost = h('div', { class: 'lexi-toasts', role: 'status', 'aria-live': 'polite' }); document.body.append(toastHost);
   function toast(text) { const t = h('div', { class: 'lexi-toast' }, h('span', { class: 'lexi-avatar lexi-s', 'aria-hidden': 'true' }, h('img', { src: 'assets/lexi-head.webp', alt: '' })), h('p', { text })); toastHost.append(t); setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 3400); }
-  function fail(e, text) { console.warn('LEXIGO cabinet', e); toast(text || (String(e && e.message || '').match(/fetch|network/i) ? 'Нет связи с сервером. Попробуй ещё раз.' : 'Не получилось. Попробуй ещё раз.')); }
+  function fail(e, text) { console.warn('LEXI cabinet', e); toast(text || (String(e && e.message || '').match(/fetch|network/i) ? 'Нет связи с сервером. Попробуй ещё раз.' : 'Не получилось. Попробуй ещё раз.')); }
   function dialog(title, body, actions) {
     const d = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': title });
     const close = () => { d.remove(); document.removeEventListener('keydown', esc); };
@@ -445,7 +445,7 @@
       toast(editing ? 'Урок обновлён.' : 'Урок сохранён. Его можно назначить классу.'); await refresh();
     });
     wrap.append(form);
-    wrap.append(h('p', { class: 'acc-small acc-muted', text: 'Свои уроки работают во всех играх LEXIGO. Ученики видят урок только когда вы назначаете его заданием. Учебники Spotlight при этом не меняются.' }));
+    wrap.append(h('p', { class: 'acc-small acc-muted', text: 'Свои уроки работают во всех играх LEXI. Ученики видят урок только когда вы назначаете его заданием. Учебники Spotlight при этом не меняются.' }));
     for (const l of T.lessons) wrap.append(h('div', { class: 'row' }, h('div', { class: 'row-main' }, h('b', { text: l.title }), h('small', { text: l.words.length + ' слов · изменён ' + C.fmtDate(l.updated_at) + ' · ' + l.words.slice(0, 4).map(w => w.en).join(', ') + (l.words.length > 4 ? '…' : '') })),
       h('button', { class: 'btn-acc small', type: 'button', text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } }),
       h('button', { class: 'btn-acc ghost small', type: 'button', text: 'Изменить', onclick: () => { root.querySelector('.cab-tabs + *').replaceWith(lessonsView(l)); window.scrollTo({ top: 0 }); } }),
@@ -476,7 +476,7 @@
     profile = p;
     if (Hint.uid() !== me.id || Hint.name() !== p.display_name) Hint.set({ uid: me.id, name: p.display_name, role: p.role });
     const lo = document.getElementById('logoutBtn'); lo.hidden = false; lo.addEventListener('click', logout);
-    document.title = (p.role === 'teacher' ? 'Кабинет учителя' : 'Мой кабинет') + ' — LEXIGO';
+    document.title = (p.role === 'teacher' ? 'Кабинет учителя' : 'Мой кабинет') + ' — LEXI';
     sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT' && !leaving) { leaving = true; Hint.clear(); location.replace('index.html'); } });
     await boot();
   }

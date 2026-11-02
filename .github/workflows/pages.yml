@@ -1,4 +1,4 @@
-name: Deploy LEXIGO to GitHub Pages
+name: Deploy LEXI to GitHub Pages
 on:
   push:
     branches: [main]

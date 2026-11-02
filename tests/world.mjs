@@ -1,4 +1,4 @@
-// LEXIGO World layer: new modes, round size, Lexi reactions, XP anti-farming,
+// LEXI World layer: new modes, round size, Lexi reactions, XP anti-farming,
 // missions, boss, stars, calm/board modes, explanations, corrupted storage, mobile.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';

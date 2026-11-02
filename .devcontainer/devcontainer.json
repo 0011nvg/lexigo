@@ -1,10 +1,10 @@
 {
-  "name": "LEXIGO PR8 static preview",
+  "name": "LEXI PR8 static preview",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "forwardPorts": [4173],
   "portsAttributes": {
     "4173": {
-      "label": "LEXIGO static preview",
+      "label": "LEXI static preview",
       "onAutoForward": "openPreview",
       "visibility": "private"
     }

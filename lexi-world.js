@@ -1,4 +1,4 @@
-/* LEXIGO World — game layer over the existing practice engine (2026-10-30).
+/* LEXI World — game layer over the existing practice engine (2026-10-30).
  * Lexi the cat (guide + reactions), XP & levels, daily missions, streaks, badges,
  * lesson stars, module boss, "why is it wrong" explanations, calm mode, board mode.
  * Device-only motivation: nothing here changes vocabulary data or verified results.
@@ -46,7 +46,7 @@
   const savePrefs = () => writeJSON(PREFS_KEY, { calm: ['auto', 'on', 'off'].includes(prefs.calm) ? prefs.calm : 'auto', board: !!prefs.board });
 
   /* ---------- levels ---------- */
-  const TITLES = ['Новичок', 'Путешественник', 'Исследователь', 'Следопыт', 'Знаток слов', 'Мастер слов', 'Капитан LEXIGO', 'Легенда LEXIGO'];
+  const TITLES = ['Новичок', 'Путешественник', 'Исследователь', 'Следопыт', 'Знаток слов', 'Мастер слов', 'Капитан LEXI', 'Легенда LEXI'];
   const RANK_ICONS = ['🌱', '🧭', '🔎', '🗺️', '📚', '⭐', '🚀', '👑'];
   const levelStart = l => 50 * l * (l - 1); // 1:0 2:100 3:300 4:600 5:1000 ...
   function levelOf(xp) { let l = 1; while (xp >= levelStart(l + 1)) l++; return { level: l, title: TITLES[Math.min(l - 1, TITLES.length - 1)], from: levelStart(l), to: levelStart(l + 1), xp }; }
@@ -107,7 +107,7 @@
 
   /* ---------- calm & board modes ---------- */
   function currentGrade() { return Number((typeof book !== 'undefined' && book && book.grade) || 2); }
-  /* 2026-11-02: LEXIGO always runs in game mode; the calm/board switches were removed at the author's request. */
+  /* 2026-11-02: LEXI always runs in game mode; the calm/board switches were removed at the author's request. */
   function isCalm() { return false; }
   function applyModes() {
     document.body.classList.toggle('calm', isCalm());
@@ -270,7 +270,7 @@
     const card = document.querySelector('#play .lesson-result');
     if (!card || card.dataset.lexi || !game) return;
     card.dataset.lexi = '1';
-    try { rewardCard(card, game); } catch (e) { console.warn('LEXIGO reward layer', e); }
+    try { rewardCard(card, game); } catch (e) { console.warn('LEXI reward layer', e); }
   });
   resultObserver.observe($('play'), { childList: true, subtree: false });
   function rewardCard(card, g) {
@@ -289,7 +289,7 @@
     const lv = levelOf(quest.xp);
     const box = el('section', 'lexi-reward'); box.setAttribute('aria-label', 'Награды Лекси');
     const head = el('div', 'lexi-reward-head'); head.append(avatar(bossWin || perfect ? 'cheer' : g.firstCorrect >= initial / 2 ? 'happy' : 'think', 'm'));
-    const msg = bossWin ? 'Страж модуля побеждён! Модуль пройден.' : perfect ? 'Ни одной ошибки! Ты в ударе.' : initial && g.firstCorrect / initial >= .7 ? 'Хороший раунд! Ещё немного — и слова твои.' : 'Ошибки — это нормально. Сыграй ещё раунд, трудные слова вернутся.';
+    const msg = bossWin ? 'Страж модуля побеждён! Лекси тобой гордится!' : perfect ? 'Ни одной ошибки! Отличная работа — Лекси тобой гордится!' : initial && g.firstCorrect / initial >= .7 ? 'Хороший раунд! Ещё немного — и слова твои.' : 'Ошибки — это нормально. Сыграй ещё раунд, трудные слова вернутся.';
     head.append(el('p', 'lexi-say', isCalm() ? msg.replace(/!/g, '.') : msg)); box.append(head);
     const row = el('div', 'lexi-reward-row');
     const xp = el('div', 'reward-pill xp'); xp.append(el('b', null, '+' + (g.lexiXP || 0)), el('span', null, 'XP за раунд')); row.append(xp);
@@ -349,7 +349,7 @@
     const title = el('h2', 'lexi-hero-title');
     if (who) { title.append(base + ', ' + who + '!'); } else { title.append(base + '! ', el('span', 'lexi-hero-name', 'Я Лекси.')); }
     const sub = quest.lastLesson ? (who ? 'Это я, Лекси. Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Продолжим путешествие? Выполни миссии дня и открой сундук.') : (who ? 'Это я, Лекси. Помогу выучить слова из твоего Spotlight: узнать, вспомнить и проверить себя.' : 'Я помогу выучить слова из твоего учебника Spotlight: узнать, вспомнить и проверить себя. Выбери учебник ниже.');
-    txt.append(el('p', 'eyebrow', 'LEXIGO · МИР АНГЛИЙСКИХ СЛОВ'), title, el('p', 'lexi-hero-sub', sub));
+    txt.append(el('p', 'eyebrow', 'LEXI · МИР АНГЛИЙСКИХ СЛОВ'), title, el('p', 'lexi-hero-sub', sub));
     const actions = el('div', 'lexi-hero-actions');
     if (quest.lastLesson) {
       const label = lessonLabel(quest.lastLesson);
@@ -456,7 +456,7 @@
       const lvl = el('div', 'lexi-level big'); lvl.innerHTML = '<span class="lvl-num"></span><div><b class="lvl-title"></b><div class="lvl-track"><i></i></div><small class="lvl-xp"></small></div>';
       lvl.querySelector('.lvl-num').textContent = lv.level; lvl.querySelector('.lvl-title').textContent = 'Уровень ' + lv.level + ': ' + lv.title;
       lvl.querySelector('.lvl-track i').style.width = ((lv.xp - lv.from) / (lv.to - lv.from) * 100) + '%'; lvl.querySelector('.lvl-xp').textContent = quest.xp + ' XP · до следующего уровня ' + (lv.to - lv.xp) + ' XP';
-      const ladder = el('ol', 'rank-ladder'); ladder.setAttribute('aria-label', 'Звания LEXIGO');
+      const ladder = el('ol', 'rank-ladder'); ladder.setAttribute('aria-label', 'Звания LEXI');
       TITLES.forEach((t, i) => { const li = el('li', i + 1 < lv.level ? 'done' : i + 1 === lv.level ? 'now' : ''); li.append(el('span', 'rank-ico', RANK_ICONS[i]), el('b', null, t), el('small', null, i === 0 ? 'старт' : 'от ' + levelStart(i + 1) + ' XP')); if (i + 1 === lv.level) li.setAttribute('aria-current', 'step'); ladder.append(li); });
       sec.append(lvl, ladder, el('p', 'dashboard-note', 'XP начисляется только за верные ответы: 2 XP за узнавание, 4 XP за слово по памяти, не больше двух раз за слово в день. Ещё XP — за миссии дня, сундук и победу над стражем модуля.'));
       const grid = el('div', 'badge-grid');

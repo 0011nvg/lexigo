@@ -1,4 +1,4 @@
-name: LEXIGO quality checks
+name: LEXI quality checks
 on:
   push:
     branches: [main]

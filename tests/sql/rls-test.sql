@@ -1,4 +1,4 @@
--- LEXIGO cloud schema: access-control and anti-farming tests (run against a scratch database).
+-- LEXI cloud schema: access-control and anti-farming tests (run against a scratch database).
 -- Every check raises an exception on failure; the last line prints PASS.
 \set ON_ERROR_STOP 1
 set client_min_messages = warning;

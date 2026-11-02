@@ -1,4 +1,4 @@
-/* LEXIGO polish 2026-11-02 — loaded after world.css.
+/* LEXI polish 2026-11-02 — loaded after world.css.
    1) «Живой» Лекси на главной  2) раздел «Повторить весь учебник»  3) мелкие визуальные исправления. */
 
 /* ---------- 1. Hero + living Lexi ---------- */
@@ -270,3 +270,23 @@ body[data-page=words] #wordsDone:disabled{opacity:1;background:#c9cfe2!important
 .lb-cta,.lb-note{margin:10px 0 0;font-size:14px;color:var(--w-ink2)}
 .lb-cta a{font-weight:800}
 @media (max-width:640px){.lb-row{flex-direction:column}.lb-list li{grid-template-columns:28px minmax(0,1fr);}.lb-score{grid-column:2;font-size:13px}}
+
+/* ===================== LEXI brand (2026-11-02) =====================
+   Wordmark "LEXI" + a lime "cat dot" with ears — the full stop of «lexi.», a wink to Lexi the cat. */
+.brand-word{white-space:nowrap}
+.site-header .brand-word,.auth-side .brand-word{letter-spacing:-.035em!important;color:var(--w-blue-d)!important}
+.brand-cat{position:relative;display:inline-block;vertical-align:baseline;width:.4em;height:.36em;margin:0 0 0 .1em;letter-spacing:0;border-radius:50% 50% 46% 46%;background:var(--w-lime);box-shadow:inset 0 -.05em 0 rgba(60,90,0,.28)}
+.brand-cat::before,.brand-cat::after{content:"";position:absolute;top:-.1em;width:.15em;height:.17em;background:var(--w-lime);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.brand-cat::before{left:.01em;transform:rotate(-14deg)}
+.brand-cat::after{right:.01em;transform:rotate(14deg)}
+/* tiny eyes appear on hover — a friendly blink from Lexi */
+.brand-cat i{display:none}
+.logo:hover .brand-cat,.home-logo:hover .brand-cat{animation:lx-cat-nod .6s ease}
+@keyframes lx-cat-nod{30%{transform:translateY(-2px) rotate(-8deg)}60%{transform:translateY(0) rotate(5deg)}}
+@media (prefers-reduced-motion:reduce){.logo:hover .brand-cat{animation:none}}
+.site-footer>span{font-family:var(--w-display);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.site-header .brand-word{font-size:26px!important}
+@media (max-width:640px){.site-header .brand-word{font-size:19px!important}}
+@media (max-width:380px){.site-header .brand-word{font-size:17px!important}}
+.site-header .brand-cat{width:.48em;height:.43em;margin-left:.12em}
+.site-header .brand-cat::before,.site-header .brand-cat::after{top:-.12em;width:.18em;height:.2em}

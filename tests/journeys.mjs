@@ -69,7 +69,7 @@ async function scenario(viewport){
  assert.ok(await page.locator('#lexigoPrint .print-key li').count()>0,'Separate answer key generated');
  await page.locator('#showReport').click();
  assert.ok(await page.locator('#reportContent table tbody tr').count()>0);
- const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexigo.*csv/);
+ const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexi_spotlight.*csv/);
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
  await page.locator('#openWords').click();

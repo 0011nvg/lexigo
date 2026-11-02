@@ -1,4 +1,4 @@
-name: LEXIGO browser journeys
+name: LEXI browser journeys
 on:
   push:
     branches: [main]
@@ -37,21 +37,21 @@ jobs:
         if: success()
         run: |
           mkdir -p static-preview
-          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css print.css lexigo-plus.js account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html static-preview/
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css print.css lexigo-plus.js account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html manifest.webmanifest static-preview/
           cp -r assets vocabulary vendor static-preview/
-          printf '%s\n' 'LEXIGO Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'Cloud accounts stay off until config.js is filled in (see docs/CLOUD-SETUP.md).' > static-preview/README.txt
+          printf '%s\n' 'LEXI Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'Cloud accounts stay off until config.js is filled in (see docs/CLOUD-SETUP.md).' > static-preview/README.txt
       - name: Upload isolated static preview (no deployment)
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: lexigo-spotlight-2-9-static-preview
+          name: lexi-spotlight-2-9-static-preview
           path: static-preview/
           retention-days: 14
       - name: Upload browser screenshots and failures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lexigo-browser-screenshots
+          name: lexi-browser-screenshots
           path: test-results/
           if-no-files-found: ignore
   cloud:

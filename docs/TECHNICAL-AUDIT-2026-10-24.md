@@ -1,4 +1,4 @@
-# LEXIGO — technical audit, 2026-10-24
+# LEXI — technical audit, 2026-10-24
 
 Scope: branch `design/lexigo-illustrated-experience`, based on merge `b8323d366cc9bab420311527d33ca69fc9d6a6ef`. This is a source inspection, NOT a completed browser/security/CI validation. The container could not clone GitHub because DNS resolution failed; source files were read through the GitHub connector.
 

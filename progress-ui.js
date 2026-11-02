@@ -4,7 +4,7 @@ window.LexigoDashboard=(()=>{
  const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
  const link=(text,path,cls)=>{const a=el('a',text,cls);a.href='#'+path;return a};
  const host=el('section',undefined,'dashboard');host.id='dashboardPage';host.hidden=true;document.getElementById('pageContent').prepend(host);
- const nav=el('nav',undefined,'bottom-nav');nav.setAttribute('aria-label','Разделы LEXIGO');
+ const nav=el('nav',undefined,'bottom-nav');nav.setAttribute('aria-label','Разделы LEXI');
  for(const [key,label] of Object.entries({home:'Главная',games:'Игры',awards:'Награды',profile:'Профиль'})){const a=link('', '/'+key);a.dataset.tab=key;a.innerHTML=icon(key);a.append(el('span',label));nav.append(a)}document.body.append(nav);
  function sync(page){host.hidden=!['games','awards','profile'].includes(page);host.toggleAttribute('data-route-active',!host.hidden);nav.hidden=page==='play';for(const a of nav.children){const active=a.dataset.tab===(['lesson','words'].includes(page)?'games':page==='course'?'home':page);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')}}
  function tile(value,label){const d=el('div',undefined,'progress-tile');d.append(el('strong',String(value)),el('span',label));return d}

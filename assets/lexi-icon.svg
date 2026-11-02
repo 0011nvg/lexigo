@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="LEXI">
+  <rect width="64" height="64" rx="15" fill="#1b2a6b"/>
+  <path d="M15 14h9v27h15v8H15z" fill="#fff"/>
+  <g fill="#b4ef3a">
+    <path d="M40 38.5l2.6-7.6 4.6 5.1zM54.5 38.5l-2.6-7.6-4.6 5.1z"/>
+    <ellipse cx="47.25" cy="43" rx="8.6" ry="7.6"/>
+  </g>
+  <circle cx="44" cy="42.3" r="1.25" fill="#1b2a6b"/><circle cx="50.5" cy="42.3" r="1.25" fill="#1b2a6b"/>
+</svg>

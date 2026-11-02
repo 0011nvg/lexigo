@@ -1,4 +1,4 @@
-// LEXIGO data inventory. `node tests/inventory.mjs --write` stores the baseline;
+// LEXI data inventory. `node tests/inventory.mjs --write` stores the baseline;
 // without flags it compares the current data with tests/fixtures/inventory-baseline.json.
 import fs from 'node:fs'; import vm from 'node:vm'; import crypto from 'node:crypto'; import assert from 'node:assert/strict';
 const html = fs.readFileSync('index.html', 'utf8');

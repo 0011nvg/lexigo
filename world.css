@@ -1,4 +1,4 @@
-/* LEXIGO World — visual system 2026-10-30.
+/* LEXI World — visual system 2026-10-30.
    Loaded last: re-skins the existing markup without touching game logic.
    Fonts: Unbounded (headings) + Nunito (text), SIL OFL, self-hosted. */
 @font-face{font-family:Unbounded;font-weight:700;font-display:swap;src:url(assets/fonts/unbounded-cyrillic-700-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}

@@ -165,34 +165,6 @@ body[data-page=words] #wordsDone:disabled{opacity:1;background:#c9cfe2!important
 .selection-chip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:10px 0 0;padding:10px 14px;border-radius:14px;background:#eef3ff;color:var(--w-ink);font-weight:700;font-size:14px}
 .selection-chip .text-button{font-weight:800}
 
-/* several games / route */
-.route-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
-.route-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1.5px solid var(--w-line);background:#fff;border-radius:18px;padding:12px 16px;cursor:pointer;color:var(--w-ink);min-height:62px;box-shadow:var(--w-shadow)}
-.route-btn b{font-size:15.5px}.route-btn small{color:var(--w-mute);font-size:12.5px}
-.route-btn.primary{background:var(--w-lime);border-color:var(--w-lime);box-shadow:0 6px 0 -2px #6e9c12}
-.route-btn.primary small{color:#3d5a00}
-.route-btn.active{border-color:var(--w-blue);background:#eef3ff}
-#launcher.picking .mode-stage .mode{position:relative}
-#launcher.picking .mode-stage .mode::after{content:"";position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:8px;border:2px solid #b9c3e0;background:#fff;display:grid;place-items:center}
-#launcher.picking .mode-stage .mode.picked{box-shadow:inset 0 0 0 3px var(--w-blue)!important}
-#launcher.picking .mode-stage .mode.picked::after{content:"✓";background:var(--w-blue);border-color:var(--w-blue);color:#fff;font-weight:900;font-size:16px}
-#launcher.picking .mode-stage .mode .mode-arrow{visibility:hidden}
-#launcher.picking .daily-mode{opacity:.45;pointer-events:none}
-.route-pickbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 18px;border-radius:20px;background:var(--w-ink);color:#fff;box-shadow:0 20px 40px -16px rgba(20,27,61,.7);width:min(560px,calc(100vw - 20px))}
-.route-pickbar span{flex:1;font-weight:800}
-.route-pickbar .btn{min-height:44px}
-.route-pickbar .btn.secondary{background:rgba(255,255,255,.14)!important;color:#fff!important}
-.route-banner{margin:6px 0 10px;padding:10px 12px;border-radius:14px;background:#f4f6fd}
-.route-banner b{font-size:13px;color:var(--w-ink2)}
-.route-steps{list-style:none;display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 0;padding:0}
-.route-steps li{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#fff;color:var(--w-mute)}
-.route-steps li.done{background:var(--w-ok-bg);color:var(--w-ok)}
-.route-steps li.done::before{content:"✓ "}
-.route-steps li.now{background:var(--w-blue);color:#fff}
-.route-next{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding:12px 14px;border-radius:16px;background:#eef3ff}
-.route-next p{flex-basis:100%;margin:0;font-weight:800;color:var(--w-ink2)}
-.route-finished{font-size:16px}
-@media (max-width:640px){.route-tools{grid-template-columns:1fr}.route-pickbar{padding:10px}.route-pickbar span{font-size:14px}}
 
 /* Lexi notice (replaces browser alerts) and final-test settings */
 .lx-notice{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:16px;background:rgba(20,27,61,.5);backdrop-filter:blur(3px);animation:lx-in .2s ease both}
@@ -360,3 +332,68 @@ body[data-page=words] .catalog-selectors{order:3;margin-top:18px;padding-top:14p
 body[data-page=words] #sectionHint{order:4}
 @media (max-width:900px){.lexi-home>.lexi-hero{order:1}.lexi-home>.lexi-desk{order:2}.lexi-home>.lexi-panel{order:3}}
 .lexi-desk a.btn{text-decoration:none!important}
+/* logo mark v3: blink now and then; nod on hover (kept) */
+.lexi-mark .lm-eyes{transform-box:fill-box;transform-origin:50% 55%;animation:lm-blink 6.5s infinite}
+.site-footer .lexi-mark .lm-eyes{animation-delay:-3s}
+@keyframes lm-blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.12)}}
+@media (prefers-reduced-motion:reduce){.lexi-mark .lm-eyes{animation:none}}
+@media print{.lexi-mark .lm-eyes{animation:none}}
+/* teacher materials (2026-11-02): no «train words» button; words are chosen inside «Материалы к уроку» */
+body[data-page=teacher] #wordsDone{display:none!important}
+body.teacher-words-open[data-page=teacher] #wordSelection{display:block!important;margin-top:14px}
+.teacher-words{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0 6px;padding:12px 14px;border-radius:14px;background:#f4f6fd}
+.teacher-words b{display:block;font-size:15px;color:var(--w-ink)}
+.teacher-words span{font-size:13.5px;color:var(--w-ink2)}
+.teacher-words .btn{min-height:44px}
+.tt-title{margin:12px 0 4px;font-size:14px;color:var(--w-ink)}
+.grade-scale{margin:14px 0 6px;padding:12px 14px;border:1px solid var(--w-line);border-radius:14px}
+.grade-scale h4{margin:0 0 6px;font-size:14px}
+.grade-scale .gs-row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.grade-scale label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700}
+.grade-scale input[type=number]{width:64px;min-height:40px;padding:4px 8px;border-radius:10px;border:1px solid var(--w-line);font:inherit}
+.grade-scale .gs-partial{font-weight:600;margin-top:8px}
+.grade-scale .gs-note{margin:6px 0 0;font-size:12.5px;color:var(--w-mute)}
+body.teacher-words-open[data-page=teacher] #wordsDone{display:flex!important;justify-content:center;position:sticky;bottom:calc(84px + env(safe-area-inset-bottom));z-index:30;width:100%;min-height:52px;margin-top:12px}
+body.teacher-words-open[data-page=teacher] #catalogAside{display:flex!important;flex-direction:column}
+body.teacher-words-open[data-page=teacher] #wordSelection{order:1}body.teacher-words-open[data-page=teacher] #wordsDone{order:2}
+body.teacher-words-open[data-page=teacher] .catalog-selectors{order:0}
+/* «Верно / неверно» (2026-11-02): calm buttons in the LEXI palette; the icon + word, not colour alone, tells them apart */
+#play .question .buttons .btn.good,#play .question .buttons .btn.warn{background:#fff!important;color:var(--w-ink)!important;position:relative}
+#play .question .buttons .btn.good{border-color:#9fdcc6!important;box-shadow:0 5px 0 -1px #9fdcc6!important}
+#play .question .buttons .btn.warn{border-color:#ffc0b4!important;box-shadow:0 5px 0 -1px #ffc0b4!important}
+#play .question .buttons .btn.good:hover:not(:disabled){background:#effbf6!important;border-color:var(--w-ok)!important}
+#play .question .buttons .btn.warn:hover:not(:disabled){background:#fff4f1!important;border-color:var(--w-miss)!important}
+#play .question .buttons .btn.good:disabled:not(.is-correct):not(.is-wrong),#play .question .buttons .btn.warn:disabled:not(.is-correct):not(.is-wrong){opacity:.5;box-shadow:none!important}
+#play .question .buttons .btn.is-correct{animation:tf-pop .32s ease}
+#play .question .buttons .btn.is-wrong{animation:tf-shake .32s ease}
+@keyframes tf-pop{40%{transform:scale(1.05)}}
+@keyframes tf-shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion:reduce){#play .question .buttons .btn.is-correct,#play .question .buttons .btn.is-wrong{animation:none}}
+/* right answer: a small badge, Lexi's comment and the next task — no big green box */
+#play .feedback.fb-quick{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;margin:12px 0 0!important;text-align:center;min-height:0!important}
+#play .feedback.fb-quick>*:not(strong){display:none!important}
+#play .feedback.fb-quick strong{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:999px;background:var(--w-ok-bg);color:#0b5c44;font-size:16px;font-weight:900;animation:tf-pop .32s ease}
+/* wrong answer: only the short explanation */
+#play .feedback.fb-tf>div:not(.why):not(.learning-tip):not(.lexi-reward){display:none}
+#play .feedback.fb-tf .learning-tip{display:none}
+#play .question .buttons .btn.good.is-correct,#play .question .buttons .btn.warn.is-correct{opacity:1!important;background:var(--w-ok-bg)!important;border-color:var(--w-ok)!important;color:#0b5c44!important;box-shadow:inset 0 0 0 2px var(--w-ok)!important}
+#play .question .buttons .btn.good.is-wrong,#play .question .buttons .btn.warn.is-wrong{opacity:1!important;background:var(--w-miss-bg)!important;border-color:var(--w-miss)!important;color:#7a2318!important;box-shadow:inset 0 0 0 2px var(--w-miss)!important}
+/* Lexi speaks English (2026-11-02): big English line, small Russian hint, 🔊 only on tap */
+.lexi-live-bubble b{display:inline;font-size:16px;font-weight:900;color:var(--w-blue-d)}
+.lexi-live-bubble small{display:block;margin-top:2px;font-size:12.5px;font-weight:700;color:var(--w-ink2);line-height:1.25}
+.lexi-live-bubble.show{pointer-events:auto}
+.lexi-say{margin-left:6px;width:30px;height:30px;border:0;border-radius:50%;background:#eef3ff;font-size:14px;line-height:30px;cursor:pointer;vertical-align:middle;padding:0}
+.lexi-say:hover{background:#dfe8ff}
+.lexi-live-body.tilt{animation:lx-tilt .9s ease-in-out}
+@keyframes lx-tilt{0%,100%{transform:none}30%{transform:rotate(-6deg) translateY(-4px)}60%{transform:rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.lexi-live-body.tilt{animation:none}}
+@media (max-width:640px){
+ /* phone: the bubble sits over Lexi himself, never over the text or the buttons */
+ .lexi-live-bubble{left:2px;right:2px;bottom:4px;top:auto;width:auto;max-width:none;border-radius:14px;transform-origin:50% 100%}
+ .lexi-live-bubble b{font-size:14px}.lexi-live-bubble small{font-size:11px}
+ .lexi-say{width:26px;height:26px;line-height:26px;font-size:12px}
+}
+/* Lexi is always tappable: the art layer is above the text, but only Lexi himself and his bubble catch taps */
+.lexi-hero>.lexi-hero-art{position:relative;z-index:2;pointer-events:none}
+.lexi-hero>.lexi-hero-art .lexi-live-hit,.lexi-hero>.lexi-hero-art .lexi-live-bubble.show{pointer-events:auto}
+@media (max-width:640px){.lexi-say{float:right;margin:0 0 2px 6px}}

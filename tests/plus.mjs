@@ -1,4 +1,4 @@
-// LEXI+ (2026-11-02): chosen words, several games / route, configurable final test, honest storage notes, mobile.
+// LEXI+ (2026-11-02): chosen words, games right after the word set, configurable final test, honest storage notes, mobile.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';
@@ -87,22 +87,17 @@ try {
   assert.deepEqual(await page.evaluate(() => game.types.slice().sort()), ['fix', 'spell', 'truefalse']);
   ok('final test: chosen task types only (no crystals), needs one writing task, remembered for links');
 
-  /* 4. Several games in a row and the full route */
-  await page.goto(BASE + '#/lesson/4/3'); await page.locator('.route-tools .route-btn', { hasText: 'Выбрать игры' }).click();
-  await page.locator('.mode[data-mode=quiz]').click(); await page.locator('.mode[data-mode=truefalse]').click();
-  assert.equal(await page.evaluate(() => !!game), false, 'picking does not start a game');
-  await page.locator('.route-pickbar .btn', { hasText: 'Начать (2)' }).click();
+  /* 4. No intermediate «route» step: the games are shown at once and one tap starts a game; the word set stays */
+  await page.goto(BASE + '#/lesson/4/3'); await page.locator('#launcher').waitFor();
+  assert.equal(await page.locator('.route-tools, .route-pickbar').count(), 0, 'no «Пройти по порядку / Выбрать игры»');
+  const setBefore = await page.evaluate(() => selectedWords().map(w => w.id).sort());
+  await page.locator('.mode[data-mode=quiz]').click();
   assert.equal(await page.evaluate(() => game.mode), 'quiz');
-  await page.locator('.route-banner').waitFor();
+  assert.ok((await page.evaluate(() => game.words.map(w => w.id))).every(id => setBefore.includes(id)));
   await finishRound(page);
-  await page.locator('.route-next .btn', { hasText: 'Дальше: Верно / неверно' }).click();
+  await page.locator('#back').click(); await page.locator('.mode[data-mode=truefalse]').click();
   assert.equal(await page.evaluate(() => game.mode), 'truefalse');
-  await finishRound(page);
-  await page.locator('.route-finished').waitFor();
-  await page.goto(BASE + '#/lesson/4/3'); await page.locator('.route-tools .route-btn.primary').click();
-  assert.equal(await page.evaluate(() => game.mode), 'cards');
-  assert.equal(await page.locator('.route-steps li').count(), await page.locator('.mode-stage .mode[data-mode]').count() - (await page.evaluate(() => audioAvailable()) ? 0 : 1));
-  ok('games: pick several and play them in a row; «Пройти по порядку» follows all three stages');
+  ok('games: shown right after the word set, one tap starts any game, the chosen words stay');
 
   /* 5. Interrupted test, then back: nothing breaks; storage note is honest for guests */
   await page.goto(BASE + '#/lesson/4/3/play/spell'); await solve(page); await page.locator('#back').click();

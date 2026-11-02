@@ -11,7 +11,7 @@
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const today = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const dayDiff = (a, b) => Math.round((new Date(b + 'T12:00') - new Date(a + 'T12:00')) / 86400000);
-  const pick = list => list[Math.floor(Math.random() * list.length)];
+  let lastLine = ''; const pick = list => { const pool = list.length > 1 ? list.filter(x => x !== lastLine) : list; lastLine = pool[Math.floor(Math.random() * pool.length)]; return lastLine; }; // never the same line twice in a row
   const allWords = () => DB.books.flatMap(b => b.sections.flatMap(s => s.words));
 
   /* ---------- safe storage ---------- */
@@ -128,9 +128,9 @@
     setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 3600);
   }
   const LINES = {
-    ok: ['Верно!', 'Отлично!', 'Так держать!', 'Yes! Правильно!', 'Супер!', 'В точку!'],
-    okRecall: ['Ты вспомнил сам — это сильнее всего!', 'По памяти — вот это да!', 'Слово твоё. Отлично!'],
-    miss: ['Ничего, разберёмся.', 'Ошибка — это шаг к знанию.', 'Почти! Посмотри разбор.', 'Это слово вернётся ещё раз.'],
+    ok: ['Верно!', 'Отлично!', 'Great job!', 'Yes! Правильно!', 'Well done!', 'В точку!', 'You’re a star! ⭐', 'Super!'],
+    okRecall: ['Ты вспомнил сам — это сильнее всего!', 'Amazing! По памяти!', 'Слово твоё. Great job!'],
+    miss: ['Ничего, разберёмся.', 'Keep going! Ошибка — это шаг к знанию.', 'Почти! Посмотри разбор.', 'You can do it! Слово вернётся ещё раз.'],
     hint: ['Подсказка — это нормально. Закрепим ещё раз.', 'С подсказкой тоже учимся!'],
     start: { cards: 'Переворачивай и вспоминай.', quiz: 'Выбирай перевод. Не спеши.', truefalse: 'Верно или нет? Смотри внимательно.', spell: 'Пиши по памяти. Есть подсказка 💡', fix: 'Найди ошибку в слове.', audio: 'Слушай и пиши. Можно слушать снова.', listen: 'Слушай и выбирай слово.', builder: 'Собирай по порядку.', pairs: 'Соединяй пары как можно быстрее!', crystals: 'Собери кристаллы — и отвечай на слова.', boss: 'Страж модуля ждёт. Без подсказок!', mixed: 'Тренировка дня: всего понемногу.', review: 'Работаем над ошибками. Ты справишься!' }
   };
@@ -198,7 +198,11 @@
       box.append(el('p', null, 'Ты выбрал «' + lastPick + '», а прозвучало «' + w.en + '».'));
       const again = el('button', 'btn secondary', '🔊 Послушать ещё раз'); again.type = 'button'; again.onclick = () => speak(w.en); box.append(again);
     } else if (mode === 'truefalse') {
-      box.append(el('p', null, 'Правильная пара: «' + w.en + '» — «' + w.ru + '».'), el('p', 'why-tip', 'Сравни перевод на экране с правильным.'));
+      // short and useful: what was on the screen and what the word really means
+      const shown = (document.querySelector('#play .question p[style]')?.textContent || '').trim();
+      feedback.classList.add('fb-tf');
+      if (shown && normalize(shown) === normalize(w.ru)) box.append(el('p', null, 'Перевод был верным: «' + w.en + '» — «' + w.ru + '».'), el('p', 'why-tip', 'Нажимай «Верно», когда перевод совпадает со значением слова.'));
+      else box.append(el('p', null, '«' + w.en + '» значит «' + w.ru + '»' + (shown ? ', а не «' + shown + '».' : '.')), el('p', 'why-tip', 'Скажи пару вслух: ' + w.en + ' — ' + w.ru + '.'));
     } else if (mode === 'builder') {
       box.append(el('p', null, 'Правильный порядок: «' + w.en + '».'), el('p', 'why-tip', 'Собери ещё раз в голове: сначала первое слово или первая буква.'));
     } else if (mode === 'letterfix') {
@@ -224,6 +228,7 @@
     else if (d.hinted) say(pick(lines.hint), 'think');
     else say(pick(lines.miss), 'oops');
     markChoices(d);
+    if (d.correct && d.mode === 'truefalse' && d.feedback) d.feedback.classList.add('fb-quick'); // a short reaction instead of a big green box
     explain(d);
     if (game?.mode === 'boss') bossHUD(d);
     if (!d.correct && d.feedback?.scrollIntoView) setTimeout(() => d.feedback.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }), 30);
@@ -257,7 +262,7 @@
     game.lexiInit = true; game.lexiXP = game.lexiXP || 0; game.lexiStarted = Date.now();
     $('bossHud')?.remove(); $('game').classList.toggle('boss-mode', game.mode === 'boss');
     const c = coach(); c.hidden = false;
-    say(LINES.start[game.mode] || 'Поехали!', game.mode === 'boss' ? 'think' : 'hello');
+    say((Math.random() < .5 ? pick(['Let’s play! ', 'Ready? ', 'Let’s learn! ']) : '') + (LINES.start[game.mode] || 'Поехали!'), game.mode === 'boss' ? 'think' : 'hello');
     if (game.mode === 'boss') bossHUD();
     const total = game.words.length;
     if (!game.assignmentId && total >= 2 && ['quiz', 'spell', 'truefalse', 'fix', 'audio', 'cards', 'builder', 'listen', 'crystals'].includes(game.mode)) {
@@ -289,7 +294,7 @@
     const lv = levelOf(quest.xp);
     const box = el('section', 'lexi-reward'); box.setAttribute('aria-label', 'Награды Лекси');
     const head = el('div', 'lexi-reward-head'); head.append(avatar(bossWin || perfect ? 'cheer' : g.firstCorrect >= initial / 2 ? 'happy' : 'think', 'm'));
-    const msg = bossWin ? 'Страж модуля побеждён! Лекси тобой гордится!' : perfect ? 'Ни одной ошибки! Отличная работа — Лекси тобой гордится!' : initial && g.firstCorrect / initial >= .7 ? 'Хороший раунд! Ещё немного — и слова твои.' : 'Ошибки — это нормально. Сыграй ещё раунд, трудные слова вернутся.';
+    const msg = bossWin ? 'You did it! Страж модуля побеждён — Лекси тобой гордится!' : perfect ? 'You’re a star! Ни одной ошибки — Лекси тобой гордится!' : initial && g.firstCorrect / initial >= .7 ? 'Great job! Ещё немного — и слова твои.' : 'Keep going! Ошибки — это нормально, трудные слова вернутся.';
     head.append(el('p', 'lexi-say', isCalm() ? msg.replace(/!/g, '.') : msg)); box.append(head);
     const row = el('div', 'lexi-reward-row');
     const xp = el('div', 'reward-pill xp'); xp.append(el('b', null, '+' + (g.lexiXP || 0)), el('span', null, 'XP за раунд')); row.append(xp);

@@ -34,6 +34,7 @@ jobs:
       - run: node tests/plus.mjs
       - run: node tests/print-layout.mjs
       - run: LEXIGO_WEBKIT=1 node tests/personal.mjs
+      - run: node tests/rules.mjs
       - name: Prepare isolated static preview package
         if: success()
         run: |

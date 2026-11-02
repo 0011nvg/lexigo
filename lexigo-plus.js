@@ -104,7 +104,8 @@
     if (sc) sc.textContent = 'Выбрано ' + n + ' из ' + m;
     if (tc) tc.textContent = n === m ? 'в играх — все слова' : n ? 'в играх — только отмеченные' : 'отметь слова для игр';
     const ow = $('openWords'); if (ow) { ow.textContent = n === m ? 'Слова урока: ' + m + ' · выбрать' : 'Слова: ' + n + ' из ' + m + ' · изменить'; ow.classList.toggle('has-subset', n !== m); }
-    const done = $('wordsDone'); if (done) { done.textContent = !n ? 'Отметь хотя бы одно слово' : n === m ? 'Тренировать все слова (' + n + ') →' : 'Тренировать выбранные (' + n + ') →'; done.disabled = !n; }
+    const done = $('wordsDone'); if (done && document.body.dataset.page === 'teacher') { done.textContent = n ? 'Готово: ' + n + ' ' + plural(n, 'слово', 'слова', 'слов') + ' для работы ↓' : 'Отметь хотя бы одно слово'; done.disabled = !n; } else if (done) { done.textContent = !n ? 'Отметь хотя бы одно слово' : n === m ? 'Тренировать все слова (' + n + ') →' : 'Тренировать выбранные (' + n + ') →'; done.disabled = !n; }
+    const twc = $('teacherWordCount'); if (twc) twc.textContent = n === m ? 'все слова урока: ' + m : 'выбрано ' + n + ' из ' + m;
     let chip = $('selectionChip');
     const launcher = $('launcher');
     if (launcher && n !== m) {
@@ -116,6 +117,12 @@
   // nicer labels for the existing buttons
   for (const [id, t] of [['all', 'Выбрать все'], ['none', 'Снять выделение']]) { const b = $(id); if (b) b.textContent = t; }
   // the old "Все"/"Снять" etc. already call renderWords → updateStats → saved automatically
+
+  /* teacher materials: choose the words right here (the student «train» block is not shown to the teacher) */
+  const tpw = $('teacherPickWords');
+  if (tpw) tpw.onclick = () => { const open = !document.body.classList.contains('teacher-words-open'); document.body.classList.toggle('teacher-words-open', open); tpw.setAttribute('aria-expanded', String(open)); tpw.textContent = open ? 'Готово' : 'Выбрать слова'; if (open) $('wordSelection')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); else $('teacherPickWords')?.scrollIntoView({ block: 'center' }); };
+  $('wordsDone')?.addEventListener('click', e => { if (document.body.dataset.page === 'teacher') { e.preventDefault(); e.stopImmediatePropagation(); if (document.body.classList.contains('teacher-words-open')) tpw?.click(); } }, true);
+  new MutationObserver(() => { refreshSelectionUI(); if (document.body.dataset.page !== 'teacher' && document.body.classList.contains('teacher-words-open')) { document.body.classList.remove('teacher-words-open'); if (tpw) { tpw.textContent = 'Выбрать слова'; tpw.setAttribute('aria-expanded', 'false'); } } }).observe(document.body, { attributes: true, attributeFilter: ['data-page'] });
 
   /* ---------- 3. configurable final test ---------- */
   const BOSS_KEY = 'lexigo_boss_types_v1';
@@ -180,79 +187,16 @@
   }
   let overridePool = null;
 
-  /* ---------- 2. choose several modes / follow the route ---------- */
-  const ROUTE_KEY = 'lexigo_route_v1';
+  /* ---------- 2. games right after the word set (2026-11-02: «Пройти по порядку» / «Выбрать игры» removed) ----------
+   * The launcher shows every game straight away; one tap starts it. The final test still opens its settings first. */
   const launcher = $('launcher');
-  const modeButtons = () => [...launcher.querySelectorAll('.mode-stage .mode[data-mode]')].filter(b => b.dataset.mode !== 'audio' || audioOK());
-  let picking = false; const picked = new Set();
-  const bar = el('div', 'route-tools');
-  const allBtn = el('button', 'route-btn primary'); allBtn.type = 'button'; allBtn.innerHTML = '<b>▶ Пройти по порядку</b><small>все игры трёх этапов</small>';
-  const pickBtn = el('button', 'route-btn'); pickBtn.type = 'button'; pickBtn.innerHTML = '<b>☑ Выбрать игры</b><small>отметь несколько и пройди подряд</small>';
-  bar.append(allBtn, pickBtn);
-  launcher.querySelector('.mode-heading')?.after(bar);
-  const headP = launcher.querySelector('.mode-heading p'); if (headP) headP.textContent = 'Нажми на игру, чтобы начать, — или пройди несколько игр подряд.';
-  const pickBar = el('div', 'route-pickbar'); pickBar.hidden = true;
-  const pickInfo = el('span', null, ''); const pickGo = el('button', 'btn', 'Начать'); pickGo.type = 'button'; const pickCancel = el('button', 'btn secondary', 'Отмена'); pickCancel.type = 'button';
-  pickBar.append(pickInfo, pickCancel, pickGo); document.body.append(pickBar);
-  function setPicking(on) {
-    picking = on; picked.clear(); launcher.classList.toggle('picking', on); pickBar.hidden = !on;
-    modeButtons().forEach(b => { b.classList.remove('picked'); if (on) b.setAttribute('aria-pressed', 'false'); else b.removeAttribute('aria-pressed'); });
-    pickBtn.classList.toggle('active', on); paintPick();
-  }
-  function paintPick() { const n = picked.size; pickInfo.textContent = n ? 'Выбрано игр: ' + n : 'Отметь игры'; pickGo.disabled = !n; pickGo.textContent = n ? 'Начать (' + n + ') →' : 'Начать'; }
-  pickBtn.onclick = () => setPicking(!picking);
-  pickCancel.onclick = () => setPicking(false);
-  pickGo.onclick = () => { const order = modeButtons().map(b => b.dataset.mode).filter(m => picked.has(m)); setPicking(false); beginRoute(order); };
-  allBtn.onclick = () => beginRoute(modeButtons().map(b => b.dataset.mode));
-  // capture clicks on game cards: picking mode toggles, the final test opens its settings
+  const headP = launcher.querySelector('.mode-heading p'); if (headP) headP.textContent = 'Нажми на игру — и начнём.';
+  try { sessionStorage.removeItem('lexigo_route_v1'); } catch { /* old route from an earlier visit */ }
   launcher.addEventListener('click', e => {
     const b = e.target.closest('.mode[data-mode]'); if (!b || !launcher.contains(b)) return;
-    if (picking && b.closest('.mode-stage')) { e.preventDefault(); e.stopImmediatePropagation(); const m = b.dataset.mode; picked.has(m) ? picked.delete(m) : picked.add(m); b.classList.toggle('picked', picked.has(m)); b.setAttribute('aria-pressed', String(picked.has(m))); paintPick(); return; }
-    if (b.dataset.mode === 'boss') { e.preventDefault(); e.stopImmediatePropagation(); clearRoute(); bossDialog(t => start('boss', null, t)); return; }
-    clearRoute();
+    if (b.dataset.mode === 'boss') { e.preventDefault(); e.stopImmediatePropagation(); bossDialog(t => start('boss', null, t)); }
   }, true);
-  $('quickStart')?.addEventListener('click', () => clearRoute(), true);
-
-  function clearRoute() { try { sessionStorage.removeItem(ROUTE_KEY); } catch { /* */ } }
-  function saveRoute(r) { try { sessionStorage.setItem(ROUTE_KEY, JSON.stringify(r)); } catch { /* */ } }
-  // the route lives in sessionStorage: it belongs to this tab only
-  function readRoute() { try { const r = JSON.parse(sessionStorage.getItem(ROUTE_KEY) || 'null'); return r && r.key === lessonKey() && Array.isArray(r.modes) ? r : null; } catch { return null; } }
-  function beginRoute(modes) {
-    if (!modes.length) return;
-    if (!selectedWords().length) { alert('Сначала выбери хотя бы одно слово.'); return; }
-    saveRoute({ key: lessonKey(), modes, i: 0 });
-    runStep();
-  }
-  function runStep() {
-    const r = readRoute(); if (!r) return;
-    const mode = r.modes[r.i];
-    if (!mode) { clearRoute(); return; }
-    const launchIt = types => { start(mode, null, types); if (!game) { // not enough words for this game: skip it
-        r.i++; saveRoute(r); if (r.i < r.modes.length) { toast('Игру «' + MODE_NAMES[mode] + '» пропускаем: для неё мало подходящих слов.', 'think'); setTimeout(runStep, 300); } else clearRoute(); } };
-    if (mode === 'boss') bossDialog(launchIt); else launchIt(undefined);
-  }
-  function routeBanner() {
-    const r = readRoute(); const g = $('game'); g?.querySelector('.route-banner')?.remove();
-    if (!r || !game || r.modes[r.i] !== game.mode) return;
-    const steps = el('ol', 'route-steps'); r.modes.forEach((m, k) => { const li = el('li', k < r.i ? 'done' : k === r.i ? 'now' : '', MODE_NAMES[m]); steps.append(li); });
-    const box = el('div', 'route-banner'); box.append(el('b', null, 'Маршрут · игра ' + (r.i + 1) + ' из ' + r.modes.length), steps);
-    g.querySelector('#counter')?.after(box);
-  }
-  // after a finished game in a route: offer the next one
-  new MutationObserver(() => {
-    const card = document.querySelector('#play .lesson-result, #play .pair-finish');
-    if (!card || card.dataset.route) { if (!card) routeBanner(); return; }
-    card.dataset.route = '1';
-    const r = readRoute(); if (!r || !game || r.modes[r.i] !== game.mode) return;
-    const box = el('div', 'route-next');
-    if (r.i + 1 < r.modes.length) {
-      const next = r.modes[r.i + 1];
-      const b = el('button', 'btn good', 'Дальше: ' + MODE_NAMES[next] + ' →'); b.type = 'button'; b.onclick = () => { r.i++; saveRoute(r); runStep(); };
-      const stopBtn = el('button', 'btn secondary', 'Закончить маршрут'); stopBtn.type = 'button'; stopBtn.onclick = () => { clearRoute(); box.remove(); };
-      box.append(el('p', null, 'Маршрут: пройдено ' + (r.i + 1) + ' из ' + r.modes.length), b, stopBtn);
-    } else { box.append(el('p', 'route-finished', '🏁 Маршрут пройден! Все выбранные игры позади.')); clearRoute(); }
-    card.append(box);
-  }).observe($('play'), { childList: true, subtree: true });
+  const readRoute = () => null;
 
   /* ---------- 5. honest storage notes ---------- */
   function storageNotes() {
@@ -263,6 +207,7 @@
     if (rep) { const h = rep.querySelector('h3'), p = rep.querySelector('p'); if (h) h.textContent = 'Результаты практики'; if (p) p.textContent = signed ? 'Слова с ошибками и даты повторения из вашего прогресса. Результаты учеников — в кабинете учителя.' : 'Слова с ошибками и даты повторения по данным этого устройства. Результаты учеников — в кабинете учителя после входа.'; }
   }
   storageNotes();
+  try { restoreGradeScale(); $('gradeScale')?.addEventListener('change', () => gradeScale()); } catch { /* teacher settings are optional */ }
   window.addEventListener('lexigo:account', storageNotes);
   window.LexigoPlus = Object.freeze({ bossTypes, notice, route: readRoute, wordSet, setWordSet, presetWordSet, refreshSelection: () => refreshSelectionUI(), HARD_KEY });
   // the first lesson may already be open (the page was loaded with a lesson link): restore its saved choice now

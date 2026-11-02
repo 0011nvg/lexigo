@@ -81,13 +81,13 @@ for (const [name, engine] of engines) {
     if (await page.locator('.cq-word').count()) await answer(page, true);
     await page.evaluate(() => { const p = document.querySelector('.cq-play'); p.classList.remove('calm'); });
     const m2 = (await st(page)).moves;
-    await page.evaluate(() => { const E = LexiCrystalEngine, s = LexiCrystalQuest.state(), [a, b] = E.findMove(s); const g = LexiCrystalQuest.debug(); g.sel = a; document.querySelector(`#cqBoard .cq-gem[data-i="${a}"]`); });
-    const two = await page.evaluate(() => { const s = LexiCrystalQuest.state(), all = LexiCrystalEngine.allMoves(s); return [all[0], all[all.length - 1]]; });
-    await drag(page, two[0][0], two[0][1]);
-    const busy = await page.evaluate(() => LexiCrystalQuest.debug().busy);
-    await drag(page, two[1][0], two[1][1]); await idle(page);
-    if (busy) assert.equal((await st(page)).moves, m2 - 1, 'second move during the animation is ignored');
-    ok(name + ': input is locked while crystals fall (second drag ignored)');
+    // два хода подряд в один момент: второй приходит, пока идёт анимация первого, — и игнорируется
+    const res2 = await page.evaluate(() => { const E = LexiCrystalEngine, s = LexiCrystalQuest.state(), all = E.allMoves(s); const a = all[0], b = all.find(m => !m.some(i => a.includes(i))) || all[all.length - 1];
+      LexiCrystalQuest.tryMove(a[0], a[1]); const busy = LexiCrystalQuest.debug().busy; LexiCrystalQuest.tryMove(b[0], b[1]); return busy; });
+    assert.ok(res2, 'busy during the animation');
+    await idle(page);
+    assert.equal((await st(page)).moves, m2 - 1, 'second move during the animation is ignored');
+    ok(name + ': input is locked while crystals fall (a second move at the same moment is ignored)');
 
     /* 6. «Энергия Лекси»: ошибка без штрафа, верный ответ +1 ход */
     for (let k = 0; k < 30 && !(await page.locator('.cq-word').count()); k++) {

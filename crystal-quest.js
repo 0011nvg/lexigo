@@ -611,5 +611,5 @@
     h.focus({ preventScroll: true }); card.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
   }
 
-  window.LexiCrystalQuest = Object.freeze({ begin, end, startLevel, showMap, state: () => G && G.st, debug: () => G });
+  window.LexiCrystalQuest = Object.freeze({ begin, end, startLevel, showMap, tryMove: (a, b) => attempt(a, b), state: () => G && G.st, debug: () => G });
 })();

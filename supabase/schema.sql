@@ -101,6 +101,16 @@ create table if not exists public.sessions (
 );
 create index if not exists sessions_user_idx on public.sessions(user_id, created_at desc);
 create index if not exists sessions_assignment_idx on public.sessions(assignment_id);
+-- v2 (рейтинг ТОП-3): ключ таблицы рекордов, время и ошибки раунда
+alter table public.sessions add column if not exists board_key text;
+alter table public.sessions add column if not exists seconds numeric(7,1);
+alter table public.sessions add column if not exists mistakes int;
+alter table public.sessions drop constraint if exists sessions_board_key_check;
+alter table public.sessions add constraint sessions_board_key_check check (board_key is null or board_key ~ '^[a-z]{2,12}\|[a-z0-9]{1,12}\|n[0-9]{1,3}(\|w[a-z0-9]{1,8})?(\|t[a-z,]{2,80})?$');
+alter table public.sessions drop constraint if exists sessions_seconds_check;
+alter table public.sessions add constraint sessions_seconds_check check (seconds is null or seconds between 0 and 7200);
+alter table public.sessions drop constraint if exists sessions_mistakes_check;
+alter table public.sessions add constraint sessions_mistakes_check check (mistakes is null or mistakes between 0 and 10000);
 
 create table if not exists public.word_progress (
   user_id       uuid not null references public.profiles(id) on delete cascade,
@@ -363,6 +373,7 @@ declare
   v_xp int := 0; n int; gain int; c text; v_claims int; v_acc int; v_sid uuid;
   st public.user_stats; snap jsonb; existing public.sessions;
   allowed_claims text[] := array['newwords','recall','fixed','due','listen','perfect','variety'];
+  v_board text := nullif(p->>'board_key',''); v_seconds numeric; v_mistakes int;
 begin
   if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
   if v_client is null or v_client !~ '^[A-Za-z0-9_-]{8,64}$' then raise exception 'bad client id'; end if;
@@ -441,6 +452,12 @@ begin
 
   v_acc := case when v_first > 0 then round(100.0 * v_first_ok / v_first) end;
 
+  -- рейтинг: ключ проверяется по формату и режиму; время правдоподобно (не меньше 0,4 с на ответ)
+  if v_board is not null and (v_board !~ '^[a-z]{2,12}\|[a-z0-9]{1,12}\|n[0-9]{1,3}(\|w[a-z0-9]{1,8})?(\|t[a-z,]{2,80})?$' or split_part(v_board, '|', 1) <> v_mode) then v_board := null; end if;
+  begin v_seconds := round((p->>'seconds')::numeric, 1); exception when others then v_seconds := null; end;
+  if v_seconds is not null and (v_seconds > 7200 or v_seconds < greatest(1, v_total * 0.4)) then v_seconds := null; end if;
+  begin v_mistakes := least(greatest((p->>'mistakes')::int, 0), 10000); exception when others then v_mistakes := null; end;
+
   -- 2) миссии дня (по 25 XP, не больше трёх разных в день) и сундук (40 XP, раз в день)
   if jsonb_typeof(p->'missions') = 'array' then
     for c in select jsonb_array_elements_text(p->'missions') loop
@@ -482,10 +499,11 @@ begin
    where user_id = uid returning * into st;
 
   insert into public.sessions(user_id, client_id, assignment_id, lesson_id, grade, section_index, scope, route, title, mode, finished,
-                              total, first_correct, correct, wrong, hints, accuracy, xp, events, local_day)
+                              total, first_correct, correct, wrong, hints, accuracy, xp, events, local_day, board_key, seconds, mistakes)
   values (uid, v_client, v_assignment, v_lesson, v_grade, v_section,
           case when v_assignment is not null then 'assignment' else v_scope end, v_route, v_title, v_mode, v_finished,
-          v_total, v_first_ok, v_correct, v_wrong, v_hints, v_acc, v_xp, v_events, v_day)
+          v_total, v_first_ok, v_correct, v_wrong, v_hints, v_acc, v_xp, v_events, v_day,
+          case when v_finished then v_board end, v_seconds, v_mistakes)
   returning id into v_sid;
 
   return jsonb_build_object('duplicate', false, 'session_id', v_sid, 'xp_gained', v_xp, 'xp', st.xp, 'streak', st.streak_count,
@@ -543,3 +561,82 @@ revoke all on function public.my_role(), public.owns_group(uuid), public.is_memb
 grant execute on function public.my_role(), public.owns_group(uuid), public.is_member_of(uuid), public.is_teacher_of(uuid),
   public.is_my_teacher(uuid), public.can_see_assignment(uuid), public.can_see_lesson(uuid) to authenticated;
 revoke all on function public.handle_new_user() from public, anon, authenticated;
+
+-- =====================================================================
+-- v2 · ТОП-3 рекордов (2026-11-02)
+-- Отдельная таблица на каждый «ключ»: режим + урок/набор слов + число слов раунда
+-- (+ для финального теста — набор слов и типы заданий). Записать результат можно
+-- только своей завершённой тренировкой, которую сохранил сервер; место считает сервер.
+-- =====================================================================
+create table if not exists public.leaderboard (
+  board_key    text not null,
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  session_id   uuid references public.sessions(id) on delete set null,
+  name         text not null check (char_length(name) between 2 and 20),
+  accuracy     int,
+  seconds      numeric(7,1),
+  mistakes     int,
+  achieved_at  timestamptz not null default now(),
+  primary key (board_key, user_id)
+);
+alter table public.leaderboard enable row level security;
+revoke all on public.leaderboard from anon, authenticated;
+
+-- ключ сортировки: меньше — лучше. «Найди пару»: время, затем ошибки. Остальные: точность, затем время.
+create or replace function public.lb_k1(p_board text, p_acc int, p_sec numeric) returns numeric
+language sql immutable set search_path = '' as $$ select case when p_board like 'pairs|%' then coalesce(p_sec, 99999) else -coalesce(p_acc, -1) end::numeric $$;
+create or replace function public.lb_k2(p_board text, p_sec numeric, p_mis int) returns numeric
+language sql immutable set search_path = '' as $$ select case when p_board like 'pairs|%' then coalesce(p_mis, 99999) else coalesce(p_sec, 99999) end::numeric $$;
+
+create or replace function public.leaderboard_top(p_board text)
+returns table(place int, name text, accuracy int, seconds numeric, mistakes int, mine boolean, achieved date)
+language sql stable security definer set search_path = public as $$
+  select (row_number() over (order by public.lb_k1(l.board_key, l.accuracy, l.seconds), public.lb_k2(l.board_key, l.seconds, l.mistakes), l.achieved_at))::int,
+         l.name, l.accuracy, l.seconds, l.mistakes, (l.user_id = auth.uid()), l.achieved_at::date
+  from public.leaderboard l where l.board_key = p_board
+  order by 1 limit 3
+$$;
+
+create or replace function public.leaderboard_preview(p_session uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare s public.sessions; own public.leaderboard; c1 numeric; c2 numeric; pl int;
+begin
+  if auth.uid() is null then return jsonb_build_object('qualifies', false, 'reason', 'guest'); end if;
+  select * into s from public.sessions where id = p_session and user_id = auth.uid();
+  if not found or s.board_key is null or not s.finished or s.created_at < now() - interval '2 hours'
+     or (s.board_key like 'pairs|%' and s.seconds is null) or (s.board_key not like 'pairs|%' and s.accuracy is null) then
+    return jsonb_build_object('qualifies', false, 'reason', 'not_eligible');
+  end if;
+  c1 := public.lb_k1(s.board_key, s.accuracy, s.seconds); c2 := public.lb_k2(s.board_key, s.seconds, s.mistakes);
+  select * into own from public.leaderboard where board_key = s.board_key and user_id = auth.uid();
+  if found and own.session_id = s.id then return jsonb_build_object('qualifies', false, 'reason', 'already', 'board_key', s.board_key); end if;
+  if found and (public.lb_k1(own.board_key, own.accuracy, own.seconds), public.lb_k2(own.board_key, own.seconds, own.mistakes)) <= (c1, c2) then
+    return jsonb_build_object('qualifies', false, 'reason', 'own_better', 'board_key', s.board_key);
+  end if;
+  select 1 + count(*) into pl from public.leaderboard l
+   where l.board_key = s.board_key and l.user_id <> auth.uid()
+     and (public.lb_k1(l.board_key, l.accuracy, l.seconds), public.lb_k2(l.board_key, l.seconds, l.mistakes)) <= (c1, c2);
+  return jsonb_build_object('qualifies', pl <= 3, 'place', pl, 'board_key', s.board_key, 'accuracy', s.accuracy, 'seconds', s.seconds, 'mistakes', s.mistakes);
+end $$;
+
+create or replace function public.leaderboard_claim(p_session uuid, p_name text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare pre jsonb; s public.sessions; n text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g'));
+begin
+  if auth.uid() is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  if n !~ '^[A-Za-zА-Яа-яЁё0-9 ._-]{2,20}$' then raise exception 'bad name' using errcode = '22023'; end if;
+  pre := public.leaderboard_preview(p_session);
+  if not coalesce((pre->>'qualifies')::boolean, false) then return jsonb_build_object('ok', false, 'reason', pre->>'reason'); end if;
+  select * into s from public.sessions where id = p_session;
+  insert into public.leaderboard(board_key, user_id, session_id, name, accuracy, seconds, mistakes, achieved_at)
+  values (s.board_key, auth.uid(), s.id, n, s.accuracy, s.seconds, s.mistakes, now())
+  on conflict (board_key, user_id) do update set session_id = excluded.session_id, name = excluded.name, accuracy = excluded.accuracy,
+    seconds = excluded.seconds, mistakes = excluded.mistakes, achieved_at = excluded.achieved_at;
+  return jsonb_build_object('ok', true, 'place', (pre->>'place')::int, 'board_key', s.board_key);
+end $$;
+
+revoke all on function public.leaderboard_top(text), public.leaderboard_preview(uuid), public.leaderboard_claim(uuid, text),
+  public.lb_k1(text, int, numeric), public.lb_k2(text, numeric, int) from public, anon;
+grant execute on function public.leaderboard_top(text) to anon, authenticated;
+grant execute on function public.leaderboard_preview(uuid), public.leaderboard_claim(uuid, text) to authenticated;
+grant execute on function public.lb_k1(text, int, numeric), public.lb_k2(text, numeric, int) to anon, authenticated;

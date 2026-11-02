@@ -21,6 +21,7 @@ async function run(name,viewport){
   for(const mode of ['cards','quiz','pairs','spell','fix','truefalse','audio','boss','crystals']){
    await page.evaluate(()=>{selected=new Set(scope.map(w=>w.id));renderWords()});
    await page.locator('[data-mode="'+mode+'"]').click();
+   if(mode==='boss')await page.locator('.boss-setup .btn',{hasText:'Начать тест'}).click(); // final test opens its settings first
    assert.ok(await page.locator('#game').isVisible(),mode+' opened');
    assert.ok(await page.locator('#play').isVisible(),mode+' has play area');
    await capture(mode);

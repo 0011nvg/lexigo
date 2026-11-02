@@ -184,27 +184,22 @@ try {
   await deep.close();
   ok('deep link: Lexi joins a game opened directly by URL');
 
-  /* 12. Calm mode: auto for 7–9, manual toggle persists */
-  await page.goto(BASE + '#/lesson/8/0');
-  assert.ok(await page.evaluate(() => document.body.classList.contains('calm')));
-  await page.goto(BASE + '#/lesson/2/0');
-  assert.ok(!(await page.evaluate(() => document.body.classList.contains('calm'))));
-  await page.locator('#calmToggle').click();
-  await page.reload(); await page.locator('#launcher').waitFor();
-  assert.ok(await page.evaluate(() => document.body.classList.contains('calm')));
-  await page.locator('#calmToggle').click();
-  ok('calm: auto for grades 7–9, persistent toggle');
+  /* 12. Always game mode (calm/board switches removed 2026-11-02), even for grades 7–9 and old saved prefs */
+  await page.evaluate(() => localStorage.setItem('lexigo_prefs_v1', JSON.stringify({ calm: 'on', board: true })));
+  await page.goto(BASE + '#/lesson/8/0'); await page.reload(); await page.locator('#launcher').waitFor();
+  assert.ok(!(await page.evaluate(() => document.body.classList.contains('calm') || document.body.classList.contains('board'))));
+  assert.equal(await page.locator('#calmToggle, #boardToggle').count(), 0);
+  assert.match(await page.locator('#lexiChip .chip-lvl').innerText(), /Новичок|Путешественник|Исследователь/);
+  assert.doesNotMatch(await page.locator('#lexiChip').innerText(), /XP|Ур\./);
+  ok('game mode always on: no calm/board switches; header shows a rank, not "Ур. · XP"');
 
-  /* 13. Teacher: board mode toggle, print unchanged */
+  /* 13. Teacher: print sheet without game elements */
   await page.goto(BASE + '#/lesson/2/0/teacher');
-  await page.locator('#boardToggle').check();
-  assert.ok(await page.evaluate(() => document.body.classList.contains('board')));
   await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
   await page.locator('#printTest').click();
   assert.ok(await page.evaluate(() => window.__printed && document.querySelectorAll('#lexigoPrint .print-question').length > 0));
   assert.equal(await page.evaluate(() => [...document.querySelectorAll('#lexigoPrint *')].some(n => /lexi-/.test(n.className))), false);
-  await page.locator('#boardToggle').uncheck();
-  ok('teacher: board mode, print sheet without game elements');
+  ok('teacher: print sheet without game elements');
   await page.close();
 
   /* 14. Corrupted storage never breaks the app */

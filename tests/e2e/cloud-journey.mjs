@@ -84,6 +84,7 @@ try {
   assert.equal(await g.locator('#accountButton').getAttribute('href'), 'auth.html');
   await playToEnd(g);
   await g.locator('.signup-nudge').waitFor({ timeout: 4000 });
+  await g.locator('.lb .lb-cta').waitFor({ timeout: 8000 });   // empty board: a guest would make it — invited to sign in
   const guestWords = await g.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('lexigo_progress_v1') || '{}')).length);
   assert.ok(guestWords > 0);
   ok('guest: plays without an account, gentle sign-up hint after the first round (' + guestWords + ' words kept on device)');
@@ -142,6 +143,16 @@ try {
   await s.locator('.task-overlay').waitFor();
   await s.locator('.task-mode', { hasText: 'Выбери перевод' }).click();
   await playToEnd(s, { mistakes: 1 });
+  // ТОП-3: first result on this board → congratulation + name form
+  await s.locator('.lb-claim').waitFor({ timeout: 10000 });
+  await s.locator('.lb-name').fill('<x>');
+  await s.locator('.lb-claim button').click();
+  await s.locator('.lb-msg', { hasText: 'Имя' }).waitFor();
+  await s.locator('.lb-name').fill('Маша К.');
+  await s.locator('.lb-claim button').click();
+  await s.locator('.lb-saved').waitFor();
+  assert.match(await s.locator('.lb-list li.mine').innerText(), /Маша К\./);
+  ok('ТОП-3: top result → congratulation, name validated, saved on the server, own row highlighted');
   await s.getByRole('button', { name: 'Вернуться к заданию' }).click();
   await s.locator('.task-mode.done', { hasText: 'Выбери перевод' }).waitFor();
   await s.locator('.task-mode', { hasText: 'Напиши слово' }).click();
@@ -180,6 +191,9 @@ try {
   assert.equal(xp2, xpOf(mail('masha')));
   assert.match(await s2.locator('.lexi-hero-title').innerText(), /Маша/);
   ok('second device: word progress and XP restored after sign-in; Lexi greets by name');
+  const lbRows = await s2.evaluate(async () => { const sb = await window.LexigoCloud.client(); const { data } = await sb.from('sessions').select('board_key').not('board_key', 'is', null).limit(1); const t = await sb.rpc('leaderboard_top', { p_board: data[0].board_key }); return t.data; });
+  assert.equal(lbRows[0].name, 'Маша К.'); assert.equal(lbRows[0].mine, true);
+  ok('ТОП-3 is stored on the server: visible after reload and on another device');
 
   /* 8. Resubmitting the same round awards nothing (idempotence through the API) */
   const before = xpOf(mail('masha'));

@@ -26,7 +26,7 @@ window.LexigoDashboard=(()=>{
    const grid=el('div',undefined,'award-grid');for(const a of s.awards){const card=el('article',undefined,'award-card'+(a.earned?' earned':''));const badge=el('span',undefined,'award-symbol');badge.innerHTML=icon('awards');card.append(badge,el('h2',a.name),el('p',a.rule),el('strong',a.earned?'Получено':Math.min(a.value,a.goal)+' / '+a.goal));grid.append(card)}host.append(grid);
    host.append(el('p','Награды рассчитываются по сохранённым результатам. Повторение одного слова не добавляет эту награду заново.','dashboard-note'));
   }
-  host.append(el('p','Прогресс хранится только в этом браузере. При очистке данных браузера он может исчезнуть.','dashboard-note'));
+  host.append(el('p',(window.LexigoAccountHint&&window.LexigoAccountHint.uid())?'Прогресс сохраняется в твоём аккаунте и доступен на любом устройстве после входа.':'Прогресс сохраняется на этом устройстве. Войди в аккаунт, чтобы он не потерялся и был доступен везде.','dashboard-note'));
  }
  return Object.freeze({sync,render});
 })();

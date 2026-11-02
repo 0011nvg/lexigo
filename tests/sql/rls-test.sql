@@ -145,6 +145,35 @@ select pg_temp.check((select right_count from word_progress where user_id=auth.u
 insert into r select 'imp2', import_guest_progress('{"w902":{"right":3}}');
 select pg_temp.check((select (v->>'already')::boolean from r where k='imp2'), 'import only once');
 
+-- ---------- ТОП-3: server-ranked, only own finished sessions, one entry per player ----------
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
+insert into r select 'lb1', submit_session(jsonb_build_object('client_id','sess-lb-001','mode','quiz','finished',true,'board_key','quiz|g4s3|n3','seconds',30,
+  'events',jsonb_build_array(jsonb_build_object('w','w500','ok',true),jsonb_build_object('w','w501','ok',true),jsonb_build_object('w','w502','ok',false))));
+select pg_temp.check((select board_key from sessions where client_id='sess-lb-001')='quiz|g4s3|n3', 'board key stored');
+select pg_temp.check((select (leaderboard_preview((select v->>'session_id' from r where k='lb1')::uuid)->>'qualifies')::boolean), 'first result qualifies');
+do $$ begin perform leaderboard_claim((select v->>'session_id' from r where k='lb1')::uuid, '<b>'); raise exception 'FAIL: bad name accepted'; exception when invalid_parameter_value then null; end $$;
+select pg_temp.check((leaderboard_claim((select v->>'session_id' from r where k='lb1')::uuid, '  Маша   К. '))->>'ok' = 'true', 'claim with a valid name');
+select pg_temp.check((select name from leaderboard_top('quiz|g4s3|n3') where place=1)='Маша К.', 'name normalised, place 1');
+select pg_temp.check((leaderboard_claim((select v->>'session_id' from r where k='lb1')::uuid, 'Маша'))->>'ok' = 'false', 'same session cannot be claimed twice');
+insert into r select 'lb_mode', submit_session(jsonb_build_object('client_id','sess-lb-002','mode','spell','finished',true,'board_key','quiz|g4s3|n3','events',jsonb_build_array(jsonb_build_object('w','w500','ok',true))));
+select pg_temp.check((select board_key from sessions where client_id='sess-lb-002') is null, 'board key of another mode rejected');
+insert into r select 'lb_fast', submit_session(jsonb_build_object('client_id','sess-lb-003','mode','quiz','finished',true,'board_key','quiz|g4s3|n3','seconds',0.2,'events',jsonb_build_array(jsonb_build_object('w','w500','ok',true),jsonb_build_object('w','w501','ok',true),jsonb_build_object('w','w502','ok',true))));
+select pg_temp.check((select seconds from sessions where client_id='sess-lb-003') is null, 'implausible time dropped');
+select pg_temp.check((leaderboard_claim((select v->>'session_id' from r where k='lb_fast')::uuid, 'Маша'))->>'ok' = 'true', 'better own result replaces the old one');
+select pg_temp.check((select count(*) from leaderboard_top('quiz|g4s3|n3'))=1 and (select accuracy from leaderboard_top('quiz|g4s3|n3'))=100, 'one entry per player, best kept');
+-- other students fill the board; the 4th worse result does not qualify
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000b3');
+insert into r select 'lb_b3', submit_session(jsonb_build_object('client_id','sess-lb-b3a','mode','quiz','finished',true,'board_key','quiz|g4s3|n3','seconds',20,'events',jsonb_build_array(jsonb_build_object('w','w500','ok',true),jsonb_build_object('w','w501','ok',false),jsonb_build_object('w','w502','ok',false))));
+select pg_temp.check((leaderboard_claim((select v->>'session_id' from r where k='lb_b3')::uuid, 'Петя'))->>'ok' = 'true', 'second player claims');
+select pg_temp.check((select string_agg(name, ',' order by place) from leaderboard_top('quiz|g4s3|n3'))='Маша,Петя', 'ordered by accuracy');
+select pg_temp.check(not (select mine from leaderboard_top('quiz|g4s3|n3') where place=1), 'mine flag only for own row');
+do $$ begin insert into leaderboard(board_key,user_id,name) values ('quiz|g4s3|n3', auth.uid(), 'Хакер'); raise exception 'FAIL: direct leaderboard insert'; exception when insufficient_privilege then null; end $$;
+select pg_temp.check((leaderboard_claim((select id from sessions where client_id='sess-lb-001'), 'Чужой'))->>'ok' = 'false', 'cannot claim someone else''s session');
+select pg_temp.check((leaderboard_preview((select id from sessions where client_id='sess-lb-001')))->>'qualifies' is distinct from 'true', 'foreign session is never eligible');
+reset role; set role anon; select pg_temp.as_user(null);
+select pg_temp.check((select count(*) from leaderboard_top('quiz|g4s3|n3'))=2, 'guests can view the top 3');
+reset role; set role authenticated;
+
 -- ---------- teacher reads results only of own students ----------
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
 select pg_temp.check((select count(*) from sessions where user_id='00000000-0000-0000-0000-0000000000b1')>=5, 'teacher sees own student sessions');

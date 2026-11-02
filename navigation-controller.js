@@ -20,7 +20,7 @@
   document.body.classList.toggle('teacher-mode',page==='teacher');
   byId('roleSwitch').setAttribute('aria-pressed',String(page==='teacher'));byId('roleSwitch').textContent=page==='teacher'?'К тренировкам':'Для учителя';
  }
- function crumbs(parts){const nav=byId('breadcrumbs');nav.replaceChildren(link('Учебники','/home'));for(const [label,path] of parts){nav.append(make('span','/'));if(path)nav.append(link(label,path));else{const here=make('span',label);here.setAttribute('aria-current','page');nav.append(here)}}nav.hidden=!parts.length}
+ function crumbs(parts){const nav=byId('breadcrumbs');nav.replaceChildren(link('Уроки','/home'));for(const [label,path] of parts){nav.append(make('span','/'));if(path)nav.append(link(label,path));else{const here=make('span',label);here.setAttribute('aria-current','page');nav.append(here)}}nav.hidden=!parts.length}
  function context(grade,key){
   const b=DB.books.find(b=>String(b.grade)===grade);if(!b)return false;
   const group=/^m\d+$/.test(key)?Number(key.slice(1)):null,index=/^\d+$/.test(key)?Number(key):null;
@@ -50,7 +50,7 @@
    if(parts[0]==='lesson'&&context(parts[1],parts[2])){
     const mode=parts[3]==='play'?parts[4]:null;const page=mode&&Object.hasOwn(modeNames,mode)?'play':['words','teacher'].includes(parts[3])?parts[3]:'lesson';
     show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='words'?'Слова':page==='teacher'?'Материалы':modeNames[mode]);
-    if(page==='play'){if(mode==='mixed')quickStart();else originalStart(mode);if(!game){lastURL='';history.replaceState({},'','#'+lessonPath());render();return}byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode]}
+    if(page==='play'){if(mode==='mixed')quickStart();else originalStart(mode,null,mode==='boss'&&window.LexigoPlus?window.LexigoPlus.bossTypes():undefined);if(!game){lastURL='';history.replaceState({},'','#'+lessonPath());render();return}byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode]}
     document.title=(page==='play'?modeNames[mode]:byId('currentLesson').textContent)+' — LEXIGO';
    }else if(['games','awards','profile'].includes(parts[0])){const page=parts[0];show(page);crumbs([]);LexigoDashboard.render(page,lessonPath(),'Spotlight '+book.grade+' · '+(unit==='__all'?mod:book.sections[Number(unit)].title),modeNames);document.title=({games:'Игры',awards:'Награды',profile:'Профиль'}[page])+' — LEXIGO';}
    else if(parts[0]==='course'){show('course');course(parts[1],parts[2])}

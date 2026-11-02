@@ -127,11 +127,11 @@ async function run(viewport){
   selected=new Set(singles.map(w=>w.id));
   const original=[...document.querySelectorAll('#taskTypes input')].map(x=>[x,x.checked]);
   try{
-   document.querySelectorAll('#taskTypes input').forEach(x=>x.checked=x.value==='fix');
-   const previous=game;start('boss');
+   // the final test is configured in its own settings (2026-11-02); a set without a writing task is still refused
+   const previous=game;start('boss',null,['fix']);
    if(game!==previous)throw Error('Boss accepted typo correction as independent recall');
-   document.querySelectorAll('#taskTypes input').forEach(x=>x.checked=x.value==='spell');
-   start('boss');
+   if(!document.querySelector('.lx-notice'))throw Error('Refusal must be explained by Lexi');document.querySelector('.lx-notice').remove();
+   start('boss',null,['spell']);
    if(!game||game.mode!=='boss'||!['spell','audio'].includes(game.activeQuestionMode))throw Error('Boss lacks unaided recall');
    stop();
   }finally{original.forEach(([x,v])=>x.checked=v)}

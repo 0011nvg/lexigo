@@ -42,11 +42,12 @@
   let quest = loadQuest();
   const saveQuest = () => writeJSON(QUEST_KEY, quest);
   function day(k = today()) { return quest.days[k] || (quest.days[k] = { xp: 0, words: {}, counters: {}, done: [], chest: false, modes: [] }); }
-  const prefs = Object.assign({ calm: 'auto', board: false }, readJSON(PREFS_KEY, {}));
+  const prefs = Object.assign({ calm: 'auto', board: false }, readJSON(PREFS_KEY, {})); prefs.calm = 'off'; prefs.board = false;
   const savePrefs = () => writeJSON(PREFS_KEY, { calm: ['auto', 'on', 'off'].includes(prefs.calm) ? prefs.calm : 'auto', board: !!prefs.board });
 
   /* ---------- levels ---------- */
-  const TITLES = ['Новичок', 'Путешественник', 'Следопыт', 'Исследователь', 'Знаток слов', 'Мастер слов', 'Капитан LEXIGO', 'Легенда LEXIGO'];
+  const TITLES = ['Новичок', 'Путешественник', 'Исследователь', 'Следопыт', 'Знаток слов', 'Мастер слов', 'Капитан LEXIGO', 'Легенда LEXIGO'];
+  const RANK_ICONS = ['🌱', '🧭', '🔎', '🗺️', '📚', '⭐', '🚀', '👑'];
   const levelStart = l => 50 * l * (l - 1); // 1:0 2:100 3:300 4:600 5:1000 ...
   function levelOf(xp) { let l = 1; while (xp >= levelStart(l + 1)) l++; return { level: l, title: TITLES[Math.min(l - 1, TITLES.length - 1)], from: levelStart(l), to: levelStart(l + 1), xp }; }
 
@@ -106,10 +107,11 @@
 
   /* ---------- calm & board modes ---------- */
   function currentGrade() { return Number((typeof book !== 'undefined' && book && book.grade) || 2); }
-  function isCalm() { return prefs.calm === 'on' || (prefs.calm === 'auto' && currentGrade() >= 7); }
+  /* 2026-11-02: LEXIGO always runs in game mode; the calm/board switches were removed at the author's request. */
+  function isCalm() { return false; }
   function applyModes() {
     document.body.classList.toggle('calm', isCalm());
-    document.body.classList.toggle('board', !!prefs.board);
+    document.body.classList.remove('board');
     const t = $('calmToggle');
     if (t) { t.setAttribute('aria-pressed', String(isCalm())); t.querySelector('span').textContent = isCalm() ? 'Спокойный' : 'Игровой'; t.title = isCalm() ? 'Спокойный режим: меньше анимаций и реплик. Нажми, чтобы включить игровой.' : 'Игровой режим: Лекси комментирует, есть эффекты. Нажми, чтобы включить спокойный.'; }
     const b = $('boardToggle'); if (b) b.checked = !!prefs.board;
@@ -324,13 +326,13 @@
     const nav = document.querySelector('.header-actions'); if (!nav || $('lexiChip')) return;
     const chip = el('a', 'lexi-chip'); chip.id = 'lexiChip'; chip.href = '#/awards'; chip.setAttribute('aria-label', 'Мой уровень и награды');
     chip.append(avatar('hello', 's'), el('span', 'chip-lvl'), el('span', 'chip-streak'));
-    const calm = el('button', 'calm-toggle'); calm.id = 'calmToggle'; calm.type = 'button'; calm.innerHTML = '<i aria-hidden="true"></i><span></span>';
-    calm.onclick = () => { prefs.calm = isCalm() ? 'off' : 'on'; savePrefs(); applyModes(); toast(isCalm() ? 'Спокойный режим: меньше эффектов и реплик.' : 'Игровой режим включён!', 'hello'); };
-    nav.prepend(chip); nav.append(calm);
+    nav.prepend(chip);
   }
   function refreshChrome() {
     const lv = levelOf(quest.xp), chip = $('lexiChip'); if (!chip) return;
-    chip.querySelector('.chip-lvl').textContent = 'Ур. ' + lv.level + ' · ' + quest.xp + ' XP'; chip.querySelector('.chip-lvl').dataset.short = 'Ур. ' + lv.level; chip.dataset.level = lv.level; chip.setAttribute('aria-label', 'Уровень ' + lv.level + ', ' + quest.xp + ' XP. Мои награды');
+    chip.querySelector('.chip-lvl').textContent = lv.title; chip.querySelector('.chip-lvl').dataset.short = lv.title; chip.dataset.level = lv.level; chip.dataset.rank = RANK_ICONS[Math.min(lv.level - 1, RANK_ICONS.length - 1)]; chip.querySelector('.chip-lvl').dataset.rank = chip.dataset.rank;
+    chip.title = lv.title + ' · уровень ' + lv.level + ' · ' + quest.xp + ' XP · до следующего звания ' + (lv.to - lv.xp) + ' XP';
+    chip.setAttribute('aria-label', 'Моё звание: ' + lv.title + '. Уровень ' + lv.level + ', ' + quest.xp + ' XP. Открыть награды');
     chip.querySelector('.chip-lvl').style.setProperty('--p', ((lv.xp - lv.from) / (lv.to - lv.from) * 100).toFixed(0) + '%');
     const alive = quest.streak.last && dayDiff(quest.streak.last, today()) <= 1 ? quest.streak.count : 0;
     chip.querySelector('.chip-streak').textContent = alive ? '🔥 ' + alive : '';
@@ -454,7 +456,9 @@
       const lvl = el('div', 'lexi-level big'); lvl.innerHTML = '<span class="lvl-num"></span><div><b class="lvl-title"></b><div class="lvl-track"><i></i></div><small class="lvl-xp"></small></div>';
       lvl.querySelector('.lvl-num').textContent = lv.level; lvl.querySelector('.lvl-title').textContent = 'Уровень ' + lv.level + ': ' + lv.title;
       lvl.querySelector('.lvl-track i').style.width = ((lv.xp - lv.from) / (lv.to - lv.from) * 100) + '%'; lvl.querySelector('.lvl-xp').textContent = quest.xp + ' XP · до следующего уровня ' + (lv.to - lv.xp) + ' XP';
-      sec.append(lvl, el('p', 'dashboard-note', 'XP начисляется только за верные ответы: 2 XP за узнавание, 4 XP за слово по памяти, не больше двух раз за слово в день. Ещё XP — за миссии дня, сундук и победу над стражем модуля.'));
+      const ladder = el('ol', 'rank-ladder'); ladder.setAttribute('aria-label', 'Звания LEXIGO');
+      TITLES.forEach((t, i) => { const li = el('li', i + 1 < lv.level ? 'done' : i + 1 === lv.level ? 'now' : ''); li.append(el('span', 'rank-ico', RANK_ICONS[i]), el('b', null, t), el('small', null, i === 0 ? 'старт' : 'от ' + levelStart(i + 1) + ' XP')); if (i + 1 === lv.level) li.setAttribute('aria-current', 'step'); ladder.append(li); });
+      sec.append(lvl, ladder, el('p', 'dashboard-note', 'XP начисляется только за верные ответы: 2 XP за узнавание, 4 XP за слово по памяти, не больше двух раз за слово в день. Ещё XP — за миссии дня, сундук и победу над стражем модуля.'));
       const grid = el('div', 'badge-grid');
       for (const [id, name, rule] of BADGES) { const card = el('article', 'badge-card' + (quest.badges[id] ? ' earned' : '')); card.append(el('span', 'badge-icon badge-' + id), el('h3', null, name), el('p', null, rule), el('strong', null, quest.badges[id] ? 'Получено' : 'Ещё впереди')); grid.append(card); }
       sec.append(grid); host.querySelector('h1')?.after(sec);
@@ -471,6 +475,7 @@
 
   /* ---------- teacher: board mode ---------- */
   function teacherTools() {
+    return; // «Урок на доске» removed (2026-11-02): large readable type is now the default in every game
     const cfg = document.querySelector('#teacherPage .test-config'); if (!cfg || $('boardToggle')) return;
     const box = el('div', 'board-config'); const label = el('label', 'board-label'); const cb = el('input'); cb.type = 'checkbox'; cb.id = 'boardToggle';
     cb.onchange = () => { prefs.board = cb.checked; savePrefs(); applyModes(); };

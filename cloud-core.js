@@ -31,6 +31,38 @@
   function levelOf(xp) { xp = Math.max(0, Number(xp) || 0); let l = 1; while (xp >= levelStart(l + 1)) l++; return { level: l, title: LEVEL_TITLES[Math.min(l - 1, LEVEL_TITLES.length - 1)], from: levelStart(l), to: levelStart(l + 1), xp }; }
   const MODES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристаллы', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
   const ASSIGNABLE = ['quiz', 'spell', 'pairs', 'truefalse', 'cards', 'fix', 'builder', 'listen', 'audio', 'mixed', 'boss', 'crystals'];
+  /* Подходит ли игра к набору слов. Правила совпадают с самими играми (practice-controller.js):
+     «Конструктор», «Аудиодиктант», «Кристаллы», «Финальный тест» — только отдельные слова, без фраз. */
+  const MODE_HINTS = { cards: 'переворачивай и вспоминай', quiz: 'выбор перевода', spell: 'написание по памяти', pairs: 'поиск пар на время', truefalse: 'быстрая проверка',
+    fix: 'найди ошибку в слове', audio: 'услышь и напиши', crystals: 'экспедиция за кристаллами', boss: 'итоговая проверка', mixed: 'разные задания подряд',
+    builder: 'собери слово из букв', listen: 'выбери услышанное', review: 'повтор ошибок' };
+  const wordForm = s => String(s == null ? '' : s).trim().replace(/^[¡¿"“«(\[]+|[!?.,;:…"”»)\]]+$/g, '').trim();
+  const isSingle = w => /^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/.test(wordForm(w && w.en));
+  const isBuilder = w => { const n = wordForm(w && w.en).replace(/[^a-z]/gi, '').length; return isSingle(w) && n >= 2 && n <= 14; };
+  const norm = s => String(s || '').toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}' -]/gu, '').replace(/\s+/g, ' ').trim();
+  function uniquePairCount(ws) { const a = new Set(), b = new Set(); let n = 0; for (const w of ws) { const x = norm(w.en), y = norm(w.ru); if (a.has(x) || b.has(y)) continue; a.add(x); b.add(y); n++; } return n; }
+  const speechOK = () => typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance === 'function';
+  const ruN = (n, one, few, many) => { const a = n % 10, b = n % 100; return n + ' ' + (a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many); };
+  /* → { ok, usable, total, note } ; note объясняет причину отказа или частичного использования */
+  function modeFit(mode, list, opts = {}) {
+    const ws = (list || []).filter(isLexical), total = ws.length;
+    const single = ws.filter(isSingle).length;
+    const need = (n, min, what) => n >= min ? null : (n ? 'Нужно минимум ' + ruN(min, what[0], what[1], what[2]) + ', а в уроке ' + n + '.' : 'В уроке нет ' + what[2] + '.');
+    let usable = total, note = null;
+    if (mode === 'builder') { usable = ws.filter(isBuilder).length; note = need(usable, 1, ['отдельное слово', 'отдельных слова', 'отдельных слов (2–14 букв)']); if (note) note = '«Конструктор» собирает только отдельные слова из 2–14 букв. ' + note; }
+    else if (mode === 'audio') { usable = single; note = need(usable, 1, ['отдельное слово', 'отдельных слова', 'отдельных слов']); if (note) note = '«Аудиодиктант» диктует только отдельные слова, без фраз. ' + note; }
+    else if (mode === 'crystals') { usable = single; note = need(usable, 1, ['отдельное слово', 'отдельных слова', 'отдельных слов']); if (note) note = '«Кристаллы» работают только с отдельными словами. ' + note; }
+    else if (mode === 'boss') { usable = single; note = need(usable, 3, ['отдельное слово', 'отдельных слова', 'отдельных слов']); if (note) note = '«Финальный тест» проверяет только отдельные слова. ' + note; }
+    else if (mode === 'pairs') { usable = uniquePairCount(ws); note = need(usable, 2, ['пара', 'пары', 'пар с разными словами и переводами']); }
+    else if (['quiz', 'truefalse', 'listen'].includes(mode)) note = need(total, 2, ['слово', 'слова', 'слов']);
+    else note = need(total, 1, ['слово', 'слова', 'слов']);
+    const ok = !note;
+    if (ok && (mode === 'audio' || mode === 'listen') && opts.runtime && !speechOK()) return { ok: false, usable, total, note: 'В этом браузере нет озвучки — игра на слух недоступна.' };
+    if (ok && usable < total && ['builder', 'audio', 'crystals', 'boss'].includes(mode)) note = 'Фразы пропускаются: в игре ' + ruN(usable, 'слово', 'слова', 'слов') + ' из ' + total + '.';
+    return { ok, usable, total, note };
+  }
+  /* игры своего урока: сохранённый список или (для старых уроков) все игры */
+  function lessonModes(lesson) { const m = lesson && Array.isArray(lesson.modes) ? lesson.modes.filter(x => ASSIGNABLE.includes(x)) : []; return m.length ? ASSIGNABLE.filter(x => m.includes(x)) : ASSIGNABLE.slice(); }
   const BADGES = [
     ['streak3', '🔥', 'Три дня подряд', 'Занимайся 3 дня подряд', s => s.streak_best >= 3],
     ['streak7', '📅', 'Неделя слов', 'Занимайся 7 дней подряд', s => s.streak_best >= 7],
@@ -105,5 +137,5 @@
     return 'Что-то пошло не так. Попробуй ещё раз чуть позже.';
   }
 
-  window.LexigoCloud = Object.freeze({ configured, client, levelOf, MODES, ASSIGNABLE, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, fmtDate, localDay, clientId, authMessage });
+  window.LexigoCloud = Object.freeze({ configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, fmtDate, localDay, clientId, authMessage });
 })();

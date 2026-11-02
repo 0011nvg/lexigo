@@ -78,6 +78,18 @@ insert into assignments(group_id,teacher_id,title,grade,section_indexes,modes,co
 insert into assignments(group_id,teacher_id,student_id,title,lesson_id,modes) values ((select v::uuid from ctx where k='g1'),auth.uid(),'00000000-0000-0000-0000-0000000000b2','Только Саше',(select v::uuid from ctx where k='l1'),'{pairs}');
 insert into ctx select 'a1', id::text from assignments where title like 'Spotlight 4%';
 insert into ctx select 'a_sasha', id::text from assignments where title='Только Саше';
+-- v2: игры урока и задания без ограничения «до 6»
+select pg_temp.check((select modes from custom_lessons where title='Мой урок') is null, 'old lessons: modes null = all games');
+update custom_lessons set modes='{quiz,spell,pairs,truefalse,cards,fix,builder,listen,audio,mixed,boss,crystals}', updated_at=now() where title='Мой урок';
+select pg_temp.check(cardinality((select modes from custom_lessons where title='Мой урок'))=12, 'lesson keeps all 12 games');
+insert into custom_lessons(owner_id,title,words,modes) values (auth.uid(),'Один режим','[{"en":"cat","ru":"кот"},{"en":"dog","ru":"собака"}]','{quiz}');
+do $$ begin update custom_lessons set modes='{quiz,teleport}' where title='Мой урок'; raise exception 'FAIL: unknown game saved'; exception when check_violation then null; end $$;
+do $$ begin update custom_lessons set modes='{quiz,quiz}' where title='Мой урок'; raise exception 'FAIL: duplicate game saved'; exception when check_violation then null; end $$;
+do $$ begin update custom_lessons set modes='{}' where title='Мой урок'; raise exception 'FAIL: empty game list saved'; exception when check_violation then null; end $$;
+insert into assignments(group_id,teacher_id,title,lesson_id,modes) values ((select v::uuid from ctx where k='g1'),auth.uid(),'Все игры',(select v::uuid from ctx where k='l1'),'{cards,quiz,spell,pairs,truefalse,fix,audio,crystals,boss,mixed,builder,listen,review}');
+select pg_temp.check(cardinality((select modes from assignments where title='Все игры'))=13, 'assignment with all 13 games (no limit of 6)');
+do $$ begin insert into assignments(group_id,teacher_id,title,grade,section_indexes,modes) values ((select v::uuid from ctx where k='g1'),auth.uid(),'плохо',3,'{1}','{}'); raise exception 'FAIL: assignment without games'; exception when check_violation then null; end $$;
+delete from assignments where title='Все игры'; delete from custom_lessons where title='Один режим';
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
 do $$ begin insert into assignments(group_id,teacher_id,title,grade,section_indexes,modes) values ((select v::uuid from ctx where k='g1'),auth.uid(),'чужое',3,'{1}','{quiz}'); raise exception 'FAIL: assignment into foreign group'; exception when insufficient_privilege then null; end $$;

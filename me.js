@@ -345,6 +345,10 @@
   function openWizard(preset = {}) {
     if (!T.groups.length) { tab = 'groups'; teacher(); return toast('Сначала создайте класс — задания назначаются группе или ученику из неё.'); }
     const state = { group: T.groups[0].id, student: '', source: preset.lesson ? 'lesson' : 'book', grade: 2, module: 0, sections: new Set(), wordIds: null, lesson: preset.lesson || (T.lessons[0] && T.lessons[0].id) || '', modes: new Set(['quiz', 'spell', 'pairs']), title: '', titleTouched: false };
+    const lessonById = id => T.lessons.find(x => x.id === id);
+    // игры своего урока подставляются автоматически — учитель выбрал их при создании урока
+    const useLessonModes = () => { const l = lessonById(state.lesson); if (l) { state.modes.clear(); C.lessonModes(l).forEach(m => state.modes.add(m)); } };
+    if (state.source === 'lesson') useLessonModes();
     const box = h('section', { class: 'acc-card wiz', 'aria-label': 'Новое задание' });
     const msg = h('p', { class: 'acc-msg', role: 'status' });
     function sectionsOf() { const b = DB.books.find(x => x.grade === state.grade); const m = modules(b)[state.module]; return b.sections.map((s, i) => ({ s, i })).filter(x => x.s.module === m && x.s.words.some(C.isLexical)); }
@@ -368,7 +372,7 @@
         h('label', { class: 'acc-field', style: { marginTop: '10px', marginBottom: 0 } }, h('span', { text: 'Ученики' }),
           h('select', { onchange: e => { state.student = e.target.value; } }, h('option', { value: '', text: 'Вся группа «' + (g ? g.name : '') + '» (' + ms.length + ')' }), ms.map(m => h('option', { value: m.student_id, selected: state.student === m.student_id, text: studentName(m.student_id) })))));
       const step2 = h('div', { class: 'wiz-step' }, h('h3', null, h('i', { text: '2' }), 'Что повторяем'),
-        h('div', { class: 'seg' }, h('button', { type: 'button', 'aria-pressed': String(state.source === 'book'), text: '📘 Учебник Spotlight', onclick: () => { state.source = 'book'; draw(); } }), h('button', { type: 'button', 'aria-pressed': String(state.source === 'lesson'), text: '✏️ Мой урок', onclick: () => { state.source = 'lesson'; draw(); } })));
+        h('div', { class: 'seg' }, h('button', { type: 'button', 'aria-pressed': String(state.source === 'book'), text: '📘 Учебник Spotlight', onclick: () => { state.source = 'book'; draw(); } }), h('button', { type: 'button', 'aria-pressed': String(state.source === 'lesson'), text: '✏️ Мой урок', onclick: () => { if (state.source !== 'lesson') { state.source = 'lesson'; useLessonModes(); } draw(); } })));
       if (state.source === 'book') {
         const b = DB.books.find(x => x.grade === state.grade), mods = modules(b), secs = sectionsOf();
         const grid = h('div', { class: 'lessons-pick' }, secs.map(({ s, i }) => h('label', null, h('input', { type: 'checkbox', checked: state.sections.has(i), onchange: e => { e.target.checked ? state.sections.add(i) : state.sections.delete(i); state.wordIds = null; draw(); } }), h('span', null, s.title, h('small', { class: 'acc-muted', text: ' · ' + s.words.filter(C.isLexical).length + ' сл.' })))));
@@ -379,17 +383,17 @@
         if (state.sections.size) {
           const all = (() => { const keep = state.wordIds; state.wordIds = null; const w = chosenWords(); state.wordIds = keep; return w; })();
           const det = h('details', { open: !!state.wordIds }, h('summary', { class: 'btn-link', style: { cursor: 'pointer', marginTop: '10px' }, text: state.wordIds ? 'Выбрано слов: ' + state.wordIds.size + ' из ' + all.length : 'Все ' + all.length + ' слов · выбрать отдельные' }),
-            h('div', { class: 'words-pick' }, all.map(w => h('label', null, h('input', { type: 'checkbox', checked: !state.wordIds || state.wordIds.has(w.id), onchange: e => { if (!state.wordIds) state.wordIds = new Set(all.map(x => x.id)); e.target.checked ? state.wordIds.add(w.id) : state.wordIds.delete(w.id); det.querySelector('summary').textContent = 'Выбрано слов: ' + state.wordIds.size + ' из ' + all.length; } }), h('span', null, w.en, h('small', { text: w.ru }))))));
+            h('div', { class: 'words-pick' }, all.map(w => h('label', null, h('input', { type: 'checkbox', checked: !state.wordIds || state.wordIds.has(w.id), onchange: e => { if (!state.wordIds) state.wordIds = new Set(all.map(x => x.id)); e.target.checked ? state.wordIds.add(w.id) : state.wordIds.delete(w.id); det.querySelector('summary').textContent = 'Выбрано слов: ' + state.wordIds.size + ' из ' + all.length; picker.refresh(); } }), h('span', null, w.en, h('small', { text: w.ru }))))));
           step2.append(det);
         }
       } else if (!T.lessons.length) {
         step2.append(h('div', { class: 'empty', style: { marginTop: '10px' } }, 'У вас пока нет своих уроков. ', h('button', { type: 'button', class: 'btn-link', text: 'Создать урок', onclick: () => { wizard = null; tab = 'lessons'; teacher(); } })));
       } else {
-        step2.append(h('label', { class: 'acc-field', style: { marginTop: '10px' } }, h('span', { text: 'Урок' }), h('select', { onchange: e => { state.lesson = e.target.value; draw(); } }, T.lessons.map(l => h('option', { value: l.id, selected: l.id === state.lesson, text: l.title + ' (' + l.words.length + ' сл.)' })))));
+        step2.append(h('label', { class: 'acc-field', style: { marginTop: '10px' } }, h('span', { text: 'Урок' }), h('select', { onchange: e => { state.lesson = e.target.value; useLessonModes(); draw(); } }, T.lessons.map(l => h('option', { value: l.id, selected: l.id === state.lesson, text: l.title + ' (' + l.words.length + ' сл.)' })))));
       }
-      const step3 = h('div', { class: 'wiz-step' }, h('h3', null, h('i', { text: '3' }), 'Игры (до 6)'),
-        h('div', { class: 'seg' }, C.ASSIGNABLE.map(m => h('button', { type: 'button', 'aria-pressed': String(state.modes.has(m)), text: C.MODES[m], onclick: e => { if (state.modes.has(m)) state.modes.delete(m); else if (state.modes.size < 6) state.modes.add(m); else return toast('Не больше 6 игр в одном задании.'); e.currentTarget.setAttribute('aria-pressed', String(state.modes.has(m))); } }))),
-        h('p', { class: 'acc-small acc-muted', style: { margin: '8px 0 0' }, text: '«Финальный тест» и «Кристаллы» используют только отдельные слова (без фраз).' }));
+      const picker = modePicker(state.modes, chosenWords);
+      const step3 = h('div', { class: 'wiz-step' }, h('h3', null, h('i', { text: '3' }), 'Игры'), picker,
+        h('p', { class: 'acc-small acc-muted', style: { margin: '8px 0 0' }, text: 'Можно выбрать одну игру, несколько или все. «Конструктор слов», «Аудиодиктант», «Кристаллы» и «Финальный тест» используют только отдельные слова (без фраз).' + (state.source === 'lesson' ? ' Для своего урока подставлены игры, выбранные при его создании.' : '') }));
       const titleIn = h('input', { class: 'acc-input', maxlength: 120, value: autoTitle(), oninput: e => { state.title = e.target.value; state.titleTouched = true; } });
       const due = h('input', { class: 'acc-input', type: 'datetime-local', id: 'wizDue' });
       const comment = h('textarea', { class: 'acc-input', maxlength: 500, rows: 2, style: { minHeight: '70px' }, placeholder: 'Например: «Повторите слова к контрольной в пятницу»' });
@@ -402,9 +406,10 @@
         if (state.source === 'lesson' && !state.lesson) return setMsg('Выберите урок.');
         if (ws.length < 2) return setMsg('Нужно минимум 2 слова.');
         if (!state.modes.size) return setMsg('Выберите хотя бы одну игру.');
-        if (state.modes.has('boss') && ws.filter(w => /^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/.test(w.en.trim())).length < 3) return setMsg('Для «Финального теста» нужно минимум 3 отдельных слова.');
+        const unfit = [...state.modes].filter(m => !C.modeFit(m, ws).ok);
+        if (unfit.length) return setMsg(unfit.map(m => '«' + C.MODES[m] + '»: ' + C.modeFit(m, ws).note).join(' ') + ' Снимите эти игры или выберите другие слова.');
         const title = (titleIn.value || autoTitle()).trim().slice(0, 120);
-        const row = { group_id: state.group, teacher_id: me.id, student_id: state.student || null, title, modes: [...state.modes], due_at: due.value ? new Date(due.value).toISOString() : null, comment: comment.value.trim() || null };
+        const row = { group_id: state.group, teacher_id: me.id, student_id: state.student || null, title, modes: C.ASSIGNABLE.filter(m => state.modes.has(m)), due_at: due.value ? new Date(due.value).toISOString() : null, comment: comment.value.trim() || null };
         if (state.source === 'book') { row.grade = state.grade; row.section_indexes = [...state.sections].sort((x, y) => x - y); if (state.wordIds) row.word_ids = ws.map(w => w.id).slice(0, 300); }
         else row.lesson_id = state.lesson;
         go.disabled = true;
@@ -421,6 +426,45 @@
     draw(); wizard = box; teacher(); box.scrollIntoView({ block: 'start' });
   }
 
+  /* ---------- выбор игр: без ограничения по количеству, с проверкой совместимости ---------- */
+  // modes: Set (изменяется на месте); getWords(): текущие слова; onChange(): после изменения
+  function modePicker(modes, getWords, onChange) {
+    const all = C.ASSIGNABLE, box = h('div', { class: 'mode-pick' });
+    const count = h('b', { class: 'mode-count', 'aria-live': 'polite' });
+    const toggleAll = h('button', { type: 'button', class: 'btn-link' });
+    const grid = h('div', { class: 'mode-grid', role: 'group', 'aria-label': 'Игры' });
+    const note = h('p', { class: 'mode-note', role: 'status' });
+    function paint() {
+      const ws = getWords(), bad = [], part = [];
+      count.textContent = 'Выбрано: ' + modes.size + ' из ' + all.length;
+      toggleAll.textContent = modes.size === all.length ? 'Снять все' : 'Выбрать все';
+      grid.replaceChildren(...all.map(m => {
+        const fit = ws.length ? C.modeFit(m, ws) : { ok: true, note: null };
+        const on = modes.has(m);
+        if (on && !fit.ok) bad.push(m); else if (on && fit.note) part.push(m);
+        const status = !ws.length ? '' : !fit.ok ? '✕ не подходит' : fit.note ? '⚠ частично' : '✓';
+        return h('button', { type: 'button', class: 'mode-opt' + (fit.ok ? '' : ' unfit') + (fit.ok && fit.note ? ' partial' : ''), 'aria-pressed': String(on), 'data-mode': m, title: fit.note || C.MODE_HINTS[m] || '',
+          onclick: () => { on ? modes.delete(m) : modes.add(m); paint(); onChange && onChange(); } },
+          h('span', { class: 'mo-check', 'aria-hidden': 'true', text: on ? '✓' : '' }), h('span', { class: 'mo-txt' }, h('b', { text: C.MODES[m] || m }), h('small', { text: C.MODE_HINTS[m] || '' }),
+            status && status !== '✓' ? h('i', { class: 'mo-fit', text: status }) : null));
+      }));
+      const lines = [];
+      const line = (mark, m) => { const n = C.modeFit(m, ws).note; return mark + ' ' + (n.startsWith('«') ? n : C.MODES[m] + ': ' + n); };
+      for (const m of bad) lines.push(line('✕', m));
+      for (const m of part) lines.push(line('⚠', m));
+      note.className = 'mode-note' + (bad.length ? ' err' : part.length ? ' warn' : '');
+      note.replaceChildren(...lines.map(t => h('span', { text: t })));
+      note.hidden = !lines.length;
+    }
+    toggleAll.addEventListener('click', () => { if (modes.size === all.length) modes.clear(); else all.forEach(m => modes.add(m)); paint(); onChange && onChange(); });
+    box.append(h('div', { class: 'mode-head' }, count, h('span', { class: 'seg' }, toggleAll)), grid, note);
+    paint();
+    box.refresh = paint;
+    box.unfit = () => { const ws = getWords(); return [...modes].filter(m => !C.modeFit(m, ws).ok); };
+    return box;
+  }
+  const playUrl = id => 'index.html?lesson=' + encodeURIComponent(id);
+
   /* ---------- custom lessons ---------- */
   function lessonsView(edit) {
     const wrap = h('div', { class: 'list' });
@@ -428,28 +472,51 @@
     const title = h('input', { class: 'acc-input', maxlength: 80, value: editing ? editing.title : '', placeholder: 'Например: Еда и напитки — дополнительные слова', id: 'lsTitle' });
     const text = h('textarea', { class: 'acc-input', id: 'lsWords', placeholder: 'apple — яблоко\nice cream — мороженое\ncarrot; морковь', value: '' });
     if (editing) text.value = editing.words.map(w => w.en + ' — ' + w.ru).join('\n');
+    const modes = new Set(editing ? C.lessonModes(editing) : C.ASSIGNABLE);
+    const words = () => C.parseWordList(text.value).map((w, i) => ({ id: 'n' + i, en: w.en, ru: w.ru }));
     const preview = h('div', { class: 'preview-words' }), count = h('small');
-    const upd = () => { const ws = C.parseWordList(text.value); count.textContent = 'Распознано слов: ' + ws.length + ' (нужно от 2 до 200). Строки без перевода пропускаются.'; preview.replaceChildren(...ws.slice(0, 60).map(w => h('span', { text: w.en + ' — ' + w.ru }))); };
+    const picker = modePicker(modes, words);
+    let timer = 0;
+    const upd = () => { const ws = C.parseWordList(text.value); count.textContent = 'Распознано слов: ' + ws.length + ' (нужно от 2 до 200). Строки без перевода пропускаются.'; preview.replaceChildren(...ws.slice(0, 60).map(w => h('span', { text: w.en + ' — ' + w.ru }))); clearTimeout(timer); timer = setTimeout(picker.refresh, 250); };
     text.addEventListener('input', upd); upd();
     const save = h('button', { class: 'btn-acc', type: 'submit', text: editing ? 'Сохранить изменения' : 'Сохранить урок' });
-    const form = h('form', { class: 'acc-card' }, h('div', { class: 'sec-title' }, h('h2', { text: editing ? 'Редактировать урок' : 'Новый урок' }), editing ? h('button', { type: 'button', class: 'btn-link', text: 'Отмена', onclick: () => { tab = 'lessons'; root.querySelector('.cab-tabs + *').replaceWith(lessonsView()); } }) : null),
+    const saveAndPlay = h('button', { class: 'btn-acc lime', type: 'button', text: '▶ Сохранить и пройти' });
+    const form = h('form', { class: 'acc-card' }, h('div', { class: 'sec-title' }, h('h2', { text: editing ? 'Редактировать урок' : 'Новый урок' }), editing ? h('button', { type: 'button', class: 'btn-link', text: 'Отмена', onclick: () => { tab = 'lessons'; teacher(); } }) : null),
       h('label', { class: 'acc-field', for: 'lsTitle' }, h('span', { text: 'Название' }), title),
       h('label', { class: 'acc-field', for: 'lsWords' }, h('span', { text: 'Слова — по одному на строку: английское слово, тире, перевод' }), text, count),
-      preview, h('div', { style: { marginTop: '12px' } }, save));
-    form.addEventListener('submit', async e => {
-      e.preventDefault(); const ws = C.parseWordList(text.value), t = title.value.trim();
+      preview,
+      h('div', { class: 'acc-field', style: { marginTop: '14px' } }, h('span', { text: 'Игры урока — сколько угодно, хоть все' }), picker),
+      h('div', { class: 'seg', style: { marginTop: '12px', alignItems: 'center' } }, save, saveAndPlay));
+    async function persist(play) {
+      const ws = C.parseWordList(text.value), t = title.value.trim();
       if (!t) return toast('Добавьте название урока.'); if (ws.length < 2) return toast('Нужно минимум 2 слова с переводом.');
-      save.disabled = true;
-      const res = editing ? await sb.from('custom_lessons').update({ title: t, words: ws, updated_at: new Date().toISOString() }).eq('id', editing.id) : await sb.from('custom_lessons').insert({ owner_id: me.id, title: t, words: ws });
-      save.disabled = false; if (res.error) return fail(res.error);
-      toast(editing ? 'Урок обновлён.' : 'Урок сохранён. Его можно назначить классу.'); await refresh();
-    });
+      if (!modes.size) return toast('Выберите хотя бы одну игру.');
+      const unfit = picker.unfit();
+      if (unfit.length) return toast('Не подходит к словам урока: ' + unfit.map(m => '«' + C.MODES[m] + '»').join(', ') + '. Снимите эти игры или добавьте отдельные слова.');
+      const list = C.ASSIGNABLE.filter(m => modes.has(m));
+      save.disabled = saveAndPlay.disabled = true;
+      const res = editing ? await sb.from('custom_lessons').update({ title: t, words: ws, modes: list, updated_at: new Date().toISOString() }).eq('id', editing.id)
+        : await sb.from('custom_lessons').insert({ owner_id: me.id, title: t, words: ws, modes: list });
+      if (res.error) { save.disabled = saveAndPlay.disabled = false; return fail(res.error); }
+      let id = editing ? editing.id : null;
+      // RLS не отдаёт строку в ответ на insert — находим только что созданный урок отдельным запросом
+      if (!id && play) { const r = await sb.from('custom_lessons').select('id').eq('owner_id', me.id).eq('title', t).order('created_at', { ascending: false }).limit(1); id = r.data && r.data[0] && r.data[0].id; }
+      save.disabled = saveAndPlay.disabled = false;
+      if (play && id) { location.href = playUrl(id); return; }
+      toast(editing ? 'Урок обновлён.' : 'Урок сохранён. Пройдите его сами («▶ Играть») или назначьте классу.'); tab = 'lessons'; await refresh();
+    }
+    form.addEventListener('submit', e => { e.preventDefault(); persist(false); });
+    saveAndPlay.addEventListener('click', () => persist(true));
     wrap.append(form);
-    wrap.append(h('p', { class: 'acc-small acc-muted', text: 'Свои уроки работают во всех играх LEXI. Ученики видят урок только когда вы назначаете его заданием. Учебники Spotlight при этом не меняются.' }));
-    for (const l of T.lessons) wrap.append(h('div', { class: 'row' }, h('div', { class: 'row-main' }, h('b', { text: l.title }), h('small', { text: l.words.length + ' слов · изменён ' + C.fmtDate(l.updated_at) + ' · ' + l.words.slice(0, 4).map(w => w.en).join(', ') + (l.words.length > 4 ? '…' : '') })),
-      h('button', { class: 'btn-acc small', type: 'button', text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } }),
-      h('button', { class: 'btn-acc ghost small', type: 'button', text: 'Изменить', onclick: () => { root.querySelector('.cab-tabs + *').replaceWith(lessonsView(l)); window.scrollTo({ top: 0 }); } }),
-      h('button', { class: 'btn-link', type: 'button', style: { color: 'var(--w-miss)' }, text: 'Удалить', onclick: () => dialog('Удалить урок «' + l.title + '»?', h('p', { text: 'Задания с этим уроком тоже будут удалены.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить', onclick: async () => { const { error } = await sb.from('custom_lessons').delete().eq('id', l.id); if (error) return fail(error); close(); await refresh(); } })]) })));
+    wrap.append(h('p', { class: 'acc-small acc-muted', text: 'Создайте урок → выберите игры → сохраните → пройдите его сами → назначьте классу. Ваши тренировки не попадают в статистику класса и не начисляют XP. Ученики видят урок только когда вы назначаете его заданием.' }));
+    for (const l of T.lessons) {
+      const ms = C.lessonModes(l);
+      wrap.append(h('div', { class: 'row lesson-row' }, h('div', { class: 'row-main' }, h('b', { text: l.title }), h('small', { text: l.words.length + ' слов · игр: ' + ms.length + ' из ' + C.ASSIGNABLE.length + ' · изменён ' + C.fmtDate(l.updated_at) + ' · ' + l.words.slice(0, 4).map(w => w.en).join(', ') + (l.words.length > 4 ? '…' : '') })),
+        h('a', { class: 'btn-acc lime small', href: playUrl(l.id), 'aria-label': 'Играть: ' + l.title, text: '▶ Играть' }),
+        h('button', { class: 'btn-acc small', type: 'button', text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } }),
+        h('button', { class: 'btn-acc ghost small', type: 'button', text: 'Изменить', onclick: () => { root.querySelector('.cab-tabs + *').replaceWith(lessonsView(l)); window.scrollTo({ top: 0 }); } }),
+        h('button', { class: 'btn-link', type: 'button', style: { color: 'var(--w-miss)' }, text: 'Удалить', onclick: () => dialog('Удалить урок «' + l.title + '»?', h('p', { text: 'Задания с этим уроком тоже будут удалены.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить', onclick: async () => { const { error } = await sb.from('custom_lessons').delete().eq('id', l.id); if (error) return fail(error); close(); await refresh(); } })]) })));
+    }
     return wrap;
   }
   async function refresh() { try { await loadTeacher(); teacher(); } catch (e) { fail(e); } }
@@ -459,7 +526,15 @@
      ===================================================================== */
   async function boot() {
     try {
-      if (profile.role === 'teacher') { await loadTeacher(); teacher(); } else await student();
+      if (profile.role === 'teacher') {
+        await loadTeacher();
+        // ссылки из режима тренировки: me.html?tab=lessons, me.html?assign=<id урока>
+        const q = new URLSearchParams(location.search), assign = q.get('assign'), t = q.get('tab');
+        if (t && ['groups', 'tasks', 'lessons'].includes(t)) tab = t;
+        if (q.has('assign') || q.has('tab')) history.replaceState(null, '', location.pathname);
+        teacher();
+        if (assign && T.lessons.some(l => l.id === assign)) { tab = 'tasks'; openWizard({ lesson: assign }); }
+      } else await student();
     } catch (e) { root.replaceChildren(h('div', { class: 'acc-card' }, h('p', { class: 'acc-msg err', text: 'Не удалось загрузить кабинет. Проверьте интернет и обновите страницу.' }), h('button', { class: 'btn-acc', type: 'button', text: 'Обновить', onclick: () => location.reload() }))); console.warn(e); }
   }
   async function init() {

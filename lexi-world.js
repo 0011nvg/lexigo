@@ -147,10 +147,13 @@
   }
 
   /* ---------- XP & mission counters from real answers ---------- */
+  // тренировка учителя по своему уроку (cloud.js, index.html?lesson=…): игра та же, но без XP, миссий и серии
+  const isPreview = g => !!(g && g.cloud && g.cloud.meta && g.cloud.meta.preview);
   const origRecord = record;
   record = function (w, ok, skill = 'recognition') {
     const before = w && progress[w.id] ? { ...progress[w.id] } : null;
     origRecord(w, ok, skill);
+    if (isPreview(game)) return;
     try {
       if (!w || skill === 'self' || !ok) return;
       const d = day(), seen = num(d.words[w.id]);
@@ -265,7 +268,7 @@
     say((Math.random() < .5 ? pick(['Let’s play! ', 'Ready? ', 'Let’s learn! ']) : '') + (LINES.start[game.mode] || 'Поехали!'), game.mode === 'boss' ? 'think' : 'hello');
     if (game.mode === 'boss') bossHUD();
     const total = game.words.length;
-    if (!game.assignmentId && total >= 2 && ['quiz', 'spell', 'truefalse', 'fix', 'audio', 'cards', 'builder', 'listen', 'crystals'].includes(game.mode)) {
+    if (!game.assignmentId && !(game.cloud && game.cloud.meta && game.cloud.meta.taskKey) && total >= 2 && ['quiz', 'spell', 'truefalse', 'fix', 'audio', 'cards', 'builder', 'listen', 'crystals'].includes(game.mode)) {
       const scopeSize = (typeof selectedWords === 'function' ? selectedWords().filter(isLexicalEntry).length : total);
       if (scopeSize > total) $('counter').dataset.round = 'Раунд: ' + total + ' из ' + scopeSize + ' слов урока';
       else delete $('counter').dataset.round;
@@ -279,6 +282,12 @@
   });
   resultObserver.observe($('play'), { childList: true, subtree: false });
   function rewardCard(card, g) {
+    if (isPreview(g)) {
+      const box = el('section', 'lexi-reward preview'); box.setAttribute('aria-label', 'Тренировка учителя');
+      const head = el('div', 'lexi-reward-head'); head.append(avatar('happy', 'm'));
+      head.append(el('p', 'lexi-say', 'Тренировка учителя: так урок увидят ученики. XP, миссии и серия дней не начисляются, в статистику класса ничего не попадает.'));
+      box.append(head); card.append(box); return;
+    }
     const d = day(), k = today();
     if (!d.modes.includes(g.mode)) d.modes.push(g.mode);
     d.counters.variety = new Set(d.modes.filter(m => m !== 'cards')).size;

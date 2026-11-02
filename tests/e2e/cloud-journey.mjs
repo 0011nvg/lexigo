@@ -123,13 +123,15 @@ try {
   await t.getByRole('button', { name: '＋ Новое задание' }).click();
   await t.locator('.wiz-step select').nth(1).selectOption('3');
   await t.locator('.lessons-pick label').first().click();
-  await t.locator('.wiz-step .seg button', { hasText: 'Найди пару' }).click();      // deselect pairs → quiz + spell
+  await t.locator('.mode-opt[data-mode="pairs"]').click();      // deselect pairs → quiz + spell
   await t.locator('textarea[maxlength="500"]').fill('Повторите к пятнице');
   await t.getByRole('button', { name: 'Назначить' }).click();
   await t.locator('.group-card', { hasText: 'Spotlight 3' }).waitFor();
   await t.getByRole('tab', { name: 'Мои уроки' }).click();
   await t.locator('.row', { hasText: 'Фрукты' }).getByRole('button', { name: 'Назначить' }).click();
-  await t.locator('.wiz-step .seg button', { hasText: 'Напиши слово' }).click();     // → quiz + pairs
+  assert.match(await t.locator('.mode-count').innerText(), /Выбрано: 12 из 12/);   // the lesson's own games are pre-selected
+  await t.locator('.mode-pick .btn-link', { hasText: 'Снять все' }).click();
+  await t.locator('.mode-opt[data-mode="quiz"]').click(); await t.locator('.mode-opt[data-mode="pairs"]').click();     // → quiz + pairs
   await t.getByRole('button', { name: 'Назначить' }).click();
   await t.locator('.group-card', { hasText: 'Фрукты' }).waitFor();
   assert.equal(await t.locator('article.group-card').count(), 2);

@@ -16,6 +16,16 @@
 
 create extension if not exists pgcrypto with schema extensions;  -- в Supabase уже установлено
 
+-- Список игр LEXI — ЕДИНСТВЕННОЕ место на сервере, где он записан (v2 2026-11-02).
+-- Количество игр в уроке и задании не ограничено: можно выбрать одну, несколько или все.
+-- Новая игра в LEXI = добавить её код сюда и в ASSIGNABLE/MODES в cloud-core.js.
+create or replace function public.lexi_modes_ok(m text[]) returns boolean
+language sql immutable set search_path = '' as $$
+  select m is not null and cardinality(m) between 1 and 40
+     and m <@ array['cards','quiz','spell','pairs','truefalse','fix','audio','crystals','boss','mixed','builder','listen','review']::text[]
+     and cardinality(m) = (select count(distinct x) from unnest(m) x)
+$$;
+
 -- ---------------------------------------------------------------------
 -- 1. Таблицы
 -- ---------------------------------------------------------------------
@@ -49,10 +59,15 @@ create table if not exists public.custom_lessons (
   owner_id    uuid not null references public.profiles(id) on delete cascade,
   title       text not null check (char_length(btrim(title)) between 1 and 80),
   words       jsonb not null check (jsonb_typeof(words) = 'array' and jsonb_array_length(words) between 2 and 200 and pg_column_size(words) < 60000),
+  modes       text[],          -- игры урока; null = все игры LEXI
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 create index if not exists custom_lessons_owner_idx on public.custom_lessons(owner_id);
+-- v2: игры урока (для баз, созданных версией v1)
+alter table public.custom_lessons add column if not exists modes text[];
+alter table public.custom_lessons drop constraint if exists custom_lessons_modes_check;
+alter table public.custom_lessons add constraint custom_lessons_modes_check check (modes is null or public.lexi_modes_ok(modes));
 
 create table if not exists public.assignments (
   id               uuid primary key default gen_random_uuid(),
@@ -64,7 +79,7 @@ create table if not exists public.assignments (
   section_indexes  int[] check (section_indexes is null or (cardinality(section_indexes) between 1 and 60)),
   word_ids         text[] check (word_ids is null or cardinality(word_ids) between 2 and 300),
   lesson_id        uuid references public.custom_lessons(id) on delete cascade,
-  modes            text[] not null check (cardinality(modes) between 1 and 6 and modes <@ array['cards','quiz','spell','pairs','truefalse','fix','audio','crystals','boss','mixed','builder','listen','review']::text[]),
+  modes            text[] not null,
   due_at           timestamptz,
   comment          text check (comment is null or char_length(comment) <= 500),
   created_at       timestamptz not null default now(),
@@ -72,6 +87,9 @@ create table if not exists public.assignments (
   check (lesson_id is not null or section_indexes is not null)
 );
 create index if not exists assignments_group_idx on public.assignments(group_id);
+-- v2: снято ограничение «не больше 6 игр в задании»
+alter table public.assignments drop constraint if exists assignments_modes_check;
+alter table public.assignments add constraint assignments_modes_check check (public.lexi_modes_ok(modes));
 create index if not exists assignments_teacher_idx on public.assignments(teacher_id);
 
 create table if not exists public.sessions (
@@ -239,8 +257,8 @@ grant select on public.profiles, public.groups, public.group_members, public.cus
 grant update (display_name, avatar) on public.profiles to authenticated;
 grant update (name) on public.groups to authenticated;
 grant delete on public.groups, public.group_members, public.custom_lessons, public.assignments to authenticated;
-grant insert (owner_id, title, words) on public.custom_lessons to authenticated;
-grant update (title, words, updated_at) on public.custom_lessons to authenticated;
+grant insert (owner_id, title, words, modes) on public.custom_lessons to authenticated;
+grant update (title, words, modes, updated_at) on public.custom_lessons to authenticated;
 grant insert (group_id, teacher_id, student_id, title, grade, section_indexes, word_ids, lesson_id, modes, due_at, comment) on public.assignments to authenticated;
 grant update (title, due_at, comment) on public.assignments to authenticated;
 

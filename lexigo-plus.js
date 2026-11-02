@@ -39,25 +39,61 @@
     notice(text.replace(/^Для этого режима/, 'Для этой игры') + (wordsRelated ? ' Можно выбрать больше слов урока.' : ''), wordsRelated ? [['Выбрать слова', openWords, true]] : []);
   };
 
-  /* ---------- 1. word selection: remember per lesson, clear counter ---------- */
+  /* ---------- 1. word selection: remember per lesson, clear counter ----------
+   * Storage (per browser, per account): { "<grade>:<unit>": { m: 'all'|'chosen'|'hard', ids: [...] } }.
+   * Old format (a bare array of ids) is read as the 'chosen' set. 'ids' keeps the student's own
+   * choice even while they train all words or only hard words, so they can come back to it. */
   const SEL_KEY = 'lexigo_word_selection_v1';
-  let restoring = false;
-  function saveSelection() {
-    if (restoring || typeof scope === 'undefined' || !scope.length) return;
+  const HARD_KEY = 'lexigo_hard_words_v1';
+  let restoring = false, currentSet = 'all';
+  const hardStore = () => { const h = readJSON(HARD_KEY, {}); return h && !Array.isArray(h) ? h : {}; };
+  const hardIds = () => { const h = hardStore(); return typeof scope === 'undefined' ? [] : scope.filter(w => h[w.id]).map(w => w.id); };
+  function savedEntry(key) {
+    const v = readJSON(SEL_KEY, {})[key || lessonKey()];
+    if (Array.isArray(v)) return { m: 'chosen', ids: v };
+    return v && typeof v === 'object' && Array.isArray(v.ids) ? { m: ['all', 'chosen', 'hard'].includes(v.m) ? v.m : 'chosen', ids: v.ids } : { m: 'all', ids: [] };
+  }
+  function writeEntry(entry) {
     const key = lessonKey(); if (!key) return;
-    const all = readJSON(SEL_KEY, {}); const ids = scope.filter(w => selected.has(w.id)).map(w => w.id);
-    if (ids.length === scope.length) delete all[key]; else all[key] = ids;
+    const all = readJSON(SEL_KEY, {});
+    if (entry.m === 'all' && !entry.ids.length) delete all[key]; else all[key] = entry;
     const keys = Object.keys(all); if (keys.length > 300) for (const k of keys.slice(0, keys.length - 300)) delete all[k];
     writeJSON(SEL_KEY, all);
   }
-  function restoreSelection() {
-    const saved = readJSON(SEL_KEY, {})[lessonKey()];
-    if (!Array.isArray(saved)) return;
-    const inScope = new Set(scope.map(w => w.id)), ids = saved.filter(id => inScope.has(id));
-    selected = new Set(ids); renderWords();
+  function saveSelection() {
+    if (restoring || typeof scope === 'undefined' || !scope.length) return;
+    const prev = savedEntry(); const ids = scope.filter(w => selected.has(w.id)).map(w => w.id);
+    const hard = hardIds(), same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+    if (currentSet === 'hard' && hard.length && same(ids, hard)) { writeEntry({ m: 'hard', ids: prev.ids }); return; }
+    if (ids.length === scope.length) { currentSet = 'all'; writeEntry({ m: 'all', ids: prev.ids }); return; }
+    currentSet = 'chosen'; writeEntry({ m: 'chosen', ids });
   }
+  function restoreSelection() {
+    const e = savedEntry(); const inScope = new Set(scope.map(w => w.id));
+    const chosen = e.ids.filter(id => inScope.has(id)), hard = hardIds();
+    if (e.m === 'hard' && hard.length) { currentSet = 'hard'; selected = new Set(hard); }
+    else if (e.m === 'chosen' && chosen.length) { currentSet = 'chosen'; selected = new Set(chosen); }
+    else { currentSet = 'all'; return; }
+    renderWords();
+  }
+  /* One learning context for every game: all words / my chosen words / my hard words — always inside the open lesson or module. */
+  function wordSet() {
+    if (typeof scope === 'undefined' || !scope.length) return { mode: 'all', all: 0, chosen: 0, hard: 0, active: 0 };
+    const inScope = new Set(scope.map(w => w.id));
+    return { mode: currentSet, all: scope.length, chosen: savedEntry().ids.filter(id => inScope.has(id)).length || (currentSet === 'chosen' ? scope.filter(w => selected.has(w.id)).length : 0), hard: hardIds().length, active: scope.filter(w => selected.has(w.id)).length };
+  }
+  function setWordSet(mode) {
+    if (typeof scope === 'undefined' || !scope.length) return false;
+    const inScope = new Set(scope.map(w => w.id)), e = savedEntry();
+    if (mode === 'hard') { const h = hardIds(); if (!h.length) return false; currentSet = 'hard'; selected = new Set(h); restoring = true; try { renderWords(); } finally { restoring = false; } writeEntry({ m: 'hard', ids: e.ids }); }
+    else if (mode === 'chosen') { const c = e.ids.filter(id => inScope.has(id)); if (!c.length) return false; currentSet = 'chosen'; selected = new Set(c); renderWords(); }
+    else { currentSet = 'all'; scope.forEach(w => selected.add(w.id)); restoring = true; try { renderWords(); } finally { restoring = false; } writeEntry({ m: 'all', ids: e.ids }); }
+    refreshSelectionUI(); window.dispatchEvent(new CustomEvent('lexigo:wordset')); return true;
+  }
+  // a set is chosen for one lesson before that lesson is opened (e.g. «Повторить сложные» on the home page)
+  function presetWordSet(grade, unitKey, mode) { const all = readJSON(SEL_KEY, {}); const k = grade + ':' + unitKey; const prev = Array.isArray(all[k]) ? { m: 'chosen', ids: all[k] } : (all[k] || { m: 'all', ids: [] }); all[k] = { m: mode, ids: prev.ids || [] }; writeJSON(SEL_KEY, all); }
   const origChangeUnit = changeUnit;
-  changeUnit = function (...a) { restoring = true; try { origChangeUnit.apply(this, a); restoreSelection(); } finally { restoring = false; } refreshSelectionUI(); };
+  changeUnit = function (...a) { restoring = true; currentSet = 'all'; try { origChangeUnit.apply(this, a); restoreSelection(); } finally { restoring = false; } refreshSelectionUI(); window.dispatchEvent(new CustomEvent('lexigo:wordset')); };
   $('unit').onchange = changeUnit;
   const origUpdateStats = updateStats;
   updateStats = function (...a) { origUpdateStats.apply(this, a); saveSelection(); refreshSelectionUI(); };
@@ -68,12 +104,12 @@
     if (sc) sc.textContent = 'Выбрано ' + n + ' из ' + m;
     if (tc) tc.textContent = n === m ? 'в играх — все слова' : n ? 'в играх — только отмеченные' : 'отметь слова для игр';
     const ow = $('openWords'); if (ow) { ow.textContent = n === m ? 'Слова урока: ' + m + ' · выбрать' : 'Слова: ' + n + ' из ' + m + ' · изменить'; ow.classList.toggle('has-subset', n !== m); }
-    const done = $('wordsDone'); if (done) { done.textContent = n ? 'Тренировать ' + n + ' ' + plural(n, 'слово', 'слова', 'слов') + ' →' : 'Отметь хотя бы одно слово'; done.disabled = !n; }
+    const done = $('wordsDone'); if (done) { done.textContent = !n ? 'Отметь хотя бы одно слово' : n === m ? 'Тренировать все слова (' + n + ') →' : 'Тренировать выбранные (' + n + ') →'; done.disabled = !n; }
     let chip = $('selectionChip');
     const launcher = $('launcher');
     if (launcher && n !== m) {
       if (!chip) { chip = el('p', 'selection-chip'); chip.id = 'selectionChip'; launcher.querySelector('.stats')?.after(chip); }
-      chip.replaceChildren(el('span', null, '🎯 В играх только выбранные слова: ' + n + ' из ' + m + '. '), Object.assign(el('button', 'text-button', 'Изменить'), { type: 'button', onclick: openWords }), Object.assign(el('button', 'text-button', 'Вернуть все'), { type: 'button', onclick: () => { scope.forEach(w => selected.add(w.id)); renderWords(); } }));
+      chip.replaceChildren(el('span', null, (currentSet === 'hard' ? '★ Во всех играх только сложные слова: ' : '🎯 Во всех играх только выбранные слова: ') + n + ' из ' + m + '. '), Object.assign(el('button', 'text-button', 'Изменить'), { type: 'button', onclick: openWords }), Object.assign(el('button', 'text-button', 'Вернуть все'), { type: 'button', onclick: () => setWordSet('all') }));
     } else chip?.remove();
   }
   function plural(n, a, b, c) { n = Math.abs(n) % 100; const n1 = n % 10; return n > 10 && n < 20 ? c : n1 > 1 && n1 < 5 ? b : n1 === 1 ? a : c; }
@@ -228,7 +264,7 @@
   }
   storageNotes();
   window.addEventListener('lexigo:account', storageNotes);
-  window.LexigoPlus = Object.freeze({ bossTypes, notice, route: readRoute });
+  window.LexigoPlus = Object.freeze({ bossTypes, notice, route: readRoute, wordSet, setWordSet, presetWordSet, refreshSelection: () => refreshSelectionUI(), HARD_KEY });
   // the first lesson may already be open (the page was loaded with a lesson link): restore its saved choice now
   try { if (typeof book !== 'undefined' && book && scope.length) { restoring = true; restoreSelection(); } } finally { restoring = false; }
   refreshSelectionUI();

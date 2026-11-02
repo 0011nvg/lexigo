@@ -39,7 +39,7 @@ try {
   const total = await page.locator('#words input').count();
   for (let i = 0; i < total - 20; i++) await page.locator('#words input').nth(i).uncheck();
   assert.equal(await page.locator('#selectedCount').innerText(), 'Выбрано 20 из ' + total);
-  assert.match(await page.locator('#wordsDone').innerText(), /Тренировать 20 слов/);
+  assert.match(await page.locator('#wordsDone').innerText(), /Тренировать выбранные \(20\)/);
   const chosen = await page.evaluate(() => selectedWords().map(w => w.id).sort());
   await page.locator('#wordsDone').click();
   assert.match(await page.locator('#openWords').innerText(), /20 из/);

@@ -8,9 +8,8 @@
  #lexigoPrint .print-student-sheet{height:268mm;display:flex!important;flex-direction:column;overflow:hidden;break-after:page;page-break-after:always}
  #lexigoPrint .print-head{display:flex;align-items:center;justify-content:space-between;border:0!important;padding:0!important;margin:0 0 2mm!important}
  #lexigoPrint .print-brand{font-family:Unbounded,"Arial Black",Arial,sans-serif;letter-spacing:-.6pt;font-weight:900!important;font-size:15pt!important;letter-spacing:-.5pt!important;color:#1b2a6b!important;line-height:1}
- #lexigoPrint .print-cat{position:relative;display:inline-block;width:.4em;height:.36em;margin-left:.1em;border-radius:50% 50% 46% 46%;background:#b4ef3a;border:.6pt solid #5c8a00;vertical-align:baseline}
- #lexigoPrint .print-cat::before,#lexigoPrint .print-cat::after{content:"";position:absolute;top:-.12em;width:.15em;height:.17em;background:#5c8a00;clip-path:polygon(50% 0,100% 100%,0 100%)}
- #lexigoPrint .print-cat::before{left:0;transform:rotate(-14deg)}#lexigoPrint .print-cat::after{right:0;transform:rotate(14deg)}
+ #lexigoPrint .print-brand{display:flex;align-items:center;gap:1.5mm}
+ #lexigoPrint .lexi-mark{width:6mm;height:5.5mm}
  #lexigoPrint .print-caption{font-size:7.5pt!important;letter-spacing:1.2pt!important;color:#4b5577!important;font-weight:700}
  #lexigoPrint .print-sheet h1{font-family:Arial Black,Arial,sans-serif;font-size:17pt!important;margin:0!important;line-height:1.1;color:#141b3d}
  #lexigoPrint .print-subtitle{margin:.8mm 0 1.5mm!important;color:#4b5577!important;font-size:9.5pt!important}

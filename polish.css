@@ -271,22 +271,92 @@ body[data-page=words] #wordsDone:disabled{opacity:1;background:#c9cfe2!important
 .lb-cta a{font-weight:800}
 @media (max-width:640px){.lb-row{flex-direction:column}.lb-list li{grid-template-columns:28px minmax(0,1fr);}.lb-score{grid-column:2;font-size:13px}}
 
-/* ===================== LEXI brand (2026-11-02) =====================
-   Wordmark "LEXI" + a lime "cat dot" with ears — the full stop of «lexi.», a wink to Lexi the cat. */
-.brand-word{white-space:nowrap}
+/* ===================== LEXI brand v2 (2026-11-02) =====================
+   Logo = a minimal cat-head mark (blue, lime eyes) + the wordmark LEXI. The animated Lexi character is unchanged. */
+.brand-word{white-space:nowrap;display:inline-flex!important;align-items:center;gap:.22em}
 .site-header .brand-word,.auth-side .brand-word{letter-spacing:-.035em!important;color:var(--w-blue-d)!important}
-.brand-cat{position:relative;display:inline-block;vertical-align:baseline;width:.4em;height:.36em;margin:0 0 0 .1em;letter-spacing:0;border-radius:50% 50% 46% 46%;background:var(--w-lime);box-shadow:inset 0 -.05em 0 rgba(60,90,0,.28)}
-.brand-cat::before,.brand-cat::after{content:"";position:absolute;top:-.1em;width:.15em;height:.17em;background:var(--w-lime);clip-path:polygon(50% 0,100% 100%,0 100%)}
-.brand-cat::before{left:.01em;transform:rotate(-14deg)}
-.brand-cat::after{right:.01em;transform:rotate(14deg)}
-/* tiny eyes appear on hover — a friendly blink from Lexi */
-.brand-cat i{display:none}
-.logo:hover .brand-cat,.home-logo:hover .brand-cat{animation:lx-cat-nod .6s ease}
+.lexi-mark{width:1.08em;height:1em;flex:none;display:block;overflow:visible;transform-origin:50% 90%}
+.brand-cat{display:none!important}
+.logo:hover .lexi-mark,.home-logo:hover .lexi-mark{animation:lx-cat-nod .6s ease}
 @keyframes lx-cat-nod{30%{transform:translateY(-2px) rotate(-8deg)}60%{transform:translateY(0) rotate(5deg)}}
-@media (prefers-reduced-motion:reduce){.logo:hover .brand-cat{animation:none}}
-.site-footer>span{font-family:var(--w-display);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.logo:hover .lexi-mark{animation:none}}
+.site-footer>span{font-family:var(--w-display);font-weight:800;letter-spacing:-.03em;white-space:nowrap;display:inline-flex;align-items:center;gap:.25em}
 .site-header .brand-word{font-size:26px!important}
 @media (max-width:640px){.site-header .brand-word{font-size:19px!important}}
 @media (max-width:380px){.site-header .brand-word{font-size:17px!important}}
-.site-header .brand-cat{width:.48em;height:.43em;margin-left:.12em}
-.site-header .brand-cat::before,.site-header .brand-cat::after{top:-.12em;width:.18em;height:.2em}
+.site-header .logo .brand-word,#homeLogo .brand-word,.site-footer .brand-word{display:inline-flex!important;flex-direction:row!important;align-items:center!important}
+
+/* ---------- personal desk (2026-11-02): мой класс, продолжить, мои модули, сложные слова ---------- */
+.lexi-desk{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:18px 0 6px}
+.desk-card{background:var(--w-card);border:1px solid var(--w-line);border-radius:var(--w-r);box-shadow:var(--w-shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.desk-title{margin:0!important;font-family:var(--w-text)!important;font-size:12.5px!important;font-weight:800!important;letter-spacing:.12em;text-transform:uppercase;color:var(--w-blue)!important}
+.desk-big{font-family:var(--w-display);font-size:22px;color:var(--w-ink);letter-spacing:-.02em}
+.desk-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.desk-where{margin:0;font-weight:800;font-size:16px;color:var(--w-ink)}
+.desk-lesson{margin:0;font-size:15px;color:var(--w-ink2)}
+.desk-note,.desk-hint{margin:0;font-size:13.5px;color:var(--w-mute);line-height:1.35}
+.desk-hint{font-style:italic}
+.desk-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto;padding-top:4px}
+.desk-card .btn{min-height:44px}
+.desk-card .btn.small,.btn.small{min-height:40px;padding:8px 14px!important;font-size:14px!important}
+.desk-card .text-button{align-self:flex-start;min-height:40px}
+.desk-continue{border-color:#c9d6ff;background:linear-gradient(180deg,#f4f7ff,#fff)}
+.desk-new{border:2px solid var(--w-blue)}
+.desk-device{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--w-mute);text-align:center}
+.class-picker{display:flex;flex-wrap:wrap;gap:8px}
+.class-chip{width:46px;height:46px;border-radius:14px;border:2px solid var(--w-line);background:#fff;font-family:var(--w-display);font-size:18px;color:var(--w-blue-d);cursor:pointer;transition:transform .15s,border-color .15s}
+.class-chip:hover{border-color:var(--w-blue);transform:translateY(-1px)}
+.class-chip.on{background:var(--w-blue);border-color:var(--w-blue);color:#fff}
+.class-chip.hint{border-color:var(--w-lime);box-shadow:0 0 0 3px rgba(180,239,58,.35)}
+.fav-list,.hard-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.fav-list li{display:flex;align-items:center;gap:6px}
+.fav-link{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:#f4f6fd;color:var(--w-ink);font-weight:700;text-decoration:none;min-height:44px}
+.fav-link:hover{background:#e8efff}
+.fav-link span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-grade{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--w-blue);color:#fff;font-family:var(--w-display);font-size:13px}
+.fav-x{flex:none;width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--w-mute);font-size:20px;cursor:pointer}
+.fav-x:hover{background:var(--w-miss-bg);color:var(--w-miss)}
+.hard-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;font-weight:700}
+.my-class-badge,.class-badge{display:inline-block;font-weight:800;font-size:12.5px;color:var(--w-lime-d);background:#f1fbdc;border-radius:999px;padding:3px 10px;margin-bottom:6px}
+.course-card.my-class{outline:3px solid var(--w-lime);outline-offset:3px}
+.class-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0 4px}
+.class-bar .class-badge{margin:0;font-size:14px;padding:6px 14px}
+.class-other{font-size:14.5px;color:var(--w-ink2);font-weight:600}
+#courseTabs a.my-class-tab::after{content:" ★";color:var(--w-lime-d)}
+.fav-toggle{margin:2px 0 12px;border:2px solid var(--w-line);background:#fff;border-radius:999px;padding:8px 16px;min-height:42px;font-weight:800;font-size:14.5px;color:var(--w-blue-d);cursor:pointer}
+.fav-toggle[aria-pressed="true"]{background:#fff8dc;border-color:var(--w-sun);color:#7a5400}
+/* word list stars */
+#words .wordrow{position:relative}
+#words .wordrow>span{flex:1;min-width:0}
+.star-btn{flex:none;margin-left:auto;width:44px;height:44px;border:0;border-radius:12px;background:transparent;font-size:24px;line-height:1;color:#b8bfd6;cursor:pointer}
+.star-btn:hover{background:#fff8dc;color:#e0a800}
+.star-btn.on{color:#f0a500}
+#words .wordrow.is-hard{box-shadow:inset 4px 0 0 var(--w-sun)}
+.star-hint{margin:8px 0 6px;font-size:13.5px;color:var(--w-ink2)}
+/* lesson: which words */
+.wordset-bar{margin:12px 0 4px;display:flex;flex-direction:column;gap:8px}
+.wordset-title{font-weight:800;font-size:15px;color:var(--w-ink)}
+.wordset-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wordset-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px;min-height:56px;border:2px solid var(--w-line);border-radius:14px;background:#fff;color:var(--w-ink);cursor:pointer;font-size:14.5px}
+.wordset-btn small{font-size:13px;color:var(--w-mute);font-weight:700}
+.wordset-btn.on{border-color:var(--w-blue);background:#eef3ff;color:var(--w-blue-d)}
+.wordset-btn.on small{color:var(--w-blue)}
+.wordset-btn:disabled{opacity:.5;cursor:not-allowed}
+.wordset-msg{margin:0;font-size:13.5px;color:var(--w-ink2)}
+.wordset-msg.warn{color:#8a4b00}
+.hard-add{margin-top:12px}
+@media (max-width:640px){
+ .lexi-desk{grid-template-columns:1fr;gap:10px;margin-top:12px}
+ .desk-card{padding:14px}
+ .wordset-btn{font-size:13.5px;padding:8px 4px}
+ .class-chip{width:44px;height:44px}
+}
+/* home desk spans the full width under the hero; words page: the list first, textbook/module/lesson switches below it */
+.lexi-home>.lexi-desk{grid-column:1/-1;margin:0}
+body[data-page=words] #catalogAside{display:flex!important;flex-direction:column}
+body[data-page=words] #wordSelection{order:1}
+body[data-page=words] #wordsDone{order:2}
+body[data-page=words] .catalog-selectors{order:3;margin-top:18px;padding-top:14px;border-top:1px solid var(--w-line)}
+body[data-page=words] #sectionHint{order:4}
+@media (max-width:900px){.lexi-home>.lexi-hero{order:1}.lexi-home>.lexi-desk{order:2}.lexi-home>.lexi-panel{order:3}}
+.lexi-desk a.btn{text-decoration:none!important}

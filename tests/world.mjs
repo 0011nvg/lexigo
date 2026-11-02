@@ -62,17 +62,31 @@ try {
 
   /* 4. Builder: correct assembly, wrong assembly + explanation */
   await page.goto(BASE + '#/lesson/2/5/play/builder');
-  await page.locator('#play .builder-bank').waitFor();
+  await page.locator('#play .builder-bank, #play .answerbox input').first().waitFor();
+  // very short words (e.g. "on") are asked as typing in builder mode: answer them until a real builder question
+  for (let guard = 0; guard < 8 && !(await page.locator('#play .builder-bank').count()); guard++) {
+    const prev = await page.evaluate(() => game.index);
+    await solveCurrent(page);
+    await page.locator('#play button', { hasText: /Следующее|Результат/ }).first().click();
+    await page.waitForFunction(i => game && game.index !== i && !document.querySelector('#play .feedback'), prev);
+  }
   await solveCurrent(page);
   assert.equal(await page.locator('#play .feedback[data-result=ok]').count(), 1, 'builder ok for ' + JSON.stringify(await page.evaluate(() => [game.words[game.index].en, game.activeQuestionMode, document.querySelector('#play .feedback')?.textContent])));
   assert.match(await page.locator('#lexiCoach .lexi-bubble').innerText(), /\S/);
-  await page.locator('#play button', { hasText: /Следующее|Результат/ }).first().click();
+  // go to the next real builder question: very short words (e.g. "on") are asked as typing instead
+  for (let guard = 0; guard < 8; guard++) {
+    const prev = await page.evaluate(() => game.index);
+    await page.locator('#play button', { hasText: /Следующее|Результат/ }).first().click();
+    await page.waitForFunction(i => game && game.index !== i && !document.querySelector('#play .feedback'), prev);
+    if (await page.locator('#play .builder-bank .builder-token:not([hidden])').count()) break;
+    await solveCurrent(page);
+  }
   const reversed = await page.evaluate(() => [...document.querySelectorAll('#play .builder-bank .builder-token')].map(b => b.textContent));
   const word = await page.evaluate(() => game.words[game.index].en);
   for (const t of [...reversed].reverse()) await page.locator('#play .builder-bank .builder-token:not([hidden])').filter({ hasText: new RegExp('^' + t + '$') }).first().click();
   const assembled = [...reversed].reverse().join('');
   await page.locator('#play .builder-tools button', { hasText: 'Проверить' }).click();
-  if (assembled.toLowerCase() !== word.toLowerCase()) {
+  if (assembled.toLowerCase().replace(/\s+/g, '') !== word.toLowerCase().replace(/\s+/g, '')) {
     assert.equal(await page.locator('#play .feedback[data-result=miss]').count(), 1);
     assert.match(await page.locator('#play .why').innerText(), /Правильный порядок/);
   }

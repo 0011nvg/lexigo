@@ -342,8 +342,12 @@
     host.replaceChildren();
     const hero = el('section', 'lexi-hero');
     const txt = el('div', 'lexi-hero-text');
-    const hr = new Date().getHours(), hi = hr < 12 ? 'Доброе утро!' : hr < 18 ? 'Привет!' : 'Добрый вечер!';
-    txt.append(el('p', 'eyebrow', 'LEXIGO · МИР АНГЛИЙСКИХ СЛОВ'), el('h2', 'lexi-hero-title', hi + ' Я Лекси.'), el('p', 'lexi-hero-sub', quest.lastLesson ? 'Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Я помогу выучить слова из твоего учебника Spotlight: узнать, вспомнить и проверить себя. Выбери учебник ниже.'));
+    const hr = new Date().getHours(), base = window.LexiLive ? window.LexiLive.greeting() : (hr < 12 ? 'Доброе утро' : hr < 18 ? 'Добрый день' : 'Добрый вечер');
+    let who = ''; try { who = (window.LexigoAccountHint && window.LexigoAccountHint.name()) || ''; } catch { who = ''; }
+    const title = el('h2', 'lexi-hero-title');
+    if (who) { title.append(base + ', ' + who + '!'); } else { title.append(base + '! ', el('span', 'lexi-hero-name', 'Я Лекси.')); }
+    const sub = quest.lastLesson ? (who ? 'Это я, Лекси. Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Продолжим путешествие? Выполни миссии дня и открой сундук.') : (who ? 'Это я, Лекси. Помогу выучить слова из твоего Spotlight: узнать, вспомнить и проверить себя.' : 'Я помогу выучить слова из твоего учебника Spotlight: узнать, вспомнить и проверить себя. Выбери учебник ниже.');
+    txt.append(el('p', 'eyebrow', 'LEXIGO · МИР АНГЛИЙСКИХ СЛОВ'), title, el('p', 'lexi-hero-sub', sub));
     const actions = el('div', 'lexi-hero-actions');
     if (quest.lastLesson) {
       const label = lessonLabel(quest.lastLesson);
@@ -352,8 +356,10 @@
       actions.append(go, cont);
     } else { const go = el('a', 'btn hero-go'); go.href = '#/course/' + (DB.books[0].grade) + '/0'; go.innerHTML = '<span>Начать путешествие</span><small>Выбери учебник и урок</small>'; actions.append(go); }
     txt.append(actions);
-    const art = el('div', 'lexi-hero-art'); const img = el('img'); img.src = 'assets/lexi-hero.webp'; img.alt = 'Котёнок Лекси в синей толстовке с кристаллом'; img.width = 520; img.height = 520; img.decoding = 'async'; art.append(img);
-    hero.append(txt, art); host.append(hero);
+    const art = el('div', 'lexi-hero-art');
+    if (window.LexiLive) art.append(window.LexiLive.art());
+    else { const img = el('img'); img.src = 'assets/lexi-hero.webp'; img.alt = 'Котёнок Лекси в синей толстовке с кристаллом'; img.width = 520; img.height = 520; img.decoding = 'async'; art.append(img); }
+    hero.append(art, txt); host.append(hero);
     const panel = el('section', 'lexi-panel'); panel.setAttribute('aria-labelledby', 'missionsTitle');
     const lv = levelOf(quest.xp);
     const level = el('div', 'lexi-level'); level.innerHTML = '<span class="lvl-num"></span><div><b class="lvl-title"></b><div class="lvl-track"><i></i></div><small class="lvl-xp"></small></div>';
@@ -497,5 +503,16 @@
 
   chrome(); checkBadges(); onPage();
   if (typeof game !== 'undefined' && game) initGame(); // deep link straight into a game
-  window.LexiQuest = Object.freeze({ toast, levelOf, missionState, state: () => JSON.parse(JSON.stringify(quest)), isCalm });
+  window.addEventListener('lexigo:account', () => { try { if (document.body.dataset.page === 'home' || !document.body.dataset.page) renderHome(); } catch { /* cosmetic */ } });
+  /* Cloud accounts: the server is the source of truth for XP, streak and the last lesson. */
+  function syncCloud(s) {
+    if (!s || typeof s !== 'object') return;
+    if (Number.isFinite(s.xp) && s.xp >= 0) quest.xp = Math.floor(s.xp);
+    if (Number.isFinite(s.streak) && s.streak >= 0) { quest.streak.count = Math.floor(s.streak); if (typeof s.streakLast === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.streakLast)) quest.streak.last = s.streakLast; }
+    if (Number.isFinite(s.best)) quest.streak.best = Math.max(quest.streak.best, Math.floor(s.best));
+    if (typeof s.lastLesson === 'string' && /^\/lesson\/\d+\/(m?\d+)$/.test(s.lastLesson) && !quest.lastLesson) quest.lastLesson = s.lastLesson;
+    saveQuest(); refreshChrome();
+    try { if (document.body.dataset.page === 'home') renderHome(); } catch { /* cosmetic */ }
+  }
+  window.LexiQuest = Object.freeze({ toast, levelOf, missionState, state: () => JSON.parse(JSON.stringify(quest)), isCalm, syncCloud, avatar });
 })();

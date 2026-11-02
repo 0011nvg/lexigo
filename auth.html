@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https: wss:; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Вход в LEXIGO</title>
+<link rel="stylesheet" href="world.css"><link rel="stylesheet" href="polish.css"><link rel="stylesheet" href="account.css">
+<meta name="theme-color" content="#1b2a6b">
+</head>
+<body>
+<a class="skip-link" href="#authMain">К содержимому</a>
+<header class="site-header">
+ <a class="logo" href="index.html" aria-label="LEXIGO — на главную" style="text-decoration:none"><span class="brand-word">LEXI<b>GO</b></span></a>
+ <nav class="header-actions" aria-label="Навигация"><a class="header-home" href="index.html" style="text-decoration:none">← К играм</a></nav>
+</header>
+<main id="authMain" class="acc-main" tabindex="-1">
+ <div class="auth-wrap">
+  <section class="auth-side" aria-labelledby="sideTitle">
+   <div>
+    <h1 id="sideTitle">Лекси запомнит<br>все твои успехи</h1>
+    <p>С аккаунтом прогресс сохраняется в облаке: начни на компьютере в классе — продолжи дома с телефона.</p>
+    <ul><li>Прогресс по каждому учебнику</li><li>Задания от учителя</li><li>Уровни, серии и награды</li></ul>
+   </div>
+   <img src="assets/lexi-hero.webp" alt="" width="520" height="520">
+  </section>
+  <section class="acc-card auth-box" id="authBox" aria-live="polite"><p class="loading">Загрузка…</p></section>
+ </div>
+</main>
+<script src="account-hint.js"></script><script src="config.js"></script><script src="cloud-core.js"></script><script src="auth.js"></script>
+</body>
+</html>

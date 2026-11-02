@@ -34,9 +34,9 @@ jobs:
         if: success()
         run: |
           mkdir -p static-preview
-          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css static-preview/
-          cp -r assets vocabulary static-preview/
-          printf '%s\n' 'LEXIGO Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'No Supabase cabinet or production deployment is included.' > static-preview/README.txt
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html static-preview/
+          cp -r assets vocabulary vendor static-preview/
+          printf '%s\n' 'LEXIGO Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'Cloud accounts stay off until config.js is filled in (see docs/CLOUD-SETUP.md).' > static-preview/README.txt
       - name: Upload isolated static preview (no deployment)
         if: success()
         uses: actions/upload-artifact@v4
@@ -51,3 +51,24 @@ jobs:
           name: lexigo-browser-screenshots
           path: test-results/
           if-no-files-found: ignore
+  cloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 &
+      - name: Local Supabase stack (Auth + PostgREST + PostgreSQL)
+        run: |
+          PGBIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1) tests/e2e/start-local-supabase.sh > /tmp/stack.env
+      - name: Access rules and XP (SQL)
+        run: PGHOST=/tmp/lexigo-supabase PGPORT=54329 PGUSER=postgres tests/sql/run.sh
+      - name: Cloud journey (browser)
+        run: |
+          . /tmp/stack.env
+          node tests/e2e/cloud-journey.mjs

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 const data=JSON.parse(fs.readFileSync('data.json','utf8'));
 const js=fs.readFileSync('data.js','utf8');
-const html=fs.readFileSync('index.html','utf8');
+const html=fs.readFileSync('index.html','utf8').replace(/\?v=[\w.-]+"/g,'"'); // cache-busting version marks are not part of the file names
 const context={window:{}};
 vm.runInNewContext(js,context,{timeout:5000});
 assert.equal(JSON.stringify(context.window.LEXIGO_DATA),JSON.stringify(data),'data.js and data.json must match');

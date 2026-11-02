@@ -1,7 +1,7 @@
 // LEXI data inventory. `node tests/inventory.mjs --write` stores the baseline;
 // without flags it compares the current data with tests/fixtures/inventory-baseline.json.
 import fs from 'node:fs'; import vm from 'node:vm'; import crypto from 'node:crypto'; import assert from 'node:assert/strict';
-const html = fs.readFileSync('index.html', 'utf8');
+const html = fs.readFileSync('index.html', 'utf8').replace(/\?v=[\w.-]+"/g, '"'); // ignore cache-busting version marks
 const ctx = { window: {} }; vm.createContext(ctx);
 const files = [...html.matchAll(/<script src="((?:data|vocabulary\/[^"]+)\.js)"><\/script>/g)].map(m => m[1]);
 for (const f of files) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });

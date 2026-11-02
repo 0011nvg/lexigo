@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Добро пожаловать в LEXI!</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f6fd">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f5f6fd">Остался один шаг — подтвердите адрес электронной почты.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f6fd" style="background:#f5f6fd">
+  <tr><td align="center" style="padding:28px 12px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 28px -14px rgba(27,42,107,.28)">
+      <tr><td bgcolor="#2c56f5" style="background:#2c56f5;background-image:linear-gradient(120deg,#1b2a6b,#2c56f5);padding:22px 32px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td valign="middle" style="padding-right:12px"><img src="https://0011nvg.github.io/lexigo/assets/lexi-icon-192.png" width="44" height="44" alt="" style="display:block;border:0;border-radius:12px"></td>
+          <td valign="middle" style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;letter-spacing:1px;color:#ffffff">LEXI</td>
+        </tr></table>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#d8e1ff;padding-top:6px">Английские слова — в игре</div>
+      </td></tr>
+      <tr><td style="padding:28px 32px 6px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;line-height:1.3;color:#141b3d">Добро пожаловать в LEXI!</td></tr>
+      <tr><td style="padding:6px 32px 14px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#141b3d">{{ if .Data.display_name }}Привет, {{ .Data.display_name }}! 👋{{ else }}Привет! 👋{{ end }}<br><br>LEXI — платформа, где изучение английских слов превращается в увлекательную игру вместе с котёнком Лекси.<br><br>Чтобы завершить регистрацию, подтвердите свой адрес электронной почты.</td></tr>
+          <tr><td align="center" style="padding:8px 32px 6px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#b4ef3a" style="border-radius:16px">
+              <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 30px;font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:bold;color:#13200a;text-decoration:none;border-radius:16px;border-bottom:4px solid #8fc21d">Подтвердить электронную почту</a>
+            </td></tr></table>
+          </td></tr>
+          <tr><td style="padding:14px 32px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#6c7593">
+            Кнопка не нажимается? Скопируйте ссылку в адресную строку браузера:<br>
+            <a href="{{ .ConfirmationURL }}" style="color:#2c56f5;word-break:break-all">{{ .ConfirmationURL }}</a>
+          </td></tr>
+      <tr><td style="padding:22px 32px 6px;font-family:Arial,Helvetica,sans-serif;font-size:13.5px;line-height:1.6;color:#4b5577">Ссылка действует 24 часа. Если вы не регистрировались в LEXI, просто проигнорируйте это письмо — аккаунт не будет создан.</td></tr>
+      <tr><td style="padding:10px 32px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#141b3d">До встречи в LEXI! 🐱<br><b>Команда LEXI</b></td></tr>
+      <tr><td bgcolor="#f0f3ff" style="background:#f0f3ff;padding:16px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#6c7593">
+        Это автоматическое письмо, отвечать на него не нужно. LEXI — <a href="https://0011nvg.github.io/lexigo/" style="color:#2c56f5">0011nvg.github.io/lexigo</a><br>
+        Письмо отправлено на адрес {{ .Email }}.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

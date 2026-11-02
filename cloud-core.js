@@ -211,6 +211,10 @@
     if (m.includes('failed to fetch') || m.includes('network') || m.includes('загрузить модуль')) return 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.';
     if (m.includes('same_password') || m.includes('different from the old')) return 'Новый пароль должен отличаться от старого.';
     if (m.includes('not-configured')) return 'Облачные аккаунты пока не подключены.';
+    if (m.includes('otp_expired') || m.includes('expired') || m.includes('invalid or has expired')) return 'Ссылка устарела или уже использована. Запроси новую.';
+    if (m.includes('signup') && m.includes('disabled')) return 'Регистрация временно закрыта. Попробуй позже.';
+    if (m.includes('email address') && m.includes('invalid')) return 'Проверь адрес электронной почты.';
+    if (m.includes('user not found')) return 'Аккаунт с этой почтой не найден.';
     return 'Что-то пошло не так. Попробуй ещё раз чуть позже.';
   }
 

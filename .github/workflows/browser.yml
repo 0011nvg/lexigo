@@ -84,3 +84,7 @@ jobs:
           . /tmp/stack.env
           node tests/e2e/teacher-lessons.mjs
           node tests/e2e/lesson-pages.mjs
+      - name: Russian auth e-mails (local GoTrue + SMTP sink)
+        run: |
+          . /tmp/stack.env
+          node tests/e2e/email-flow.mjs

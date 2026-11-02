@@ -21,6 +21,41 @@
   }
   function busy(btn, on, text) { btn.disabled = on; if (text) btn.textContent = text; }
 
+  /* ---------- письмо подтверждения ещё раз (2026-11-02): кнопка с паузой 60 с, всё по-русски ---------- */
+  const redirectAfterConfirm = () => base + 'auth.html' + (pendingJoin() ? '?join=' + pendingJoin() : '');
+  function resendBlock(email, opts = {}) {
+    const msg = msgBox();
+    const input = h('input', { id: 'resendEmail', type: 'email', required: true, autocomplete: 'email', inputmode: 'email', maxlength: 254, value: email || '' });
+    const btn = h('button', { class: 'btn-acc' + (opts.primary ? ' lime' : ' ghost'), type: 'submit', text: 'Отправить письмо ещё раз' });
+    let timer = 0;
+    const cooldown = sec => { clearInterval(timer); btn.disabled = true; let left = sec; btn.textContent = 'Отправить ещё раз через ' + left + ' с';
+      timer = setInterval(() => { left--; if (left <= 0) { clearInterval(timer); btn.disabled = false; btn.textContent = 'Отправить письмо ещё раз'; } else btn.textContent = 'Отправить ещё раз через ' + left + ' с'; }, 1000); };
+    const form = h('form', { class: 'resend-box', novalidate: true },
+      email ? null : h('label', { class: 'acc-field', for: 'resendEmail' }, h('span', { text: 'Электронная почта, указанная при регистрации' }), input),
+      btn, msg);
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const to = (email || input.value).trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return setMsg(msg, 'Проверь адрес электронной почты.');
+      btn.disabled = true; btn.textContent = 'Отправляем…';
+      try {
+        const { error } = await sb.auth.resend({ type: 'signup', email: to, options: { emailRedirectTo: redirectAfterConfirm() } });
+        if (error) throw error;
+        setMsg(msg, 'Готово! Новое письмо отправлено на ' + to + '. Проверь «Входящие» и папку «Спам».', 'ok');
+        cooldown(60);
+      } catch (err) { setMsg(msg, C.authMessage(err)); btn.disabled = false; btn.textContent = 'Отправить письмо ещё раз'; }
+    });
+    if (opts.cooldown) queueMicrotask(() => cooldown(opts.cooldown));
+    return form;
+  }
+  function notice({ title, text, ok, actions }) {
+    box.replaceChildren(h('div', { class: 'auth-closed auth-notice' + (ok ? ' ok' : '') },
+      h('img', { src: 'assets/lexi-head.webp', alt: '', width: 120, height: 120 }),
+      h('h2', { id: 'authNoticeTitle', tabindex: '-1', text: title, style: { fontSize: '22px', marginBottom: '8px' } }),
+      text ? h('p', { class: 'acc-muted', text }) : null, ...(actions || [])));
+    box.querySelector('#authNoticeTitle')?.focus({ preventScroll: true });
+  }
+
   /* ---------- not configured yet: honest, friendly notice ---------- */
   function closed() {
     box.replaceChildren(h('div', { class: 'auth-closed' },
@@ -57,7 +92,11 @@
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
         await finish(data.session);
-      } catch (err) { setMsg(msg, C.authMessage(err)); busy(btn, false, 'Войти'); }
+      } catch (err) {
+        setMsg(msg, C.authMessage(err)); busy(btn, false, 'Войти');
+        form.querySelector('.resend-box')?.remove();
+        if (/not confirmed/i.test(String(err && err.message))) msg.after(resendBlock(email));
+      }
     });
     return form;
   }
@@ -102,6 +141,7 @@
           h('h2', { text: 'Проверь почту!', style: { fontSize: '22px', marginBottom: '8px' } }),
           h('p', { class: 'acc-muted' }, 'Мы отправили письмо на ', h('b', { text: email }), '. Открой его и нажми ссылку — аккаунт активируется, и ты сразу попадёшь в кабинет.'),
           h('p', { class: 'acc-muted acc-small', text: 'Письма нет? Загляни в «Спам» или «Промоакции». Ссылка действует 24 часа.' }),
+          resendBlock(email, { cooldown: 60 }),
           h('button', { type: 'button', class: 'btn-link', text: 'Ко входу', onclick: () => { mode = 'login'; render(); } })));
       } catch (err) { setMsg(msg, C.authMessage(err)); busy(btn, false, 'Создать аккаунт'); }
     });
@@ -169,14 +209,30 @@
     let recovering = params.get('recovery') === '1' || hash.get('type') === 'recovery';
     sb.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') { recovering = true; newPasswordForm(); } });
     if (hash.get('error_code') || hash.get('error')) {
-      render();
-      const m = box.querySelector('.acc-msg[role=status]');
-      if (m) setMsg(m, hash.get('error_code') === 'otp_expired' ? 'Ссылка из письма устарела или уже использована. Войди или запроси новую.' : 'Не получилось открыть ссылку из письма. Попробуй войти.');
       history.replaceState(null, '', location.pathname + location.search);
-      return;
+      const expired = hash.get('error_code') === 'otp_expired' || /expired|invalid/i.test(hash.get('error_description') || '');
+      const forReset = recovering || params.get('recovery') === '1';
+      return notice({ title: expired ? 'Ссылка больше не действует' : 'Не получилось открыть ссылку',
+        text: forReset ? 'Ссылка для смены пароля устарела или уже использована. Запроси новую — это займёт минуту.'
+          : expired ? 'Срок действия ссылки истёк, или она уже была использована. Если почта уже подтверждена — просто войди. Если нет — пришлём новое письмо.'
+            : 'Попробуй войти. Если почта ещё не подтверждена, пришлём новое письмо.',
+        actions: forReset ? [h('button', { type: 'button', class: 'btn-acc lime', text: 'Запросить новую ссылку', onclick: () => { mode = 'reset'; render(); } })]
+          : [resendBlock('', { primary: true }), h('button', { type: 'button', class: 'btn-link', text: 'Войти', onclick: () => { mode = 'login'; render(); } })] });
+    }
+    // Supabase после первой из двух ссылок при смене адреса присылает message=… (по-английски) — переводим
+    if (hash.get('message')) {
+      history.replaceState(null, '', location.pathname + location.search);
+      return notice({ title: 'Почти готово!', text: 'Первая ссылка принята. Теперь откройте письмо, которое пришло на второй адрес, и нажмите кнопку в нём — тогда смена почты завершится.', actions: [h('a', { class: 'btn-acc ghost', href: 'me.html', text: 'В кабинет' })] });
     }
     const { data: { session } } = await sb.auth.getSession();
     if (recovering && session) return newPasswordForm();
+    const confirmed = hash.get('type');
+    if (session && ['signup', 'email', 'invite', 'email_change'].includes(confirmed)) {
+      const change = confirmed === 'email_change';
+      return notice({ ok: true, title: change ? 'Новый адрес почты подтверждён!' : 'Электронная почта успешно подтверждена!',
+        text: change ? 'Теперь входите в LEXI с новым адресом.' : 'Теперь вы можете пользоваться LEXI. Лекси уже ждёт тебя!',
+        actions: [h('button', { type: 'button', class: 'btn-acc lime', id: 'confirmedGo', text: 'Продолжить →', onclick: e => { e.currentTarget.disabled = true; finish(session); } })] });
+    }
     if (session) return finish(session);
     render();
   }

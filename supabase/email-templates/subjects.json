@@ -1,0 +1,8 @@
+{
+  "confirmation": "Добро пожаловать в LEXI! Подтвердите электронную почту",
+  "recovery": "LEXI: восстановление пароля",
+  "email_change": "LEXI: подтвердите новый адрес почты",
+  "magic_link": "LEXI: ссылка для входа",
+  "invite": "Вас пригласили в LEXI",
+  "reauthentication": "LEXI: код подтверждения"
+}

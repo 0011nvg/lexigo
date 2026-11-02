@@ -1,6 +1,6 @@
 // Local stand-in for https://<project>.supabase.co: routes /auth/v1 → GoTrue, /rest/v1 → PostgREST, adds CORS.
 import http from 'node:http';
-const routes = [['/auth/v1', 9999], ['/rest/v1', 3000]];
+const routes = [['/auth/v1', Number(process.env.AUTH_PORT || 9999)], ['/rest/v1', 3000]];
 const port = Number(process.env.PROXY_PORT || 54321);
 http.createServer((req, res) => {
   const cors = { 'access-control-allow-origin': req.headers.origin || '*', 'access-control-allow-headers': req.headers['access-control-request-headers'] || '*', 'access-control-allow-methods': 'GET,POST,PATCH,PUT,DELETE,OPTIONS', 'access-control-expose-headers': 'content-range,x-supabase-api-version', 'access-control-max-age': '600' };

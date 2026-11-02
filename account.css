@@ -191,3 +191,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
  .row{flex-wrap:wrap}
 }
 @media (prefers-reduced-motion:reduce){.auth-side img{animation:none}}
+/* 2026-11-02: подтверждение почты — экраны результата и повторная отправка письма */
+.auth-notice{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.auth-notice h2{outline:none}
+.auth-notice.ok h2{color:#0c7a57}
+.resend-box{display:flex;flex-direction:column;gap:8px;width:100%;max-width:380px;margin:12px auto 4px;text-align:left}
+.resend-box .btn-acc{width:100%;justify-content:center}
+.resend-box .acc-msg:empty{display:none}

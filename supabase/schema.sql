@@ -658,3 +658,176 @@ revoke all on function public.leaderboard_top(text), public.leaderboard_preview(
 grant execute on function public.leaderboard_top(text) to anon, authenticated;
 grant execute on function public.leaderboard_preview(uuid), public.leaderboard_claim(uuid, text) to authenticated;
 grant execute on function public.lb_k1(text, int, numeric), public.lb_k2(text, numeric, int) to anon, authenticated;
+
+-- =====================================================================
+-- v3 · «Кристальная экспедиция» (2026-11-02): рекорды уровней и рейтинг
+-- Уровень начинается вызовом crystal_start (сервер запоминает уровень, день поля и время),
+-- заканчивается crystal_finish: сервер проверяет правдоподобие результата, сам считает звёзды
+-- и рейтинговые очки (как crystal-engine.js) и не даёт отправить одну партию дважды.
+-- В рейтинге — только ник (или «Исследователь XXXX»), без имени и почты.
+-- =====================================================================
+create table if not exists public.crystal_runs (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  level        int not null check (level between 1 and 5),
+  day          date not null,
+  started_at   timestamptz not null default now(),
+  finished_at  timestamptz,
+  won          boolean,
+  stars        int check (stars between 0 and 3),
+  score        int check (score between 0 and 10000000),
+  moves_left   int check (moves_left between 0 and 300),
+  moves_used   int check (moves_used between 0 and 300),
+  words_ok     int check (words_ok between 0 and 200),
+  words_tried  int check (words_tried between 0 and 200),
+  rating       int not null default 0
+);
+create index if not exists crystal_runs_user_idx on public.crystal_runs(user_id, level);
+create table if not exists public.crystal_names (
+  user_id     uuid primary key references public.profiles(id) on delete cascade,
+  name        text not null check (name ~ '^[A-Za-zА-Яа-яЁё0-9 ._-]{2,20}$'),
+  updated_at  timestamptz not null default now()
+);
+alter table public.crystal_runs enable row level security;
+alter table public.crystal_names enable row level security;
+revoke all on public.crystal_runs, public.crystal_names from anon, authenticated;
+grant select on public.crystal_runs, public.crystal_names to authenticated;
+drop policy if exists crystal_runs_select on public.crystal_runs;
+create policy crystal_runs_select on public.crystal_runs for select to authenticated using (user_id = auth.uid());
+drop policy if exists crystal_names_select on public.crystal_names;
+create policy crystal_names_select on public.crystal_names for select to authenticated using (user_id = auth.uid());
+
+-- Параметры уровней — те же, что в crystal-engine.js (проверяется тестом tests/crystal-engine.mjs):
+-- ходы, звёзды (1 — порог цели по очкам, 2, 3), сколько слов нужно ответить верно, есть ли цель по очкам.
+create or replace function public.crystal_cfg(p_level int, out moves int, out s1 int, out s2 int, out s3 int, out words int, out score_goal boolean)
+language sql immutable set search_path = '' as $$
+  select c.moves, c.s1, c.s2, c.s3, c.words, c.score_goal from (values
+    (1, 20, 3000, 4800, 6600, 3, true),
+    (2, 20, 4600, 6800, 8600, 3, true),
+    (3, 22, 6800, 10000, 12500, 4, true),
+    (4, 24, 5500, 8200, 10200, 4, false),
+    (5, 26, 8000, 10500, 12500, 5, true)
+  ) as c(level, moves, s1, s2, s3, words, score_goal) where c.level = p_level
+$$;
+
+-- рейтинговые очки уровня: звёзды важнее всего; очки уровня — с пределом, чтобы не решала удача
+create or replace function public.crystal_rating(p_level int, p_won boolean, p_stars int, p_score int, p_moves_left int, p_words_ok int, p_words_tried int)
+returns int language plpgsql immutable set search_path = '' as $$
+declare c record; top numeric;
+begin
+  if not coalesce(p_won, false) then return 0; end if;
+  select * into c from public.crystal_cfg(p_level); if c.moves is null then return 0; end if;
+  top := c.s3 * 2;
+  return p_stars * 1000 + round(500 * least(p_score, top) / top)::int + 15 * least(greatest(p_moves_left, 0), 30)
+       + round(300 * (case when p_words_tried > 0 then p_words_ok::numeric / p_words_tried else 0 end))::int;
+end $$;
+
+create or replace function public.crystal_start(p_level int, p_day date) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); v_day date; v_id uuid;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  if p_level is null or p_level < 1 or p_level > 5 then raise exception 'bad level' using errcode = '22023'; end if;
+  if p_level > 1 and not exists (select 1 from public.crystal_runs where user_id = uid and level = p_level - 1 and won) then
+    return jsonb_build_object('ok', false, 'reason', 'locked');
+  end if;
+  if (select count(*) from public.crystal_runs where user_id = uid and started_at > now() - interval '10 minutes') >= 40 then
+    raise exception 'too many runs, slow down' using errcode = '54000';
+  end if;
+  v_day := case when p_day between current_date - 1 and current_date + 1 then p_day else current_date end;
+  insert into public.crystal_runs(user_id, level, day) values (uid, p_level, v_day) returning id into v_id;
+  return jsonb_build_object('ok', true, 'run_id', v_id, 'day', v_day);
+end $$;
+
+create or replace function public.crystal_totals(p_user uuid, out total int, out stars int, out place int)
+language sql stable security definer set search_path = public as $$
+  with best as (select user_id, level, max(rating) r, max(stars) s, min(finished_at) filter (where rating > 0) t
+                  from public.crystal_runs where finished_at is not null group by user_id, level),
+       tot as (select user_id, sum(r)::int total, sum(s)::int stars from best group by user_id having sum(r) > 0)
+  select coalesce((select total from tot where user_id = p_user), 0),
+         coalesce((select stars from tot where user_id = p_user), 0),
+         case when exists (select 1 from tot where user_id = p_user)
+              then 1 + (select count(*) from tot o where o.total > (select total from tot where user_id = p_user))::int end
+$$;
+
+create or replace function public.crystal_finish(p jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); r public.crystal_runs; c record; prev int;
+  v_won boolean; v_score int; v_left int; v_used int; v_ok int; v_tried int; v_stars int; v_rating int; tt record;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  begin
+    select * into r from public.crystal_runs where id = (p->>'run_id')::uuid and user_id = uid for update;
+  exception when others then return jsonb_build_object('ok', false, 'reason', 'run'); end;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'run'); end if;
+  if r.finished_at is not null then   -- повторная отправка той же партии ничего не меняет
+    select * into tt from public.crystal_totals(uid);
+    return jsonb_build_object('ok', true, 'duplicate', true, 'counted', r.rating > 0, 'rating', r.rating, 'total', tt.total, 'place', tt.place, 'improved', false);
+  end if;
+  if r.started_at < now() - interval '6 hours' then return jsonb_build_object('ok', false, 'reason', 'expired'); end if;
+  select * into c from public.crystal_cfg(r.level);
+  begin
+    v_won := coalesce((p->>'won')::boolean, false); v_score := (p->>'score')::int; v_left := (p->>'moves_left')::int; v_used := (p->>'moves_used')::int;
+    v_ok := (p->>'words_ok')::int; v_tried := (p->>'words_tried')::int;
+  exception when others then return jsonb_build_object('ok', false, 'reason', 'bad'); end;
+  -- правдоподобие: каждый верный ответ даёт ровно +1 ход; очки не выше предела; на ход нужно время
+  if v_score is null or v_left is null or v_used is null or v_ok is null or v_tried is null
+     or v_score < 0 or v_left < 0 or v_used < 1 or v_ok < 0 or v_ok > v_tried or v_tried > 60
+     or v_used + v_left <> c.moves + v_ok
+     or (not v_won and v_left <> 0)
+     or v_score > v_used * 9000 + (c.moves + 15) * 250 + 40 * 150
+     or now() - r.started_at < make_interval(secs => v_used * 0.7)
+     or (v_won and v_ok < c.words)
+     or (v_won and c.score_goal and v_score < c.s1) then
+    update public.crystal_runs set finished_at = now(), won = false, stars = 0, score = 0, moves_left = 0, moves_used = least(greatest(coalesce(v_used, 0), 0), 300), words_ok = 0, words_tried = 0, rating = 0 where id = r.id;
+    return jsonb_build_object('ok', false, 'reason', 'implausible');
+  end if;
+  v_stars := case when v_won then 1 + (v_score >= c.s2)::int + (v_score >= c.s3)::int else 0 end;
+  v_rating := public.crystal_rating(r.level, v_won, v_stars, v_score, v_left, v_ok, v_tried);
+  select coalesce(max(rating), 0) into prev from public.crystal_runs where user_id = uid and level = r.level and finished_at is not null;
+  update public.crystal_runs set finished_at = now(), won = v_won, stars = v_stars, score = v_score, moves_left = v_left, moves_used = v_used,
+    words_ok = v_ok, words_tried = v_tried, rating = v_rating where id = r.id;
+  select * into tt from public.crystal_totals(uid);
+  return jsonb_build_object('ok', true, 'counted', v_rating > 0, 'stars', v_stars, 'rating', v_rating, 'total', tt.total, 'place', tt.place, 'improved', v_rating > prev);
+end $$;
+
+create or replace function public.crystal_my() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare uid uuid := auth.uid(); tt record;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  select * into tt from public.crystal_totals(uid);
+  return jsonb_build_object('name', (select name from public.crystal_names where user_id = uid), 'rating', tt.total, 'stars', tt.stars, 'place', tt.place,
+    'levels', coalesce((select jsonb_agg(jsonb_build_object('level', level, 'best_score', best, 'stars', st, 'wins', w, 'rating', rt, 'plays', n) order by level)
+      from (select level, max(score) filter (where won) best, max(stars) st, count(*) filter (where won) w, max(rating) rt, count(*) n
+              from public.crystal_runs where user_id = uid and finished_at is not null group by level) x), '[]'::jsonb));
+end $$;
+
+create or replace function public.crystal_top()
+returns table(place int, name text, rating int, stars int, mine boolean)
+language sql stable security definer set search_path = public as $$
+  with best as (select user_id, level, max(rating) r, max(stars) s, min(finished_at) filter (where rating > 0) t
+                  from public.crystal_runs where finished_at is not null group by user_id, level),
+       tot as (select user_id, sum(r)::int total, sum(s)::int st, max(t) t from best group by user_id having sum(r) > 0)
+  select (row_number() over (order by t.total desc, t.st desc, t.t))::int, coalesce(n.name, 'Исследователь ' || upper(substr(md5(t.user_id::text), 1, 4))),
+         t.total, t.st, t.user_id = auth.uid()
+  from tot t left join public.crystal_names n on n.user_id = t.user_id
+  order by 1 limit 10
+$$;
+
+create or replace function public.crystal_set_name(p_name text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare n text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g'));
+begin
+  if auth.uid() is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  if n !~ '^[A-Za-zА-Яа-яЁё0-9 ._-]{2,20}$' then return jsonb_build_object('ok', false, 'reason', 'bad_name'); end if;
+  insert into public.crystal_names(user_id, name, updated_at) values (auth.uid(), n, now())
+  on conflict (user_id) do update set name = excluded.name, updated_at = now();
+  return jsonb_build_object('ok', true, 'name', n);
+end $$;
+
+revoke all on function public.crystal_cfg(int), public.crystal_rating(int, boolean, int, int, int, int, int), public.crystal_start(int, date),
+  public.crystal_totals(uuid), public.crystal_finish(jsonb), public.crystal_my(), public.crystal_top(), public.crystal_set_name(text) from public, anon;
+grant execute on function public.crystal_start(int, date), public.crystal_finish(jsonb), public.crystal_my(), public.crystal_top(), public.crystal_set_name(text) to authenticated;
+grant execute on function public.crystal_cfg(int), public.crystal_rating(int, boolean, int, int, int, int, int) to authenticated;
+revoke all on function public.crystal_totals(uuid) from authenticated;

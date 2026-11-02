@@ -68,7 +68,8 @@
   /* ТОП-3 board: same game + same lesson/word set + same round size; the final test also needs the same words and task types */
   function boardKey(g) {
     try {
-      if (!g || ['cards', 'review', 'mixed'].includes(g.mode) || !/^[a-z]{2,12}$/.test(g.mode)) return null;
+      // «Кристальная экспедиция» — свой рейтинг уровней (crystal_*), общий ТОП-3 ей не нужен
+      if (!g || ['cards', 'review', 'mixed', 'crystals'].includes(g.mode) || !/^[a-z]{2,12}$/.test(g.mode)) return null;
       if (g.cloud && g.cloud.meta && g.cloud.meta.preview) return null;
       const m = g.cloud && g.cloud.meta || {};
       let part = null;
@@ -102,7 +103,7 @@
     origSave(g, finished);
     try { if (finished) window.LexigoMyLessons?.markDone(g); } catch { /* optimistic only */ }
     if (isPreview(g)) return;   // тренировка учителя: в облако ничего не отправляем
-    try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length) { g.cloud.sent = true; const snapshot = g; setTimeout(() => submit(snapshot, !!finished), finished ? 400 : 0); } } catch { /* never break practice */ }
+    try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length) { g.cloud.sent = true; const snapshot = { ...g, cloud: g.cloud }; setTimeout(() => submit(snapshot, !!finished), finished ? 400 : 0); } } catch { /* never break practice */ }
   };
 
   // rounds left in the middle (back button, another game, closing the tab) are kept as unfinished
@@ -286,6 +287,8 @@
   }
   /* готовность облака: { sb, user, profile } или null (гость, нет сети, облако не настроено) */
   let done; const ready = new Promise(r => { done = v => { r(v); done = () => {}; }; });
-  window.LexigoCloudSession = Object.freeze({ flush, ready, signedIn: () => !!user, setMeta: m => { nextMeta = m; }, toast });
+  window.LexigoCloudSession = Object.freeze({ flush, ready, signedIn: () => !!user, setMeta: m => { nextMeta = m; }, toast,
+    /* новая тренировка в той же игре (следующий уровень экспедиции): новая сессия с той же «меткой» */
+    restartRound: g => { if (g && g.cloud) g.cloud = { id: C.clientId(), events: [], meta: g.cloud.meta, sent: false, t0: performance.now(), poolHash: g.cloud.poolHash }; } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

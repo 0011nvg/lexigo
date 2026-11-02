@@ -193,7 +193,7 @@ try {
   assert.equal(xp2, xpOf(mail('masha')));
   assert.match(await s2.locator('.lexi-hero-title').innerText(), /Маша/);
   ok('second device: word progress and XP restored after sign-in; Lexi greets by name');
-  const lbRows = await s2.evaluate(async () => { const sb = await window.LexigoCloud.client(); const { data } = await sb.from('sessions').select('board_key').not('board_key', 'is', null).limit(1); const t = await sb.rpc('leaderboard_top', { p_board: data[0].board_key }); return t.data; });
+  const lbRows = await s2.evaluate(async () => { const sb = await window.LexigoCloud.client(); const { data } = await sb.from('sessions').select('board_key').like('board_key', 'quiz|%').limit(1); const t = await sb.rpc('leaderboard_top', { p_board: data[0].board_key }); return t.data; });
   assert.equal(lbRows[0].name, 'Маша К.'); assert.equal(lbRows[0].mine, true);
   ok('ТОП-3 is stored on the server: visible after reload and on another device');
 

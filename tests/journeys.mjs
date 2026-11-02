@@ -28,36 +28,19 @@ async function scenario(viewport){
  await page.locator('#back').click();
  await page.locator('#launcher:not(.hidden)').waitFor();
  await page.locator('[data-mode="crystals"]').click();
- await page.locator('#crystalBoard .crystal-tile').first().waitFor();
- await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/выкл/);
- await page.locator('#crystalMute').click();assert.match(await page.locator('#crystalMute').innerText(),/вкл/);
+ // 2026-11-02 v2: «Кристальная экспедиция» — карта уровней, ходы, цели, «Энергия Лекси» (подробно — tests/crystal-play.mjs)
+ await page.locator('.cq-level[data-level="1"]').click();
+ await page.locator('#cqBoard .cq-gem').first().waitFor();
+ const sound=page.locator('.cq-tools [data-pref="muted"]');await sound.click();assert.match(await sound.innerText(),/выключен/);await sound.click();assert.match(await sound.innerText(),/включён/);
  for(let i=0;i<3;i++){
-  const move=await page.evaluate(()=>gemPossible([...game.gemBoard])||[0,1]);
-  await page.locator('#crystalBoard .crystal-tile').nth(move[0]).click();
-  await page.locator('#crystalBoard .crystal-tile').nth(move[1]).click();
-  await page.waitForFunction(()=>!game.gemBusy,null,{timeout:10000});
+  if(await page.locator('.cq-word').count())break;
+  const move=await page.evaluate(()=>LexiCrystalEngine.findMove(LexiCrystalQuest.state()));
+  await page.locator('#cqBoard .cq-gem[data-i="'+move[0]+'"]').click();
+  await page.locator('#cqBoard .cq-gem[data-i="'+move[1]+'"]').click();
+  await page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.cq-word'),null,{timeout:10000});
  }
- assert.match(await page.locator('#crystalScore').innerText(),/очков/);
- assert.ok(await page.evaluate(()=>game.crystals>=0));
- assert.ok(await page.evaluate(()=>game.crystalPoints>=0));
- assert.ok(await page.locator('.crystal-question-overlay').isVisible(),'Vocabulary task automatically overlays gems');
- assert.ok(await page.locator('.crystal-arena').count(),'Gem board remains behind the task');
- for(let n=0;n<1;n++){
-  const state=await page.evaluate(()=>({w:game.words[game.index],mode:game.mode,index:game.index}));
-  const box=page.locator('#play');
-  if(await box.locator('.answerbox input').count()){
-   await box.locator('.answerbox input').fill(state.w.en);
-   await box.getByRole('button',{name:'Проверить'}).click();
-  }else if(await box.locator('.options').count()){
-   const answer=box.locator('.options button').filter({hasText:state.w.ru}).first();if(await answer.count())await answer.click();else await box.locator('.options button').first().click();
-  }else if(await box.getByRole('button',{name:'✓ Верно'}).count()){
-   const displayed=await box.locator('.question p').nth(1).innerText();
-   await box.getByRole('button',{name:displayed.trim()===state.w.ru?'✓ Верно':'✕ Неверно'}).click();
-  }else throw Error('Unexpected crystal exercise at '+n);
-  const next=box.getByRole('button',{name:/Следующее|Результат/});if(await next.count())await next.click();else await page.waitForFunction(prev=>game.index>prev||game.mode==='crystals'&&game.crystalPhase,state.index,{timeout:5000});
- }
- const state=await page.evaluate(()=>({index:game.index,length:game.words.length}));
- if(state.index<state.length)await page.locator('.crystal-arena').waitFor();
+ assert.ok(await page.evaluate(()=>LexiCrystalQuest.state().movesUsed>=1),'moves were made');
+ assert.match(await page.locator('.cq-goals').innerText(),/Набери 3000 очков/);
  await page.locator('#back').click();
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'true');

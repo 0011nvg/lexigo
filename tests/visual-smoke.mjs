@@ -26,7 +26,7 @@ async function run(name,viewport){
    assert.ok(await page.locator('#play').isVisible(),mode+' has play area');
    await capture(mode);
    if(mode==='pairs')assert.ok(await page.locator('#play .pair').count()>=8,'pairs populated');
-   if(mode==='crystals')assert.equal(await page.locator('#crystalBoard .crystal-tile').count(),36);
+   if(mode==='crystals'){await page.locator('.cq-level[data-level="1"]').click();assert.equal(await page.locator('#cqBoard .cq-gem').count(),49);await capture('crystals-board')}
    await page.locator('#back').click();
    assert.equal(await page.locator('#launcher').isVisible(),true,mode+' exited');
   }

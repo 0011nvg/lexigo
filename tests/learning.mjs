@@ -25,10 +25,8 @@ async function run(viewport){
   return {apostrophe:apostrophe.en,ambiguous:duplicates.length};
  });
  assert.equal(lexical.apostrophe,"Let's");
- assert.equal(await page.evaluate(()=>gemScore(3,1)),30);
- assert.equal(await page.evaluate(()=>gemScore(4,1)),60);
- assert.equal(await page.evaluate(()=>gemScore(5,1)),100);
- assert.equal(await page.evaluate(()=>gemScore(3,2)),60);
+ // 2026-11-02 v2: «Кристальная экспедиция» — движок crystal-engine.js (правила подробно — tests/crystal-engine.mjs)
+ assert.deepEqual(await page.evaluate(()=>{const E=LexiCrystalEngine,st=E.create(1,'learning');return [E.LEVELS.length,st.cells.length,st.moves,!!E.findMove(st),E.runs(st).length]}),[5,49,20,true,0]);
  // Select a small, unambiguous vocabulary sample.
  const sample=await page.evaluate(()=>{
   const distinct=[];const en=new Set(),ru=new Set();

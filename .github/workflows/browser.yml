@@ -20,8 +20,8 @@ jobs:
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
       - run: node tests/inventory.mjs
-      - run: node tests/crystal-policy.mjs
-      - run: node tests/crystal-webkit.mjs
+      - run: node tests/crystal-engine.mjs
+      - run: LEXIGO_WEBKIT=1 node tests/crystal-play.mjs
       - run: node tests/progress-model.mjs
       - run: node tests/dashboard.mjs
       - run: node tests/results.mjs
@@ -41,7 +41,7 @@ jobs:
         if: success()
         run: |
           mkdir -p static-preview
-          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js word-builder.js my-lessons.js lessons.css game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css print.css lexigo-plus.js personal.js account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html manifest.webmanifest static-preview/
+          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js word-builder.js my-lessons.js lessons.css crystal-engine.js crystal-quest.js crystal.css game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css print.css lexigo-plus.js personal.js account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html manifest.webmanifest static-preview/
           cp -r assets vocabulary vendor static-preview/
           printf '%s\n' 'LEXI Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'Cloud accounts stay off until config.js is filled in (see docs/CLOUD-SETUP.md).' > static-preview/README.txt
       - name: Upload isolated static preview (no deployment)
@@ -88,3 +88,7 @@ jobs:
         run: |
           . /tmp/stack.env
           node tests/e2e/email-flow.mjs
+      - name: Crystal expedition rating (browser + server)
+        run: |
+          . /tmp/stack.env
+          node tests/e2e/crystal-rating.mjs

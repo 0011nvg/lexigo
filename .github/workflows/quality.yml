@@ -16,3 +16,4 @@ jobs:
       - run: node tests/verify.mjs
       - run: node tests/inventory.mjs
       - run: node tests/word-builder.mjs
+      - run: node tests/crystal-engine.mjs

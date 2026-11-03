@@ -93,3 +93,22 @@ body.calm .lexi-hero::after{animation:none}
 @media(min-width:901px){.lexi-hero>.lexi-hero-art .lexi-live{transform:translateX(-54px)}}
 /* On phones, settle Lexi lower without changing the desktop layout. */
 @media(max-width:640px){.lexi-hero>.lexi-hero-art{transform:translateY(36px)}}
+/* Anchor the mobile mascot inside the card and reserve room for the copy. */
+@media(max-width:640px){
+ .lexi-hero>.lexi-hero-art{position:absolute!important;float:none!important;right:4px;bottom:0;margin:0!important;transform:none!important;width:clamp(118px,43%,162px)!important}
+ .lexi-hero>.lexi-hero-art .lexi-live{width:100%;margin:0}
+ .lexi-hero .lexi-hero-title,.lexi-hero .lexi-hero-sub{max-width:calc(100% - clamp(118px,43%,162px))}
+ .lexi-hero .hero-go{max-width:calc(100% - clamp(118px,43%,162px));box-sizing:border-box}
+ .lexi-hero .hero-go small{white-space:normal;overflow-wrap:anywhere}
+ .lexi-hero .lexi-live-bubble{left:auto;right:0;top:-44px;bottom:auto;max-width:140px;transform-origin:100% 100%}
+}
+/* Slightly more lively, while remaining calm and respecting reduced motion. */
+@keyframes lexi-welcome-idle{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(-1deg)}}
+.lexi-hero .lexi-live-body{animation-name:lexi-welcome-idle;animation-duration:5.4s}
+.lexi-hero .lexi-live-body.hop{animation-name:lx-hop;animation-duration:.7s}
+.lexi-hero .lexi-live-body.wave{animation-name:lx-wave;animation-duration:1.15s}
+.lexi-hero .lexi-live-body.tilt{animation-name:lx-tilt}
+.lexi-hero::before{background:radial-gradient(circle at 1px 1px,rgba(238,255,181,.24) 1px,transparent 1.8px) 0 0/18px 18px;filter:drop-shadow(0 0 3px rgba(215,255,123,.35))}
+@keyframes lexi-hero-glints{from{opacity:.35}to{opacity:.85}}
+@media(prefers-reduced-motion:reduce){.lexi-hero .lexi-live-body{animation:none!important}}
+body.calm .lexi-hero .lexi-live-body{animation:none}

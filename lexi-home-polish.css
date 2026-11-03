@@ -45,3 +45,16 @@ body.calm .lexi-streak b::before,body.calm .lexi-streak b::after{animation:none}
 .course-coming{cursor:default}
 .course-coming:hover{transform:none!important;box-shadow:var(--w-shadow)!important}
 .course-coming .course-caption>span{background:#fff!important;color:var(--w-ink)!important;box-shadow:none!important}
+
+/* Landscape catalog: same complete travel scene on desktop and phones. */
+#courseCards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important}
+#courseCards .course-card{height:auto!important;min-height:0!important;aspect-ratio:2/1!important;background-size:100% 100%!important;background-position:center!important}
+#courseCards .course-card.grade-2,#courseCards .course-card.grade-3,#courseCards .course-card.grade-4{background-image:url('assets/soft-premium-worlds-mobile.webp')!important;background-size:100% 300%!important}
+#courseCards .grade-2{background-position:center top!important}#courseCards .grade-3{background-position:center center!important}#courseCards .grade-4{background-position:center bottom!important}
+#courseCards .course-card.teen{background-image:var(--travel-art)!important}
+#courseCards .grade-10{--travel-art:url('assets/lexi-travel-10-v2.webp')}#courseCards .grade-11{--travel-art:url('assets/lexi-travel-11-v2.webp')}
+#courseCards .grade-5{--travel-art:url('assets/lexi-travel-5-v2.webp')}#courseCards .grade-6{--travel-art:url('assets/lexi-travel-6-v2.webp')}#courseCards .grade-7{--travel-art:url('assets/lexi-travel-7-v2.webp')}#courseCards .grade-8{--travel-art:url('assets/lexi-travel-8-v2.webp')}#courseCards .grade-9{--travel-art:url('assets/lexi-travel-9-v2.webp')}
+#courseCards .course-coming .course-caption>span{font-size:12px!important;width:auto!important;height:auto!important;padding:10px 14px!important}
+#courseCards .course-coming .course-caption>span:after{content:none!important}
+@media(max-width:700px){#courseCards{grid-template-columns:1fr!important}}
+#courseCards .course-coming .course-caption>span{background:rgba(255,255,255,.8)!important;color:#334269!important;border:1px solid rgba(51,66,105,.18);box-shadow:none!important}

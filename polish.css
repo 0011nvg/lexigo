@@ -425,3 +425,4 @@ h1,h2,h3,h4,p,small,b,strong,span,label,li,a,button,.option{hyphens:manual;word-
 .result-round-bar{display:block;height:8px;margin-top:8px;border-radius:8px;background:#e1e8f8;overflow:hidden}
 .result-round-bar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--w-mint),var(--w-lime))}
 .wb-mode small{white-space:pre-line}
+@media (min-width:761px){.mode strong{font-size:15px;letter-spacing:-.005em}}

@@ -1,5 +1,5 @@
 window.LexigoDashboard=(()=>{
- const icons={home:'M3 10 12 3l9 7v11h-6v-7H9v7H3z',games:'M7 7h10c3 0 5 11 3 12-2 1-4-3-5-3H9c-1 0-3 4-5 3C2 18 4 7 7 7ZM7 10v5m-2-2h4m7-2h.01m2 3h.01',awards:'M7 3h10v6a5 5 0 0 1-10 0zM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v6m-5 1h10',profile:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-3a8 8 0 0 1 16 0v3'};
+ const icons={home:'M3.5 10.5 12 3.7l8.5 6.8v9a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z',games:'M7.4 7.5h9.2c2.1 0 3.3 1.6 3.8 3.8l1.1 4.7c.5 2.2-1.4 3.7-3.2 2.2l-2.5-2H8.2l-2.5 2c-1.8 1.5-3.7 0-3.2-2.2l1.1-4.7c.5-2.2 1.7-3.8 3.8-3.8zM7.5 10v4M5.5 12h4M16 11h.01M18 13h.01',awards:'M8 3.5h8v4.3a4 4 0 0 1-8 0zM8 5H4.5v1.5c0 2.4 1.5 4 4 4M16 5h3.5v1.5c0 2.4-1.5 4-4 4M12 12v4.5M8 20h8M9.5 16.5h5',profile:'M12 12a4.3 4.3 0 1 0 0-8.6 4.3 4.3 0 0 0 0 8.6zM4.5 20.5v-1a7.5 7.5 0 0 1 15 0v1'};
  const icon=id=>'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+icons[id]+'"/></svg>';
  const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
  const link=(text,path,cls)=>{const a=el('a',text,cls);a.href='#'+path;return a};

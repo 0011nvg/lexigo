@@ -116,7 +116,7 @@
     const row = el('div', 'class-picker'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Выбери свой класс');
     for (const b of BOOKS) {
       const k = btn(String(b.grade), () => onPick(b.grade), 'class-chip' + (b.grade === current ? ' on' : '') + (b.grade === suggested && !current ? ' hint' : ''));
-      k.setAttribute('aria-label', b.grade + ' класс · Spotlight ' + b.grade); if (b.grade === current) k.setAttribute('aria-pressed', 'true');
+      k.setAttribute('aria-label', b.grade + ' класс'); if (b.grade === current) k.setAttribute('aria-pressed', 'true');
       row.append(k);
     }
     return row;
@@ -128,7 +128,7 @@
     const cls = sectionCard('desk-class', 'Мой класс');
     if (g) {
       const b = bookOf(g); const body = el('div', 'desk-row');
-      body.append(el('b', 'desk-big', 'Spotlight ' + g), linkBtn('Открыть уроки →', '#/course/' + g + '/0', 'btn small'));
+      body.append(el('b', 'desk-big', g + ' класс'), linkBtn('Открыть уроки →', '#/course/' + g + '/0', 'btn small'));
       const change = btn('Сменить класс', () => { change.hidden = true; cls.append(classPicker(g, null, ng => { setMyClass(ng); toast('Готово! Твой класс — ' + ng + '.', 'happy'); })); }, 'text-button');
       cls.append(body, el('p', 'desk-note', b.sections.reduce((n, s) => n + s.words.length, 0) + ' слов · ' + modulesOf(b).length + ' модулей'), change);
     } else {
@@ -140,7 +140,7 @@
     // 2. continue
     if (last) {
       const info = pathInfo(last.path); const c = sectionCard('desk-continue', 'Продолжить обучение');
-      c.append(el('p', 'desk-where', 'Spotlight ' + info.grade + ' · ' + info.module), el('p', 'desk-lesson', info.title));
+      c.append(el('p', 'desk-where', info.grade + ' класс' + ' · ' + info.module), el('p', 'desk-lesson', info.title));
       const sel = selectionLabel(last.path);
       if (last.mode && MODE_NAMES[last.mode]) c.append(el('p', 'desk-note', 'Последняя тренировка: ' + MODE_NAMES[last.mode] + (last.finished ? ' · завершена ✓' : ' · не завершена') + (sel ? ' · ' + sel : '')));
       else if (sel) c.append(el('p', 'desk-note', 'В играх: ' + sel));
@@ -163,7 +163,7 @@
         for (const f of favList) {
           const b = bookOf(f.g), li = el('li'); const a = linkBtn('', '#/course/' + f.g + '/' + f.m, 'fav-link');
           a.append(el('span', 'fav-grade', f.g), el('span', null, modulesOf(b)[f.m]));
-          const x = btn('×', () => { toggleFav(f.g, f.m); refreshAll(); }, 'fav-x'); x.setAttribute('aria-label', 'Убрать из моих модулей: Spotlight ' + f.g + ', ' + modulesOf(b)[f.m]); x.title = 'Убрать';
+          const x = btn('×', () => { toggleFav(f.g, f.m); refreshAll(); }, 'fav-x'); x.setAttribute('aria-label', 'Убрать из моих модулей: ' + f.g + ' класс' + ', ' + modulesOf(b)[f.m]); x.title = 'Убрать';
           li.append(a, x); ul.append(li);
         }
         c.append(ul);
@@ -175,8 +175,8 @@
       const c = sectionCard('desk-hard', 'Мои сложные слова');
       if (hardTotal) {
         c.append(el('p', 'desk-where', hardTotal + ' ' + plural(hardTotal, 'слово', 'слова', 'слов') + ' для повторения'));
-        if (groups.length === 1) { const x = groups[0]; c.append(el('p', 'desk-note', 'Spotlight ' + x.g + ' · ' + x.module), btn('Повторить ★', () => repeatHard(x.g, x.mi))); }
-        else { const ul = el('ul', 'hard-list'); for (const x of groups.slice(0, 6)) { const li = el('li'); li.append(el('span', null, 'Spotlight ' + x.g + ' · ' + x.module + ' — ' + x.words.length), btn('Повторить', () => repeatHard(x.g, x.mi), 'btn small')); ul.append(li); } c.append(ul); }
+        if (groups.length === 1) { const x = groups[0]; c.append(el('p', 'desk-note', x.g + ' класс' + ' · ' + x.module), btn('Повторить ★', () => repeatHard(x.g, x.mi))); }
+        else { const ul = el('ul', 'hard-list'); for (const x of groups.slice(0, 6)) { const li = el('li'); li.append(el('span', null, x.g + ' класс' + ' · ' + x.module + ' — ' + x.words.length), btn('Повторить', () => repeatHard(x.g, x.mi), 'btn small')); ul.append(li); } c.append(ul); }
       } else c.append(el('p', 'desk-note', 'Отмечай ☆ трудные слова в списке слов урока — потом их можно повторить отдельно.'));
       desk.append(c);
     }
@@ -191,15 +191,15 @@
       const info = pathInfo(last.path); const go = actions?.querySelector('.hero-go');
       if (go && info) {
         go.href = '#' + last.path + (last.mode ? '/play/' + last.mode : '');
-        go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = 'Spotlight ' + info.grade + ' · ' + info.title;
+        go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = info.grade + ' класс' + ' · ' + info.title;
         actions.querySelector('.btn.secondary')?.remove();
       }
     } else if (!g) {
-      if (sub) sub.textContent = 'Я помогу выучить слова из твоего учебника Spotlight. Выбери свой класс — и начнём!';
+      if (sub) sub.textContent = 'Я помогу выучить английские слова. Выбери свой класс — и начнём!';
       const go = actions?.querySelector('.hero-go');
       if (go) { go.href = '#/home'; go.innerHTML = '<span>Выбрать класс</span><small>2–9 классы</small>'; go.onclick = e => { e.preventDefault(); e.stopPropagation(); const p = host.querySelector('.class-picker button'); p?.scrollIntoView({ block: 'center', behavior: 'smooth' }); p?.focus({ preventScroll: true }); }; }
     } else {
-      const go = actions?.querySelector('.hero-go'); if (go) { go.href = '#/course/' + g + '/0'; go.innerHTML = '<span>Начать</span><small></small>'; go.querySelector('small').textContent = 'Spotlight ' + g + ' · выбери урок'; }
+      const go = actions?.querySelector('.hero-go'); if (go) { go.href = '#/course/' + g + '/0'; go.innerHTML = '<span>Начать</span><small></small>'; go.querySelector('small').textContent = g + ' класс' + ' · выбери урок'; }
     }
   }
   function decorateHome() {

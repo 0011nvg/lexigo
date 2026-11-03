@@ -363,7 +363,7 @@
     let who = ''; try { who = (window.LexigoAccountHint && window.LexigoAccountHint.name()) || ''; } catch { who = ''; }
     const title = el('h2', 'lexi-hero-title');
     if (who) { title.append(base + ', ' + who + '!'); } else { title.append(base + '! ', el('span', 'lexi-hero-name', 'Я Лекси.')); }
-    const sub = quest.lastLesson ? (who ? 'Это я, Лекси. Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Продолжим путешествие? Выполни миссии дня и открой сундук.') : (who ? 'Это я, Лекси. Помогу выучить слова из твоего Spotlight: узнать, вспомнить и проверить себя.' : 'Я помогу выучить слова из твоего учебника Spotlight: узнать, вспомнить и проверить себя. Выбери учебник ниже.');
+    const sub = quest.lastLesson ? (who ? 'Это я, Лекси. Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Продолжим путешествие? Выполни миссии дня и открой сундук.') : (who ? 'Это я, Лекси. Помогу выучить английские слова: узнать, вспомнить и проверить себя.' : 'Я помогу выучить английские слова: узнать, вспомнить и проверить себя. Выбери учебник ниже.');
     txt.append(el('p', 'eyebrow', 'MY LEXI · УЧИМ АНГЛИЙСКИЙ ВМЕСТЕ'), title, el('p', 'lexi-hero-sub', sub));
     const actions = el('div', 'lexi-hero-actions');
     if (quest.lastLesson) {
@@ -396,8 +396,8 @@
   function lessonLabel(path) {
     const m = path.match(/^\/lesson\/(\d+)\/(m?)(\d+)$/); if (!m) return '';
     const b = DB.books.find(x => String(x.grade) === m[1]); if (!b) return '';
-    if (m[2]) return 'Spotlight ' + b.grade + ' · ' + ([...new Set(b.sections.map(s => s.module))][Number(m[3])] || '');
-    return 'Spotlight ' + b.grade + ' · ' + (b.sections[Number(m[3])]?.title || '');
+    if (m[2]) return b.grade + ' класс · ' + ([...new Set(b.sections.map(s => s.module))][Number(m[3])] || '');
+    return b.grade + ' класс · ' + (b.sections[Number(m[3])]?.title || '');
   }
   function bookStats(b) {
     const words = b.sections.flatMap(s => s.words).filter(isLexicalEntry);

@@ -364,7 +364,7 @@
     const title = el('h2', 'lexi-hero-title');
     if (who) { title.append(base + ', ' + who + '!'); } else { title.append(base + '! ', el('span', 'lexi-hero-name', 'Я Лекси.')); }
     const sub = quest.lastLesson ? (who ? 'Это я, Лекси. Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Продолжим путешествие? Выполни миссии дня и открой сундук.') : (who ? 'Это я, Лекси. Помогу выучить слова из твоего Spotlight: узнать, вспомнить и проверить себя.' : 'Я помогу выучить слова из твоего учебника Spotlight: узнать, вспомнить и проверить себя. Выбери учебник ниже.');
-    txt.append(el('p', 'eyebrow', 'MY LEXI · ТВОЙ ПОМОЩНИК'), title, el('p', 'lexi-hero-sub', sub));
+    txt.append(el('p', 'eyebrow', 'MY LEXI · УЧИМ АНГЛИЙСКИЙ ВМЕСТЕ'), title, el('p', 'lexi-hero-sub', sub));
     const actions = el('div', 'lexi-hero-actions');
     if (quest.lastLesson) {
       const label = lessonLabel(quest.lastLesson);

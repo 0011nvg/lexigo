@@ -145,7 +145,7 @@
       if (last.mode && MODE_NAMES[last.mode]) c.append(el('p', 'desk-note', 'Последняя тренировка: ' + MODE_NAMES[last.mode] + (last.finished ? ' · завершена ✓' : ' · не завершена') + (sel ? ' · ' + sel : '')));
       else if (sel) c.append(el('p', 'desk-note', 'В играх: ' + sel));
       const row = el('div', 'desk-actions');
-      if (info.whole && last.mode) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Прогресс пройденных слов сохранён; незавершённый раунд начнётся заново.')); }
+      if (info.whole && last.mode) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Пройденные слова сохранены. При возвращении игра подберёт следующие слова; результат незавершённого раунда не сохраняется.')); }
       else if (last.mode && !last.finished) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Игра начнётся сначала — незаконченная игра не сохраняется.')); }
       else if (last.mode) {
         const order = STAGE_ORDER(), i = order.indexOf(last.mode), next = i >= 0 ? order[i + 1] : null;
@@ -190,7 +190,7 @@
       if (sub) sub.textContent = 'С возвращением! Продолжим учить слова?';
       const info = pathInfo(last.path); const go = actions?.querySelector('.hero-go');
       if (go && info) {
-        go.href = '#' + last.path + (last.mode && (info.whole || !last.finished) ? '/play/' + last.mode : '');
+        go.href = '#' + last.path + (last.mode ? '/play/' + last.mode : '');
         go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = 'Spotlight ' + info.grade + ' · ' + info.title;
         actions.querySelector('.btn.secondary')?.remove();
       }

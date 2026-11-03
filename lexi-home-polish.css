@@ -64,3 +64,7 @@ body.calm .lexi-streak b::before,body.calm .lexi-streak b::after{animation:none}
 .lexi-hero .eyebrow{letter-spacing:.12em}
 @media(max-width:640px){.lexi-hero::after{width:55%;height:35%;right:0;opacity:.12}}
 @media(min-width:901px){.lexi-hero>.lexi-hero-art .lexi-live{width:min(125%,360px);margin-right:0}}
+/* Keep the welcome and the neighbouring mission panel level on wide screens. */
+@media(min-width:901px){.lexi-hero{align-self:stretch;height:auto!important;min-height:340px!important}}
+.lexi-hero::after{content:none!important}
+.lexi-hero{background:radial-gradient(ellipse at 83% 28%,rgba(139,202,255,.23),transparent 38%),radial-gradient(ellipse at 30% 100%,rgba(102,136,255,.18),transparent 50%),linear-gradient(125deg,#182e75 0%,#264bc7 58%,#3770f8 100%)!important}

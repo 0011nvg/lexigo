@@ -58,3 +58,9 @@ body.calm .lexi-streak b::before,body.calm .lexi-streak b::after{animation:none}
 #courseCards .course-coming .course-caption>span:after{content:none!important}
 @media(max-width:700px){#courseCards{grid-template-columns:1fr!important}}
 #courseCards .course-coming .course-caption>span{background:rgba(255,255,255,.8)!important;color:#334269!important;border:1px solid rgba(51,66,105,.18);box-shadow:none!important}
+/* A quiet travel motif connects the welcome to the illustrated class cards. */
+.lexi-hero{background:radial-gradient(ellipse at 82% 24%,rgba(111,193,255,.30),transparent 34%),linear-gradient(125deg,#182e75 0%,#264bc7 55%,#3770f8 100%)!important}
+.lexi-hero::after{content:"";position:absolute;right:3%;bottom:0;width:52%;height:42%;opacity:.15;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 160'%3E%3Cpath d='M0 150h400M20 150V98h28v52m9 0V72h35v78m10 0V47h27v103m8 0V91h32v59m14 0V65h38v85m13 0V31h25v119m13 0V83h38v67m12 0V55h28v95m9 0V96h41v54M246 31V13' fill='none' stroke='%23d9f0ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center bottom/contain no-repeat}
+.lexi-hero .eyebrow{letter-spacing:.12em}
+@media(max-width:640px){.lexi-hero::after{width:55%;height:35%;right:0;opacity:.12}}
+@media(min-width:901px){.lexi-hero>.lexi-hero-art .lexi-live{width:min(125%,360px);margin-right:0}}

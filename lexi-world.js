@@ -364,13 +364,12 @@
     const title = el('h2', 'lexi-hero-title');
     if (who) { title.append(base + ', ' + who + '!'); } else { title.append(base + '! ', el('span', 'lexi-hero-name', 'Я Лекси.')); }
     const sub = quest.lastLesson ? (who ? 'Это я, Лекси. Продолжим путешествие? Выполни миссии дня и открой сундук.' : 'Продолжим путешествие? Выполни миссии дня и открой сундук.') : (who ? 'Это я, Лекси. Помогу выучить слова из твоего Spotlight: узнать, вспомнить и проверить себя.' : 'Я помогу выучить слова из твоего учебника Spotlight: узнать, вспомнить и проверить себя. Выбери учебник ниже.');
-    txt.append(el('p', 'eyebrow', 'LEXI · МИР АНГЛИЙСКИХ СЛОВ'), title, el('p', 'lexi-hero-sub', sub));
+    txt.append(el('p', 'eyebrow', 'MY LEXI · ТВОЙ ПОМОЩНИК'), title, el('p', 'lexi-hero-sub', sub));
     const actions = el('div', 'lexi-hero-actions');
     if (quest.lastLesson) {
       const label = lessonLabel(quest.lastLesson);
-      const go = el('a', 'btn hero-go'); go.href = '#' + quest.lastLesson + '/play/mixed'; go.innerHTML = '<span>Тренировка дня</span><small></small>'; go.querySelector('small').textContent = label;
-      const cont = el('a', 'btn secondary'); cont.href = '#' + quest.lastLesson; cont.textContent = 'Открыть урок';
-      actions.append(go, cont);
+      const go = el('a', 'btn hero-go'); go.href = '#' + quest.lastLesson; go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = label;
+      actions.append(go);
     } else { const go = el('a', 'btn hero-go'); go.href = '#/course/' + (DB.books[0].grade) + '/0'; go.innerHTML = '<span>Начать путешествие</span><small>Выбери учебник и урок</small>'; actions.append(go); }
     txt.append(actions);
     const art = el('div', 'lexi-hero-art');

@@ -41,6 +41,8 @@
     return ql && pathInfo(ql) ? { path: ql, mode: null, finished: false, at: 0 } : null;
   }
   function pathInfo(path) {
+    const whole = String(path).match(/^\/book\/(\d+)$/);
+    if (whole) { const b = bookOf(whole[1]); return b ? { grade: b.grade, module: 'Весь учебник', unitKey: '__book', title: 'Все слова учебника', whole: true } : null; }
     const m = String(path).match(PATH_RE); if (!m) return null;
     const b = bookOf(m[1]); if (!b) return null; const ms = modulesOf(b);
     if (m[2]) { const name = ms[Number(m[3])]; return name == null ? null : { grade: b.grade, module: name, mi: Number(m[3]), unitKey: '__all', title: 'Все слова модуля' }; }
@@ -78,7 +80,7 @@
   let lastGame = null, mistakes = new Set();
   function noteGame() {
     if (typeof game === 'undefined' || !game || game.assignmentId) return;
-    if (game !== lastGame) { lastGame = game; mistakes = new Set(); const path = currentPath(); if (path) writeJSON(LAST_KEY, { path, mode: game.mode, finished: false, at: Date.now() }); }
+    if (game !== lastGame) { lastGame = game; mistakes = new Set(); const wb = window.LexigoWholeBook?.current; const path = wb && bookOf(wb.grade) ? '/book/' + wb.grade : currentPath(); if (path) writeJSON(LAST_KEY, { path, mode: game.mode, finished: false, at: Date.now() }); }
   }
   function noteFinished() {
     const v = readJSON(LAST_KEY, null); if (!v || typeof game === 'undefined' || !game || v.mode !== game.mode || v.finished) return;
@@ -143,13 +145,14 @@
       if (last.mode && MODE_NAMES[last.mode]) c.append(el('p', 'desk-note', 'Последняя тренировка: ' + MODE_NAMES[last.mode] + (last.finished ? ' · завершена ✓' : ' · не завершена') + (sel ? ' · ' + sel : '')));
       else if (sel) c.append(el('p', 'desk-note', 'В играх: ' + sel));
       const row = el('div', 'desk-actions');
-      if (last.mode && !last.finished) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Игра начнётся сначала — незаконченная игра не сохраняется.')); }
+      if (info.whole && last.mode) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Прогресс пройденных слов сохранён; незавершённый раунд начнётся заново.')); }
+      else if (last.mode && !last.finished) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Игра начнётся сначала — незаконченная игра не сохраняется.')); }
       else if (last.mode) {
         const order = STAGE_ORDER(), i = order.indexOf(last.mode), next = i >= 0 ? order[i + 1] : null;
         if (next) row.append(linkBtn('Дальше: ' + MODE_NAMES[next], '#' + last.path + '/play/' + next, 'btn'));
         row.append(linkBtn('Повторить', '#' + last.path + '/play/' + last.mode, next ? 'btn secondary' : 'btn'));
       } else row.append(linkBtn('Продолжить', '#' + last.path, 'btn'));
-      row.append(linkBtn('К уроку', '#' + last.path, 'text-button'));
+      row.append(linkBtn(info.whole ? 'К учебнику' : 'К уроку', info.whole ? '#/course/' + info.grade + '/0' : '#' + last.path, 'text-button'));
       c.append(row); desk.append(c);
     }
     // 3. favourite modules
@@ -187,9 +190,9 @@
       if (sub) sub.textContent = 'С возвращением! Продолжим учить слова?';
       const info = pathInfo(last.path); const go = actions?.querySelector('.hero-go');
       if (go && info) {
-        go.href = '#' + last.path + (last.mode && !last.finished ? '/play/' + last.mode : '');
+        go.href = '#' + last.path + (last.mode && (info.whole || !last.finished) ? '/play/' + last.mode : '');
         go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = 'Spotlight ' + info.grade + ' · ' + info.title;
-        const daily = actions.querySelector('.btn.secondary'); if (daily) { daily.href = '#' + last.path + '/play/mixed'; daily.textContent = 'Тренировка дня'; }
+        actions.querySelector('.btn.secondary')?.remove();
       }
     } else if (!g) {
       if (sub) sub.textContent = 'Я помогу выучить слова из твоего учебника Spotlight. Выбери свой класс — и начнём!';

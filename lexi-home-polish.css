@@ -68,3 +68,17 @@ body.calm .lexi-streak b::before,body.calm .lexi-streak b::after{animation:none}
 @media(min-width:901px){.lexi-hero{align-self:stretch;height:auto!important;min-height:340px!important}}
 .lexi-hero::after{content:none!important}
 .lexi-hero{background:radial-gradient(ellipse at 83% 28%,rgba(139,202,255,.23),transparent 38%),radial-gradient(ellipse at 30% 100%,rgba(102,136,255,.18),transparent 50%),linear-gradient(125deg,#182e75 0%,#264bc7 58%,#3770f8 100%)!important}
+/* A little more presence for Lexi, with quiet lime glints on the blue background. */
+@media(min-width:901px){
+ .lexi-hero{grid-template-columns:minmax(0,1fr) minmax(245px,43%)!important}
+ .lexi-hero>.lexi-hero-art .lexi-live{width:min(145%,410px);margin-right:0}
+ .lexi-hero-title{font-size:clamp(30px,3vw,42px)!important;overflow-wrap:anywhere}
+ .lexi-hero .hero-go{padding:16px 25px!important;min-width:220px;max-width:100%}
+ .lexi-hero .hero-go span{font-size:19px}.lexi-hero .hero-go small{font-size:13px;line-height:1.3}
+}
+.lexi-hero::after{content:""!important;position:absolute;inset:0;width:auto;height:auto;pointer-events:none;z-index:0;background:radial-gradient(circle at 11% 17%,#dbff96 0 1.5px,transparent 2.5px),radial-gradient(circle at 41% 13%,#d5ff92 0 1.4px,transparent 2.7px),radial-gradient(circle at 74% 19%,#e8ffb8 0 1.8px,transparent 3px),radial-gradient(circle at 88% 39%,#d9ff9c 0 1.4px,transparent 2.8px),radial-gradient(circle at 36% 79%,#e3ffa6 0 1.5px,transparent 2.8px),radial-gradient(circle at 69% 67%,#dfff95 0 1.2px,transparent 2.5px)!important;opacity:.5;animation:lexi-hero-glints 4.8s ease-in-out infinite alternate}
+@keyframes lexi-hero-glints{from{opacity:.22}to{opacity:.68}}
+@media(max-width:640px){.lexi-hero::after{inset:0;width:auto;height:auto;right:0;opacity:.4}}
+@media(prefers-reduced-motion:reduce){.lexi-hero::after{animation:none!important}}
+body.calm .lexi-hero::after{animation:none}
+@media(min-width:901px){.lexi-hero>.lexi-hero-art .lexi-live{width:min(135%,380px);margin-right:2%}.lexi-hero-title{font-size:clamp(29px,2.7vw,39px)!important}}

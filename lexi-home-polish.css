@@ -1,0 +1,47 @@
+/* Home refinements, using the existing Lexi palette and components. */
+.lexi-hero{background:radial-gradient(ellipse at 82% 26%,rgba(116,190,255,.25),transparent 32%),linear-gradient(125deg,#152761 0%,#243fbb 53%,#315ff6 100%)!important;min-height:340px!important}
+.lexi-hero>.lexi-hero-text{min-width:0;padding-bottom:30px;overflow-wrap:anywhere}
+.lexi-hero-title{line-height:1.12!important}
+.lexi-hero-art:before{content:"";position:absolute;inset:18% 2% 6%;background:radial-gradient(ellipse,rgba(161,217,255,.24),transparent 68%);pointer-events:none}
+.lexi-hero-art .lexi-live-body img{filter:drop-shadow(0 12px 16px rgba(10,16,52,.32))!important}
+.lexi-streak b::before{content:"";width:22px;height:28px;right:-7px;top:-10px;background:url('assets/lexi-flame.svg') center/contain no-repeat}
+.lexi-streak b{background:#fff2e5;box-shadow:inset 0 0 0 1px #ffe1c6}
+.course-card.teen::after{content:"";position:absolute;right:2%;top:14%;width:43%;height:72%;background:url('assets/lexi-course-art.svg') center/contain no-repeat;pointer-events:none}
+.course-card.teen .course-caption{z-index:2;pointer-events:none}
+.course-card.teen .teen-num{font-size:60px;right:14px;bottom:8px;color:rgba(255,255,255,.23)}
+.course-card.teen .course-caption h3,.course-card.teen .course-caption p{max-width:58%}
+.bottom-nav a{transition:background-color .18s ease,color .18s ease,transform .18s ease}
+.bottom-nav a svg{width:24px;height:24px;flex:none;transition:transform .18s ease}
+.bottom-nav a:hover svg{transform:translateY(-2px)}
+.bottom-nav a:focus-visible,.course-card:focus-visible{outline:3px solid #2c56f5;outline-offset:3px}
+@media(max-width:640px){.lexi-hero{min-height:0!important;padding:22px 18px!important}.lexi-hero>.lexi-hero-text{padding-bottom:0}.course-card.teen::after{right:1%;top:10%;width:44%;height:78%}.course-card.teen .teen-num{font-size:48px}}
+@media(prefers-reduced-motion:reduce){.bottom-nav a,.bottom-nav a svg,.course-card{transition:none!important}.bottom-nav a:hover svg{transform:none}}
+
+/* Travel illustrations extend the existing Spotlight 2–4 collection. */
+.course-card.teen{background-image:var(--travel-art)!important;background-size:auto 100%!important;background-position:center!important;background-repeat:no-repeat!important;background-color:#e8efff!important}
+.course-card.grade-5{--travel-art:url('assets/lexi-travel-5.webp')}
+.course-card.grade-6{--travel-art:url('assets/lexi-travel-6.webp')}
+.course-card.grade-7{--travel-art:url('assets/lexi-travel-7.webp')}
+.course-card.grade-8{--travel-art:url('assets/lexi-travel-8.webp')}
+.course-card.grade-9{--travel-art:url('assets/lexi-travel-9.webp')}
+.course-card.teen::before,.course-card.teen::after,.course-card.teen .teen-num{display:none!important}
+.course-card.teen .course-caption{background:linear-gradient(90deg,rgba(255,255,255,.84),rgba(255,255,255,.34) 50%,transparent 76%)!important}
+.course-card.teen .course-caption h3{color:var(--w-ink)!important}
+.course-card.teen .course-caption p{color:var(--w-ink2)!important;font-weight:700}
+.course-card.teen .book-meter span{color:var(--w-ink2)!important}
+.course-card.teen .book-meter i{background:linear-gradient(90deg,var(--w-mint) var(--p,0%),#dbe3f1 var(--p,0%))}
+.course-card.teen .course-caption>span{background:var(--w-blue)!important;color:white!important}
+@media(min-width:901px){.lexi-hero{align-self:start;height:390px!important;min-height:0!important}.lexi-hero>.lexi-hero-art .lexi-live{width:min(142%,420px);margin-right:-12%}}
+.lexi-streak b::before{filter:drop-shadow(0 0 3px rgba(255,157,41,.65));animation:lexi-flame-glow 2.8s ease-in-out infinite}
+.lexi-streak b::after{content:'✦';position:absolute;right:-13px;top:-14px;color:#f6a525;font-size:12px;line-height:1;animation:lexi-sparkle 2.8s ease-in-out infinite}
+@keyframes lexi-flame-glow{0%,100%{filter:drop-shadow(0 0 2px rgba(255,157,41,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,157,41,.9))}}
+@keyframes lexi-sparkle{0%,100%{opacity:.45;transform:scale(.8)}50%{opacity:1;transform:scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.lexi-streak b::before,.lexi-streak b::after{animation:none!important}}
+body.calm .lexi-streak b::before,body.calm .lexi-streak b::after{animation:none}
+
+/* Non-interactive placeholders until vocabulary for these grades is available. */
+.course-card.grade-10{--travel-art:url('assets/lexi-travel-8.webp')}
+.course-card.grade-11{--travel-art:url('assets/lexi-travel-9.webp')}
+.course-coming{cursor:default}
+.course-coming:hover{transform:none!important;box-shadow:var(--w-shadow)!important}
+.course-coming .course-caption>span{background:#fff!important;color:var(--w-ink)!important;box-shadow:none!important}

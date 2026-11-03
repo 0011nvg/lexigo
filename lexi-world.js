@@ -374,7 +374,7 @@
     txt.append(actions);
     const art = el('div', 'lexi-hero-art');
     if (window.LexiLive) art.append(window.LexiLive.art());
-    else { const img = el('img'); img.src = 'assets/lexi-hero.webp'; img.alt = 'Котёнок Лекси в синей толстовке с кристаллом'; img.width = 520; img.height = 520; img.decoding = 'async'; art.append(img); }
+    else { const img = el('img'); img.src = 'assets/lexi-wave.webp'; img.alt = 'Котёнок Лекси в синей толстовке с кристаллом'; img.width = 520; img.height = 520; img.decoding = 'async'; art.append(img); }
     hero.append(art, txt); host.append(hero);
     const panel = el('section', 'lexi-panel'); panel.setAttribute('aria-labelledby', 'missionsTitle');
     const lv = levelOf(quest.xp);

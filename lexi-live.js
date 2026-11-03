@@ -42,7 +42,7 @@
     if (!canSpeak()) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/[⭐😺…]/g, '')); u.lang = 'en-GB'; u.rate = .9; const v = typeof englishVoice === 'function' ? englishVoice() : null; if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* no voice */ }
   }
 
-  /* Builds the animated Lexi block. Eyelids are positioned over the eyes of assets/lexi-hero.webp (520×520). */
+  /* Builds the animated Lexi block. Eyelids are positioned over the eyes of assets/lexi-wave.webp (520×520). */
   function art() {
     const wrap = document.createElement('div');
     wrap.className = 'lexi-live';
@@ -51,7 +51,7 @@
       '<p class="lexi-live-bubble" aria-live="polite"></p>' +
       '<span class="lexi-live-shadow" aria-hidden="true"></span>' +
       '<div class="lexi-live-body" aria-hidden="true">' +
-      '<img src="assets/lexi-hero.webp" alt="" width="520" height="520" decoding="async">' +
+      '<img src="assets/lexi-wave.webp" alt="" width="520" height="520" decoding="async">' +
       '<i class="lexi-lid l"></i><i class="lexi-lid r"></i>' +
       '<i class="lexi-spark s1"></i><i class="lexi-spark s2"></i><i class="lexi-spark s3"></i>' +
       '</div>';

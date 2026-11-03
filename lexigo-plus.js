@@ -143,16 +143,24 @@
     if (mode !== 'boss' && types) types = types.filter(t => t !== 'crystals' || mode === 'crystals');
     return origStart.call(this, mode, words, types);
   };
-  function bossDialog(onStart) {
-    const pool = (overridePool || selectedWords()).filter(w => typeof isLexicalEntry !== 'function' || isLexicalEntry(w)).filter(SINGLE);
+  /* opts (2026-11-03): { pool, key, title } — финальный тест по другому набору (весь учебник) */
+  function bossDialog(onStart, opts = {}) {
+    const source = opts.pool || overridePool || selectedWords();
+    const pool = source.filter(w => typeof isLexicalEntry !== 'function' || isLexicalEntry(w)).filter(SINGLE);
     const chosen = new Set(bossTypes());
     document.querySelector('.lx-notice')?.remove();
     const box = el('div', 'lx-notice boss-setup'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'bossSetupTitle');
     const card = el('div', 'lx-notice-card');
-    const title = el('h2', null, 'Финальный тест'); title.id = 'bossSetupTitle';
-    const all = selectedWords().filter(w => typeof isLexicalEntry !== 'function' || isLexicalEntry(w));
-    const info = el('p', 'boss-words', 'Слова: ' + pool.length + (pool.length !== all.length ? ' из ' + all.length + ' выбранных (фразы в тест не входят)' : '') + ' · в тесте до 15 слов');
+    const title = el('h2', null, 'Финальный тест' + (opts.title ? ' · ' + opts.title : '')); title.id = 'bossSetupTitle';
+    const all = source.filter(w => typeof isLexicalEntry !== 'function' || isLexicalEntry(w));
+    let roundNote = ' · в тесте до 15 слов';
+    try {
+      const key = opts.key || (typeof lessonRoundKey === 'function' ? lessonRoundKey('boss') : '');
+      if (window.LexiRounds && key && pool.length > 15) { const i = LexiRounds.info(key, pool, 15); roundNote = ' · по 15 слов по порядку, сейчас раунд ' + (i.complete ? 1 : i.round) + ' из ' + i.rounds; }
+    } catch { /* */ }
+    const info = el('p', 'boss-words', 'Слова: ' + pool.length + (pool.length !== all.length ? ' из ' + all.length + (opts.pool ? '' : ' выбранных') + ' (фразы в тест не входят)' : '') + roundNote);
     const change = el('button', 'text-button', 'Изменить слова'); change.type = 'button'; change.onclick = () => { box.remove(); openWords(); };
+    if (opts.pool) change.hidden = true;
     const grid = el('div', 'boss-types'); grid.setAttribute('role', 'group'); grid.setAttribute('aria-label', 'Типы заданий в тесте');
     const msg = el('p', 'boss-msg'); msg.setAttribute('role', 'status');
     const paint = () => {
@@ -209,7 +217,7 @@
   storageNotes();
   try { restoreGradeScale(); $('gradeScale')?.addEventListener('change', () => gradeScale()); } catch { /* teacher settings are optional */ }
   window.addEventListener('lexigo:account', storageNotes);
-  window.LexigoPlus = Object.freeze({ bossTypes, notice, route: readRoute, wordSet, setWordSet, presetWordSet, refreshSelection: () => refreshSelectionUI(), HARD_KEY });
+  window.LexigoPlus = Object.freeze({ bossTypes, bossDialog, notice, route: readRoute, wordSet, setWordSet, presetWordSet, refreshSelection: () => refreshSelectionUI(), HARD_KEY });
   // the first lesson may already be open (the page was loaded with a lesson link): restore its saved choice now
   try { if (typeof book !== 'undefined' && book && scope.length) { restoring = true; restoreSelection(); } } finally { restoring = false; }
   refreshSelectionUI();

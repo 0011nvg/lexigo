@@ -2,6 +2,10 @@
 // missions, boss, stars, calm/board modes, explanations, corrupted storage, mobile.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+
+// 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
+async function nextQ(page) { await page.waitForFunction(() => !game || !game.answered || document.querySelector('#play .lesson-result') || [...document.querySelectorAll('#play button:not([disabled])')].some(b => /Следующее|Результат/.test(b.textContent))); const b = page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first(); if (await b.count()) await b.click(); }
+
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';
 const browser = await chromium.launch({ headless: true });
 const errors = [];
@@ -38,12 +42,12 @@ try {
   assert.ok(await page.locator('#homeTitle').isVisible());
   ok('home: Lexi hero, 3 missions, level, 8 books');
 
-  /* 2. Round size: 123-word lesson → 12-word round with honest round label */
+  /* 2. Round size: 123-word lesson → round of 15 words in order with an honest label (2026-11-03: word-rounds.js) */
   await page.goto(BASE + '#/lesson/5/0/play/quiz');
   await page.locator('#play .question').waitFor();
-  assert.equal(await page.evaluate(() => game.words.length), 12);
-  assert.match(await page.locator('#counter').getAttribute('data-round'), /Раунд: 12 из \d+ слов урока/);
-  ok('round: 12 words from a 123-word lesson');
+  assert.equal(await page.evaluate(() => game.words.length), 15);
+  assert.match(await page.locator('#counter').getAttribute('data-round'), /^0 из \d+ слов · Раунд 1 из \d+$/);
+  ok('round: 15 words from a 123-word lesson');
 
   /* 3. Non-lexical import headers never reach games */
   const leak = await page.evaluate(() => {
@@ -67,7 +71,7 @@ try {
   for (let guard = 0; guard < 8 && !(await page.locator('#play .builder-bank').count()); guard++) {
     const prev = await page.evaluate(() => game.index);
     await solveCurrent(page);
-    await page.locator('#play button', { hasText: /Следующее|Результат/ }).first().click();
+    await nextQ(page);
     await page.waitForFunction(i => game && game.index !== i && !document.querySelector('#play .feedback'), prev);
   }
   await solveCurrent(page);
@@ -76,7 +80,7 @@ try {
   // go to the next real builder question: very short words (e.g. "on") are asked as typing instead
   for (let guard = 0; guard < 8; guard++) {
     const prev = await page.evaluate(() => game.index);
-    await page.locator('#play button', { hasText: /Следующее|Результат/ }).first().click();
+    await nextQ(page);
     await page.waitForFunction(i => game && game.index !== i && !document.querySelector('#play .feedback'), prev);
     if (await page.locator('#play .builder-bank .builder-token:not([hidden])').count()) break;
     await solveCurrent(page);
@@ -156,9 +160,8 @@ try {
   /* 10. Finish a round → reward card, streak, missions, next step */
   await page.goto(BASE + '#/lesson/2/5/play/spell');
   for (let i = 0; i < 40 && !(await page.locator('.lesson-result').count()); i++) {
-    if (await page.locator('#play .answerbox input:not([disabled])').count()) await solveCurrent(page);
-    const next = page.locator('#play button', { hasText: /Следующее|Результат/ });
-    if (await next.count()) await next.first().click();
+    if (await page.locator('#play .answerbox input:not([disabled])').count()) { await solveCurrent(page); await nextQ(page); }
+    else { const next = page.locator('#play button', { hasText: /Следующее|Результат/ }); if (await next.count()) await next.first().click(); else await page.waitForTimeout(100); }
   }
   await page.locator('.lexi-reward').waitFor();
   assert.match(await page.locator('.lexi-reward').innerText(), /XP за раунд/);

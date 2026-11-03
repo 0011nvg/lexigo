@@ -233,7 +233,10 @@
     S()?.setMeta(x.preview ? { scope: 'custom', preview: true, taskKey: x.key, lesson_id: x.a.lesson_id || null, title: x.title }
       : { scope: 'assignment', taskKey: x.key, assignment_id: x.a.id, lesson_id: x.a.lesson_id || null, grade: x.a.grade || null, section_index: x.a.section_indexes ? x.a.section_indexes[0] : null, title: x.title });
     Nav.setCustom({ key: x.key, crumbs: crumbsFor(x) });
-    start(mode, picked, types);
+    // 2026-11-03: большой урок — по порядку блоками (раунд 1 — первые слова, раунд 2 — следующие…), см. word-rounds.js
+    const rounds = window.LexiRounds && !['review', 'crystals'].includes(mode) && ws.length > (mode === 'pairs' ? 9 : size);
+    if (rounds) LexiRounds.launch({ key: ('T.' + x.key).replace(/[^A-Za-z0-9:_|.-]/g, '').slice(0, 70) + '|' + mode, pool: ws, mode, types, size: mode === 'pairs' ? 9 : size, pick: mode === 'pairs' ? uniquePairs : null, again: () => launch(mode) });
+    else start(mode, picked, types);
     if (!game) { S()?.setMeta(null); return false; }
     document.getElementById('myLessonBanner')?.remove();
     const banner = h('p', { id: 'myLessonBanner', class: 'task-banner' + (x.preview ? ' preview' : '') },

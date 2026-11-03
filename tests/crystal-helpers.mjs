@@ -26,7 +26,9 @@ export async function answer(page, right) {
     if (right) await opts.filter({ hasText: new RegExp('^\\s*' + w.ru.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$') }).first().click();
     else await opts.filter({ hasNotText: new RegExp('^\\s*' + w.ru.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$') }).first().click();
   }
-  await box.locator('.cq-continue').click();
+  // 2026-11-03: a right answer closes the card by itself (no «Продолжить»); a mistake keeps the button
+  if (right) { if (await page.locator('.cq-word .cq-continue').count()) throw new Error('a right answer must not ask to press «Продолжить»'); }
+  else await box.locator('.cq-continue').click();
   await page.waitForFunction(() => !document.querySelector('.cq-word'), null, { timeout: 8000 });
 }
 /* сыграть уровень «внимательным игроком»: лучший видимый ход, слова — верно */

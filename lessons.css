@@ -15,9 +15,9 @@
 .tl-s-new{background:#eef3ff;color:#2443c9}
 .tl-s-progress{background:#fff4cf;color:#7a5600}
 .tl-s-done{background:#e3f7ec;color:#0c7a57}
-.tl-title{margin:0;font:800 19px/1.25 var(--w-display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.tl-title{margin:0;font:800 19px/1.25 var(--w-display);letter-spacing:-.01em;overflow-wrap:break-word}
 .tl-meta{margin:0;color:var(--w-ink2);font-weight:700;font-size:14px}
-.tl-comment{margin:0;padding:10px 14px;border-radius:14px;background:#f5f7ff;color:#26357a;font-weight:700;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.tl-comment{margin:0;padding:10px 14px;border-radius:14px;background:#f5f7ff;color:#26357a;font-weight:700;font-size:14px;line-height:1.4;overflow-wrap:break-word}
 .tl-progress{display:flex;flex-direction:column;gap:6px}
 .tl-progress small{color:var(--w-mute);font-weight:700;font-size:13px}
 .tl-bar{height:10px;border-radius:999px;background:#edf0fa;overflow:hidden}
@@ -48,7 +48,7 @@
 .my-lesson{display:flex;flex-direction:column;gap:18px}
 .my-lesson .my-head{display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px 26px!important;margin:0!important;border-radius:26px!important;background:linear-gradient(120deg,#fff,#eef2ff)!important;box-shadow:var(--w-shadow)!important;border:0}
 .my-head-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-.my-head h1{margin:0;font:800 clamp(24px,4vw,36px)/1.1 var(--w-display);overflow-wrap:anywhere;outline:none}
+.my-head h1{margin:0;font:800 clamp(24px,4vw,36px)/1.1 var(--w-display);overflow-wrap:break-word;outline:none}
 .my-head .eyebrow{margin:0}
 .my-meta{margin:0;color:var(--w-ink2);font-weight:700}
 .my-progress{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 12px;max-width:560px;margin-top:4px}
@@ -57,7 +57,7 @@
 .my-head-actions .btn{text-decoration:none;text-align:center}
 .my-comment{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:20px;background:#fff;box-shadow:var(--w-shadow)}
 .my-comment img{width:56px;height:56px;border-radius:50%;flex:none;background:#eef3ff}
-.my-comment p{margin:0;line-height:1.45;overflow-wrap:anywhere}
+.my-comment p{margin:0;line-height:1.45;overflow-wrap:break-word}
 .my-lesson .task-preview-note{margin:0}
 .my-sec-head{display:flex;align-items:center;gap:10px;margin:0 0 14px}
 .my-sec-head h2{margin:0;font:800 20px/1.2 var(--w-display)}
@@ -67,7 +67,7 @@
 .my-word-list li{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 10px 8px 14px;border-radius:14px;background:#f6f8ff;border:1px solid #e6ebfa}
 .my-word-list li[hidden]{display:none}
 .my-word-list b{font-weight:800;color:var(--w-ink);overflow-wrap:break-word;min-width:0}
-.my-word-list span{color:var(--w-ink2);flex:1;min-width:0;overflow-wrap:break-word;hyphens:auto}
+.my-word-list span{color:var(--w-ink2);flex:1;min-width:0;overflow-wrap:break-word;hyphens:manual}
 .my-word-list b::after{content:'—';margin-left:8px;color:#aab2cc;font-weight:400}
 .my-word-list li.known{background:#f1fbf5;border-color:#cdeedd}
 .my-known{font-style:normal;color:var(--w-ok);font-weight:900}
@@ -98,12 +98,12 @@
 .ml-tools input{max-width:320px}
 .ml-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .ml-card{display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:22px;background:#fff;box-shadow:var(--w-shadow);border:2px solid #e3e9fb;min-width:0}
-.ml-card h3{margin:0;font:800 18px/1.25 var(--w-display);overflow-wrap:anywhere}
+.ml-card h3{margin:0;font:800 18px/1.25 var(--w-display);overflow-wrap:break-word}
 .ml-facts{display:flex;flex-wrap:wrap;gap:6px}
 .ml-facts span{padding:4px 10px;border-radius:999px;background:#f2f5ff;color:#33408a;font-weight:800;font-size:12.5px}
 .ml-assigned{margin:0;font-size:13.5px;color:var(--w-ink2);font-weight:700}
 .ml-assigned.none{color:var(--w-mute)}
-.ml-words{margin:0;color:var(--w-mute);font-size:13.5px;overflow-wrap:anywhere}
+.ml-words{margin:0;color:var(--w-mute);font-size:13.5px;overflow-wrap:break-word}
 .ml-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
 .ml-actions .btn-acc{justify-content:center;text-align:center;text-decoration:none}
 .ml-more{display:flex;justify-content:flex-end}

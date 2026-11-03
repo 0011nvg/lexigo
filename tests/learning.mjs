@@ -1,6 +1,10 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 
+// 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
+async function nextQ(page) { await page.waitForFunction(() => !game || !game.answered || document.querySelector('#play .lesson-result') || [...document.querySelectorAll('#play button:not([disabled])')].some(b => /Следующее|Результат/.test(b.textContent))); const b = page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first(); if (await b.count()) await b.click(); }
+
+
 const browser=await chromium.launch({headless:true});
 const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
 const errors=[];
@@ -59,7 +63,7 @@ async function run(viewport){
  await page.getByRole('button',{name:'Проверить'}).click();
  assert.equal(await page.evaluate(()=>game.firstCorrect),0);
  assert.ok(await page.locator('.feedback').count());
- await page.getByRole('button',{name:/Следующее|Результат/}).click();
+ await nextQ(page);
  assert.ok(await page.evaluate(()=>game.retryQueue.length+game.retries)>0,'Hinted word queued for review');
  await page.locator('#back').click();
  // Wrong answer must reappear, and progress must record the mistake.
@@ -69,7 +73,7 @@ async function run(viewport){
  await page.getByRole('button',{name:'Проверить'}).click();
  assert.equal(await page.evaluate(()=>game.firstCorrect),0);
  assert.ok(await page.evaluate(id=>getProgress({id}).wrong>0,wrong));
- await page.getByRole('button',{name:/Следующее|Результат/}).click();
+ await nextQ(page);
  assert.ok(await page.evaluate(()=>game.retryQueue.length+game.retries)>0);
  await page.locator('#back').click();
  // Pairs: each unique word must appear twice and can be matched.

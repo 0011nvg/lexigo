@@ -2,6 +2,10 @@
 // lean teacher materials (no «train» block, no time limit, words chosen inside), «Верно / неверно» reactions, Lexi speaks English.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+
+// 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
+async function nextQ(page) { await page.waitForFunction(() => !game || !game.answered || document.querySelector('#play .lesson-result') || [...document.querySelectorAll('#play button:not([disabled])')].some(b => /Следующее|Результат/.test(b.textContent))); const b = page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first(); if (await b.count()) await b.click(); }
+
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';
 const browser = await chromium.launch({ headless: true });
 const errors = [];
@@ -38,7 +42,7 @@ try {
     await page.locator('#play .builder-tools button', { hasText: 'Проверить' }).click();
     await page.locator('#play .feedback').waitFor();
     assert.equal(await page.locator('#play .feedback').getAttribute('data-result'), 'ok', 'a correctly built word is accepted: ' + en);
-    await page.locator('#play button', { hasText: /Следующее|Результат/ }).first().click();
+    await nextQ(page);
   }
   await page.goto(BASE + '#/lesson/2/0'); await page.locator('.mode[data-mode=audio]').click();
   if (await page.evaluate(() => !!game)) assert.ok(await page.evaluate(() => game.words.every(isSingleWordEntry)), 'audio: no phrases');

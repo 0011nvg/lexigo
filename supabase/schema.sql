@@ -831,3 +831,54 @@ revoke all on function public.crystal_cfg(int), public.crystal_rating(int, boole
 grant execute on function public.crystal_start(int, date), public.crystal_finish(jsonb), public.crystal_my(), public.crystal_top(), public.crystal_set_name(text) to authenticated;
 grant execute on function public.crystal_cfg(int), public.crystal_rating(int, boolean, int, int, int, int, int) to authenticated;
 revoke all on function public.crystal_totals(uuid) from authenticated;
+
+-- =====================================================================
+-- v4 · Раунды блоками (2026-11-03): где ученик остановился в большом наборе слов
+-- (урок, модуль, весь учебник, урок учителя) — чтобы продолжить на другом устройстве.
+-- scope — ключ набора и игры («B5|quiz», «L5.0.all|spell», «T.a-…|pairs»), seen — id уже пройденных слов,
+-- cycle — номер круга (после прохождения всех слов начинается новый). Ученик видит и меняет только свои строки,
+-- запись — только через rounds_save (проверка формата и размера); при удалении аккаунта строки удаляются.
+-- =====================================================================
+create table if not exists public.word_rounds (
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  scope       text not null check (scope ~ '^[A-Za-z0-9:_|.-]{1,80}$'),
+  seen        text[] not null default '{}' check (cardinality(seen) <= 3000),
+  cycle       int not null default 0 check (cycle between 0 and 100000),
+  updated_at  timestamptz not null default now(),
+  primary key (user_id, scope)
+);
+alter table public.word_rounds enable row level security;
+revoke all on public.word_rounds from anon, authenticated;
+grant select on public.word_rounds to authenticated;
+drop policy if exists word_rounds_select on public.word_rounds;
+create policy word_rounds_select on public.word_rounds for select to authenticated using (user_id = auth.uid());
+
+create or replace function public.rounds_save(p_scope text, p_seen text[], p_cycle int)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); n int; old_cycle int; old_seen text[];
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '28000'; end if;
+  if p_scope is null or p_scope !~ '^[A-Za-z0-9:_|.-]{1,80}$' then raise exception 'bad scope' using errcode = '22023'; end if;
+  if p_cycle is null or p_cycle < 0 or p_cycle > 100000 then raise exception 'bad cycle' using errcode = '22023'; end if;
+  p_seen := coalesce(p_seen, '{}');
+  if cardinality(p_seen) > 3000 then raise exception 'too many words' using errcode = '22023'; end if;
+  if exists (select 1 from unnest(p_seen) x where x is null or x !~ '^[A-Za-z0-9_-]{1,24}$') then raise exception 'bad word id' using errcode = '22023'; end if;
+  if not exists (select 1 from public.profiles where id = uid) then raise exception 'no profile' using errcode = '28000'; end if;
+  select count(*) into n from public.word_rounds where user_id = uid;
+  if n >= 300 and not exists (select 1 from public.word_rounds where user_id = uid and scope = p_scope) then
+    delete from public.word_rounds where user_id = uid and scope = (select scope from public.word_rounds where user_id = uid order by updated_at limit 1);
+  end if;
+  select array(select distinct x from unnest(p_seen) x) into p_seen;
+  select cycle, seen into old_cycle, old_seen from public.word_rounds where user_id = uid and scope = p_scope for update;
+  if found then
+    -- новый круг заменяет старый; в том же круге слова объединяются (два устройства не теряют прогресс)
+    if p_cycle < old_cycle then return; end if;
+    if p_cycle = old_cycle then select array(select distinct x from unnest(old_seen || p_seen) x) into p_seen; end if;
+    if cardinality(p_seen) > 3000 then p_seen := p_seen[1:3000]; end if;
+    update public.word_rounds set seen = p_seen, cycle = p_cycle, updated_at = now() where user_id = uid and scope = p_scope;
+  else
+    insert into public.word_rounds (user_id, scope, seen, cycle) values (uid, p_scope, p_seen, p_cycle);
+  end if;
+end $$;
+revoke all on function public.rounds_save(text, text[], int) from public, anon;
+grant execute on function public.rounds_save(text, text[], int) to authenticated;

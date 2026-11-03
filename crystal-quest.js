@@ -493,14 +493,18 @@
     if (!counted) g.queue.splice(Math.min(1, g.queue.length), 0, { w, retry: true });
     const res = E.wordAnswered(g.st, counted);
     g.pending.q.querySelectorAll('button.option, .options button, .buttons button').forEach(b => { b.disabled = true; });
-    const d = el('div', 'feedback'); d.dataset.result = counted ? 'ok' : hinted ? 'hint' : 'miss'; d.setAttribute('role', 'status');
-    d.append(el('strong', null, counted ? '✓ Верно! +1 ход' + (res.steps.length ? ' и особый кристалл' : '') : hinted ? 'Подсказка помогла — слово ещё вернётся' : 'Почти! Запомни правильный ответ'), el('div', null, msg),
-      el('div', 'learning-tip', counted ? 'Отлично! Возвращаемся к кристаллам.' : 'Это слово вернётся чуть позже. Ходы не сгорают — ошибаться не страшно.'));
-    const next = btn('Продолжить ▶', 'btn good cq-continue', () => close());
-    g.pending.q.append(d, next);   // кнопка вне карточки ответа: Лекси может свернуть её до короткой плашки
+    const right = !!correct;
+    g.pending.q.querySelectorAll('button, input').forEach(b => { b.disabled = true; });
+    const d = el('div', 'feedback' + (right ? ' fb-quick' : '')); d.dataset.result = counted ? 'ok' : hinted ? 'hint' : 'miss'; d.setAttribute('role', 'status');
+    /* 2026-11-03: верно — короткая плашка и сразу обратно к кристаллам; ошибка — правильный ответ и «Продолжить ▶» */
+    if (right) d.append(el('strong', null, counted ? '✓ Верно! +1 ход' + (res.steps.length ? ' и особый кристалл' : '') : '✓ Верно — с подсказкой'));
+    else d.append(el('strong', null, 'Почти! Запомни правильный ответ'), el('div', null, msg),
+      el('div', 'learning-tip', 'Это слово вернётся чуть позже. Ходы не сгорают — ошибаться не страшно.'));
+    const next = right ? null : btn('Продолжить ▶', 'btn good cq-continue', () => close());
+    g.pending.q.append(d); if (next) g.pending.q.append(next);
     sound(counted ? 'word' : 'soft');
     try { document.dispatchEvent(new CustomEvent('lexigo:answer', { detail: { word: w, correct: counted, hinted, skill, mode: game.activeQuestionMode, gameMode: 'crystals', retry: !!game.retryActive, feedback: d } })); } catch { /* */ }
-    setTimeout(() => next.focus(), 40);
+    if (next) setTimeout(() => next.focus(), 40); else setTimeout(() => close(), 420);
     let closed = false;
     async function close() {
       if (closed) return; closed = true;

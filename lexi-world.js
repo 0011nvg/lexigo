@@ -268,7 +268,8 @@
     say((Math.random() < .5 ? pick(['Let’s play! ', 'Ready? ', 'Let’s learn! ']) : '') + (LINES.start[game.mode] || 'Поехали!'), game.mode === 'boss' ? 'think' : 'hello');
     if (game.mode === 'boss') bossHUD();
     const total = game.words.length;
-    if (!game.assignmentId && !(game.cloud && game.cloud.meta && game.cloud.meta.taskKey) && total >= 2 && ['quiz', 'spell', 'truefalse', 'fix', 'audio', 'cards', 'builder', 'listen', 'crystals'].includes(game.mode)) {
+    if (game.round && window.LexiRounds) $('counter').dataset.round = LexiRounds.label(game.round);
+    else if (!game.assignmentId && !(game.cloud && game.cloud.meta && game.cloud.meta.taskKey) && total >= 2 && ['quiz', 'spell', 'truefalse', 'fix', 'audio', 'cards', 'builder', 'listen', 'crystals'].includes(game.mode)) {
       const scopeSize = (typeof selectedWords === 'function' ? selectedWords().filter(isLexicalEntry).length : total);
       if (scopeSize > total) $('counter').dataset.round = 'Раунд: ' + total + ' из ' + scopeSize + ' слов урока';
       else delete $('counter').dataset.round;

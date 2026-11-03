@@ -3,6 +3,10 @@
 // В каждом задании плитки = буквы ответа; собранное по порядку слово засчитывается; ошибка — не засчитывается.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+
+// 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
+async function nextQ(page) { await page.waitForFunction(() => !game || !game.answered || document.querySelector('#play .lesson-result') || [...document.querySelectorAll('#play button:not([disabled])')].some(b => /Следующее|Результат/.test(b.textContent))); const b = page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first(); if (await b.count()) await b.click(); }
+
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';
 const browser = await chromium.launch({ headless: true });
 const errors = [];
@@ -43,7 +47,7 @@ try {
       assert.equal(await page.locator('#play .feedback').getAttribute('data-result'), wrong ? 'miss' : 'ok', (wrong ? 'wrong order rejected: ' : 'accepted: ') + st.answer);
       if (wrong) { wrongTried++; assert.match(await page.locator('#play .feedback').innerText(), new RegExp('Правильный порядок: «' + esc(st.answer) + '»')); }
       questions++;
-      await page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first().click();
+      await nextQ(page);
     }
     await page.locator('#play .lesson-result').waitFor();
   }

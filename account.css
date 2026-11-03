@@ -81,7 +81,7 @@ body{margin:0}
 .list{display:grid;gap:10px}
 .row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1px solid var(--w-line);background:#fff}
 .row-main{flex:1;min-width:0}
-.row-main b{display:block;font-size:15px;overflow-wrap:anywhere}
+.row-main b{display:block;font-size:15px;overflow-wrap:break-word}
 .row-main small{display:block;color:var(--w-mute);font-size:12.5px;margin-top:3px}
 .loading{padding:40px;text-align:center;color:var(--w-mute);font-weight:700}
 .cab-tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 18px;padding:4px;border-radius:16px;background:#eef1fb;scrollbar-width:none}
@@ -136,7 +136,7 @@ body{margin:0}
 .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;letter-spacing:.14em;background:#f4fbe6;color:#3c5a00;border-radius:10px;padding:5px 10px;font-size:16px}
 .group-card{display:grid;gap:12px;padding:18px;border-radius:20px;border:1px solid var(--w-line);background:#fff}
 .group-card header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.group-card h3{font-size:17px;flex:1;min-width:0;overflow-wrap:anywhere}
+.group-card h3{font-size:17px;flex:1;min-width:0;overflow-wrap:break-word}
 .invite{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:#f6f8ff;font-size:13.5px}
 .tbl-wrap{overflow-x:auto;border:1px solid var(--w-line);border-radius:16px}
 table.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}

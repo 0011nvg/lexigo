@@ -18,6 +18,11 @@ window.LexigoResults=(()=>{
   const total=Math.max(0,g.words.length-(g.retries||0)),stats=el('div',undefined,'result-metrics');
   stats.append(metric(pairs?g.matched+' / '+g.words.length:g.mode==='cards'?Math.min(g.index,g.words.length):g.firstCorrect+' / '+total,pairs?'пар найдено':g.mode==='cards'?'карточек просмотрено':'верно с первого раза'));
   stats.append(metric('+'+reward.crystals,'кристаллов за слова','result-earned'),metric(Math.floor(time/60)+':'+String(Math.floor(time%60)).padStart(2,'0'),'время тренировки'));card.append(stats);
+  /* 2026-11-03: прогресс по большому набору слов (раунды блоками, word-rounds.js) */
+  if(g.round&&window.LexiRounds){const i=LexiRounds.info(g.round.key,g.round.poolIds.map(id=>({id})),g.round.size);const n=el('p',undefined,'result-round');n.setAttribute('role','status');
+   if(i.complete){n.append(el('b','🎉 Все слова пройдены: '+i.total+'!'),document.createTextNode(' Можно пройти их заново или поработать над ошибками.'))}
+   else{n.append(el('b',i.done+' из '+i.total+' '+LexiRounds.ofWords(i.total)),document.createTextNode(' уже пройдено. Дальше — раунд '+i.round+' из '+i.rounds+': новые слова.'))}
+   const bar=el('span',undefined,'result-round-bar');const fill=el('i');fill.style.width=Math.round(i.done/Math.max(1,i.total)*100)+'%';bar.append(fill);n.append(bar);card.append(n)}
   if(!reward.crystals)card.append(el('p',g.mode==='cards'?'Самооценка не начисляет кристаллы. Попробуй режим «Напиши слово».':'Новые кристаллы появятся за новые слова или самостоятельное написание.','result-note'));
   if(reward.awards.length){const awards=el('div',undefined,'result-awards');awards.append(el('h3','Новые достижения'));for(const a of reward.awards)awards.append(el('span',a.name,'result-award'));card.append(awards)}
   if(pairs)card.append(el('p','Ошибок при подборе: '+g.pairMistakes,'result-note'));

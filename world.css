@@ -164,7 +164,7 @@ main{padding-bottom:110px}
 .lexi-tip::before{content:"Лекси советует";position:absolute;top:-10px;left:72px;background:var(--w-lime);color:var(--w-ink);font-size:11px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:8px;text-transform:uppercase}
 .modes{display:grid!important;grid-template-columns:1fr!important;gap:16px!important}
 .mode{border-radius:18px!important;border:1px solid var(--w-line)!important;background:#fff!important;box-shadow:0 1px 0 rgba(20,27,61,.04)!important;transition:transform .15s,box-shadow .15s,border-color .15s!important;min-height:76px!important;word-break:normal!important;overflow-wrap:normal!important;hyphens:manual!important}
-.mode strong,.mode small{word-break:normal!important;overflow-wrap:break-word!important;hyphens:auto}
+.mode strong,.mode small{word-break:normal!important;overflow-wrap:break-word!important;hyphens:manual}
 .mode strong{font-weight:800!important;color:var(--w-ink)!important}
 .mode:hover{transform:translateY(-2px);box-shadow:var(--w-shadow)!important;border-color:#cdd6f6!important}
 .daily-mode{background:linear-gradient(120deg,var(--w-blue-d),var(--w-blue))!important;border:0!important}
@@ -207,7 +207,7 @@ main{padding-bottom:110px}
 .why{margin:10px 0 4px;padding:12px 14px;border-radius:16px;background:#fff;border:2px dashed #ffc7bd}
 .why strong{display:block;margin-bottom:6px;color:var(--w-miss)}
 .why p{margin:4px 0;line-height:1.45}.why-tip{color:var(--w-ink2);font-weight:700}
-.diff{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:18px;font-weight:700;letter-spacing:.04em;background:#f6f7fd;border-radius:8px;padding:1px 6px}
+.diff{font-family:var(--w-text);font-size:19px;font-weight:800;letter-spacing:.06em;font-variant-ligatures:none;background:#f6f7fd;border-radius:8px;padding:1px 6px}
 .diff mark{border-radius:4px;padding:0 1px}
 .diff-extra{background:#ffd4cc;color:#a1220f;text-decoration:line-through}
 .diff-miss{background:#c9f5df;color:#06603f}

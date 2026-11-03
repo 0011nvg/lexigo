@@ -9,7 +9,7 @@ try{for(const width of [390,1440]){
  for(let attempt=0;attempt<3;attempt++){
   if(attempt===0)await page.locator('[data-mode="spell"]').click();else await page.locator('.result-actions').getByRole('button',{name:'Повторить',exact:true}).click();
   const answer=await page.evaluate(()=>game.words[0].en);await page.locator('#play .answerbox input').fill(answer);await page.locator('#play').getByRole('button',{name:'Проверить',exact:true}).click();
-  await page.locator('#play').getByRole('button',{name:/Результат →/}).click();await page.locator('.lesson-result').waitFor();
+  await page.locator('.lesson-result').waitFor(); // 2026-11-03: a right answer opens the result by itself
   assert.equal(await page.locator('.result-earned strong').innerText(),attempt===0?'+1':attempt===1?'+2':'+0');
   assert.equal(await page.locator('.result-metric strong').first().innerText(),'1 / 1');
   await page.waitForFunction(()=>document.querySelector('.result-mascot')?.naturalWidth>0);

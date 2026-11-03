@@ -208,6 +208,29 @@ reset role; set role anon; select pg_temp.as_user(null);
 do $$ begin perform count(*) from profiles; raise exception 'FAIL: anon read profiles'; exception when insufficient_privilege then null; end $$;
 do $$ begin perform submit_session('{}'); raise exception 'FAIL: anon submitted'; exception when insufficient_privilege then null; end $$;
 
+-- ---------- word rounds (2026-11-03): own rows only, writes only through rounds_save, cycles merge ----------
+reset role; set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
+select rounds_save('B5|quiz', array['s5_0','s5_1','s5_1'], 0);
+select rounds_save('B5|quiz', array['s5_2'], 0);
+select pg_temp.check((select cardinality(seen) from word_rounds where scope='B5|quiz')=3, 'rounds: same cycle — words are merged without duplicates');
+select rounds_save('B5|quiz', array['s5_9'], 1);
+select pg_temp.check((select seen from word_rounds where scope='B5|quiz')=array['s5_9'] and (select cycle from word_rounds where scope='B5|quiz')=1, 'rounds: a new cycle replaces the old one');
+select rounds_save('B5|quiz', array['s5_0','s5_1'], 0);
+select pg_temp.check((select seen from word_rounds where scope='B5|quiz')=array['s5_9'], 'rounds: a stale device from the old cycle cannot undo progress');
+do $$ begin perform rounds_save('bad scope!', array['s5_0'], 0); raise exception 'FAIL: bad scope accepted'; exception when invalid_parameter_value then null; end $$;
+do $$ begin perform rounds_save('B5|quiz', array['<x>'], 0); raise exception 'FAIL: bad word id accepted'; exception when invalid_parameter_value then null; end $$;
+do $$ begin perform rounds_save('B5|quiz', array_fill('w1'::text, array[3001]), 0); raise exception 'FAIL: too many ids accepted'; exception when invalid_parameter_value then null; end $$;
+do $$ begin insert into word_rounds(user_id, scope) values ('00000000-0000-0000-0000-0000000000b1', 'x'); raise exception 'FAIL: direct insert into word_rounds'; exception when insufficient_privilege then null; end $$;
+do $$ begin update word_rounds set cycle = 5; raise exception 'FAIL: direct update of word_rounds'; exception when insufficient_privilege then null; end $$;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+select pg_temp.check((select count(*) from word_rounds)=0, 'rounds: nobody else (even the teacher) sees a student''s rounds');
+reset role; set role anon; select pg_temp.as_user(null);
+do $$ begin perform rounds_save('B5|quiz', array['s5_0'], 0); raise exception 'FAIL: anon saved rounds'; exception when insufficient_privilege then null; end $$;
+reset role;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000b2');
+set role authenticated; select rounds_save('L5.0.all|spell', array['s5_3'], 0); reset role;
+
 -- ---------- delete account cascades ----------
 reset role; set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b2');
@@ -217,5 +240,6 @@ select delete_my_account();
 select pg_temp.check(not exists(select 1 from profiles where id='00000000-0000-0000-0000-0000000000b2'), 'profile deleted');
 select pg_temp.check(not exists(select 1 from group_members where student_id='00000000-0000-0000-0000-0000000000b2'), 'memberships deleted');
 select pg_temp.check(not exists(select 1 from assignments where student_id='00000000-0000-0000-0000-0000000000b2'), 'personal assignments deleted');
+select pg_temp.check(not exists(select 1 from word_rounds where user_id='00000000-0000-0000-0000-0000000000b2'), 'word rounds deleted with the account');
 
-select 'PASS cloud schema: roles, RLS isolation, server-side XP, idempotence, caps, removal, account deletion' as result;
+select 'PASS cloud schema: roles, RLS isolation, server-side XP, idempotence, caps, removal, word rounds, account deletion' as result;

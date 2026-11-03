@@ -225,7 +225,7 @@ body[data-page=words] #wordsDone:disabled{opacity:1;background:#c9cfe2!important
 .lb-head small{color:var(--w-mute);font-size:12.5px}
 .lb-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .lb-list li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(20,27,61,.05)}
-.lb-list li b{overflow-wrap:anywhere;font-size:16px}
+.lb-list li b{overflow-wrap:break-word;font-size:16px}
 .lb-list li.empty b{color:#a8afc6;font-weight:600}
 .lb-list li.mine{box-shadow:inset 0 0 0 2px var(--w-blue);background:#eef3ff}
 .lb-medal{font-size:22px;line-height:1}
@@ -382,8 +382,8 @@ body.teacher-words-open[data-page=teacher] .catalog-selectors{order:0}
 .lexi-live-bubble b{display:inline;font-size:16px;font-weight:900;color:var(--w-blue-d)}
 .lexi-live-bubble small{display:block;margin-top:2px;font-size:12.5px;font-weight:700;color:var(--w-ink2);line-height:1.25}
 .lexi-live-bubble.show{pointer-events:auto}
-.lexi-say{margin-left:6px;width:30px;height:30px;border:0;border-radius:50%;background:#eef3ff;font-size:14px;line-height:30px;cursor:pointer;vertical-align:middle;padding:0}
-.lexi-say:hover{background:#dfe8ff}
+button.lexi-say{margin-left:6px;width:30px;height:30px;border:0;border-radius:50%;background:#eef3ff;font-size:14px;line-height:30px;cursor:pointer;vertical-align:middle;padding:0}
+button.lexi-say:hover{background:#dfe8ff}
 .lexi-live-body.tilt{animation:lx-tilt .9s ease-in-out}
 @keyframes lx-tilt{0%,100%{transform:none}30%{transform:rotate(-6deg) translateY(-4px)}60%{transform:rotate(4deg)}}
 @media (prefers-reduced-motion:reduce){.lexi-live-body.tilt{animation:none}}
@@ -391,12 +391,12 @@ body.teacher-words-open[data-page=teacher] .catalog-selectors{order:0}
  /* phone: the bubble sits over Lexi himself, never over the text or the buttons */
  .lexi-live-bubble{left:2px;right:2px;bottom:4px;top:auto;width:auto;max-width:none;border-radius:14px;transform-origin:50% 100%}
  .lexi-live-bubble b{font-size:14px}.lexi-live-bubble small{font-size:11px}
- .lexi-say{width:26px;height:26px;line-height:26px;font-size:12px}
+ button.lexi-say{width:26px;height:26px;line-height:26px;font-size:12px}
 }
 /* Lexi is always tappable: the art layer is above the text, but only Lexi himself and his bubble catch taps */
 .lexi-hero>.lexi-hero-art{position:relative;z-index:2;pointer-events:none}
 .lexi-hero>.lexi-hero-art .lexi-live-hit,.lexi-hero>.lexi-hero-art .lexi-live-bubble.show{pointer-events:auto}
-@media (max-width:640px){.lexi-say{float:right;margin:0 0 2px 6px}}
+@media (max-width:640px){button.lexi-say{float:right;margin:0 0 2px 6px}}
 /* своё задание/урок: недоступные игры и режим тренировки учителя */
 .task-mode .task-mode-note{font-size:11.5px;line-height:1.3;color:var(--w-mute);font-weight:600}
 .task-mode.unfit{background:#fbfbfd;border-style:dashed;cursor:help}.task-mode.unfit b{color:var(--w-mute)}.task-mode.unfit span{color:var(--w-miss)}
@@ -404,5 +404,24 @@ body.teacher-words-open[data-page=teacher] .catalog-selectors{order:0}
 .task-preview-note{margin:14px 0 0;padding:11px 14px;border-radius:14px;background:#eef3ff;color:#26357a;font-weight:700;font-size:13.5px;line-height:1.4}
 .task-card.preview{border-top:6px solid var(--w-lime)}
 .task-banner.preview{background:#f3fbdc;color:#3d5200}
-.lexi-reward.preview .lexi-say{font-size:14px}
+.lexi-reward.preview p.lexi-say{font-size:14px}
 @media (max-width:520px){.task-modes{grid-template-columns:1fr 1fr}.task-actions .btn{flex:1 1 auto;text-align:center}}
+/* 2026-11-03 · типографика: один фирменный шрифт везде, аккуратные переносы без разрыва слов по буквам,
+   без «висячих» слов в заголовках; длинные слова и фразы переносятся только между словами, а слово длиннее строки — в последнюю очередь. */
+button,input,select,textarea,optgroup,option{font-family:inherit}
+body,.lx-notice,.lexi-toasts,.cq-word,.boss-setup{font-family:var(--w-text)}
+h1,h2,h3,.mode strong,.wb-mode b,.boss-type b,.lexi-say,.feedback strong{text-wrap:balance}
+p,small,li,.learning-tip,.feedback div{text-wrap:pretty}
+h1,h2,h3,h4,p,small,b,strong,span,label,li,a,button,.option{hyphens:manual;word-break:normal}
+.acc-card h1,.acc-main h1{overflow-wrap:break-word;font-size:clamp(22px,6.4vw,34px)}
+#play .option,#play .options button,#play .buttons button{overflow-wrap:break-word;min-width:0}
+.mode small{text-wrap:pretty}
+@media (max-width:600px){.course-card{aspect-ratio:auto!important;min-height:184px!important}.acc-card h1,.acc-main h1{font-size:clamp(18px,5.2vw,28px)!important}}
+.pair-grid .pair{font-size:clamp(14px,1.45vw,17px)!important;line-height:1.25;overflow-wrap:break-word;hyphens:manual}
+@media (max-width:420px){.pair-grid .pair{font-size:14px!important;padding:8px 6px!important}}
+/* 2026-11-03 · прогресс большого набора слов после раунда */
+.result-round{margin:14px auto 4px;max-width:520px;padding:12px 16px;border-radius:16px;background:#f2f6ff;color:var(--w-ink2);font-size:15px;line-height:1.45;text-align:center}
+.result-round b{color:var(--w-ink)}
+.result-round-bar{display:block;height:8px;margin-top:8px;border-radius:8px;background:#e1e8f8;overflow:hidden}
+.result-round-bar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--w-mint),var(--w-lime))}
+.wb-mode small{white-space:pre-line}

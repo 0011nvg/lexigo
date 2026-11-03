@@ -38,6 +38,7 @@ jobs:
       - run: node tests/word-builder.mjs
       - run: node tests/builder-play.mjs
       - run: node tests/rounds.mjs
+      - run: node tests/book-context.mjs
       - run: LEXIGO_WEBKIT=1 node tests/text-audit.mjs
       - name: Prepare isolated static preview package
         if: success()

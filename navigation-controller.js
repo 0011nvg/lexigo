@@ -59,19 +59,30 @@
     if(!ML)byId('myLessonPage').replaceChildren(make('p','Загружаем урок…'));
     return;
    }
+   if(parts[0]!=='book'&&window.LexigoWholeBook)window.LexigoWholeBook.current=null;
+   if(parts[0]==='book'){
+    const g=parts[1],mode=parts[2]==='play'&&Object.hasOwn(modeNames,parts[3])?parts[3]:null,known=DB.books.some(b=>String(b.grade)===g);
+    if(known&&mode&&window.LexigoWholeBook){show('play');window.LexigoWholeBook.play(g,mode);
+     if(game&&wholeBook()&&String(wholeBook().grade)===g){byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode];bookCrumbs(g,mode);document.title=modeNames[mode]+' · Spotlight '+g+' — LEXI';return}}
+    if(known&&mode&&!window.LexigoWholeBook)return; /* whole-book.js ещё загружается — он сам перерисует маршрут */
+    lastURL='';history.replaceState({},'','#'+(known?'/course/'+g+'/0':'/home'));render();return;
+   }
    if(parts[0]==='lesson'&&context(parts[1],parts[2])){
     const mode=parts[3]==='play'?parts[4]:null;const page=mode&&Object.hasOwn(modeNames,mode)?'play':['words','teacher'].includes(parts[3])?parts[3]:'lesson';
     show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='words'?'Слова':page==='teacher'?'Материалы':modeNames[mode]);
     if(page==='play'){if(mode==='mixed')quickStart();else originalStart(mode,null,mode==='boss'&&window.LexigoPlus?window.LexigoPlus.bossTypes():undefined);if(!game){lastURL='';history.replaceState({},'','#'+lessonPath());render();return}byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode]}
     document.title=(page==='play'?modeNames[mode]:byId('currentLesson').textContent)+' — LEXI';
    }else if(['games','awards','profile'].includes(parts[0])){const page=parts[0];show(page);crumbs([]);LexigoDashboard.render(page,lessonPath(),'Spotlight '+book.grade+' · '+(unit==='__all'?mod:book.sections[Number(unit)].title),modeNames);document.title=({games:'Игры',awards:'Награды',profile:'Профиль'}[page])+' — LEXI';}
-   else if(parts[0]==='course'){show('course');course(parts[1],parts[2])}
+   else if(parts[0]==='course'&&DB.books.some(b=>String(b.grade)===parts[1])){show('course');course(parts[1],parts[2])}
 
    else{show('home');crumbs([]);document.title='LEXI — английский по шагам';if(route!=='/home'){history.replaceState({},'','#/home');lastURL='/home'}}
   }finally{applying=false}focusPage();
  }
- start=function(...args){originalStart(...args);if(!applying&&game){const path=(custom?'/my/'+custom.key:lessonPath())+'/play/'+game.mode;history[location.hash==='#'+path?'replaceState':'pushState']({},'','#'+path);lastURL=path;show('play');if(custom)crumbs([...custom.crumbs,[modeNames[game.mode],null]]);else lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage()}};
- stop=function(){originalStop();if(!applying&&document.body.dataset.page==='play')navigate(custom?'/my/'+custom.key:lessonPath())};
+ start=function(...args){originalStart(...args);if(!applying&&game){const wb=wholeBook();const path=wb?'/book/'+wb.grade+'/play/'+game.mode:(custom?'/my/'+custom.key:lessonPath())+'/play/'+game.mode;history[location.hash==='#'+path?'replaceState':'pushState']({},'','#'+path);lastURL=path;show('play');if(wb)bookCrumbs(wb.grade,game.mode);else if(custom)crumbs([...custom.crumbs,[modeNames[game.mode],null]]);else lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage()}};
+ stop=function(){const wb=wholeBook();originalStop();if(!applying&&document.body.dataset.page==='play')navigate(wb?'/course/'+wb.grade+'/0':custom?'/my/'+custom.key:lessonPath())};
+ /* 2026-11-03: «Весь учебник» — свой адрес #/book/<класс>/play/<игра>: учебник берётся из адреса, а не из последнего открытого урока */
+ function wholeBook(){const w=window.LexigoWholeBook&&window.LexigoWholeBook.current;return w&&DB.books.some(b=>String(b.grade)===String(w.grade))?w:null}
+ function bookCrumbs(g,mode){crumbs([['Spotlight '+g,'/course/'+g+'/0'],['Весь учебник · '+modeNames[mode],null]])}
  /* для страниц уроков учителя (my-lessons.js) */
  window.LexigoNav=Object.freeze({navigate,crumbs,show,focusPage,setCustom(ctx){custom=ctx||null},custom:()=>custom,refresh(){lastURL='';render()}});
  goHome=()=>navigate('/home');goToLibrary=()=>navigate('/course/'+book.grade+'/'+modules(book).indexOf(mod));

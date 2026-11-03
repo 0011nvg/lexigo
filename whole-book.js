@@ -17,7 +17,7 @@ panel.innerHTML='<div class="wb-head"><span class="wb-icon" aria-hidden="true"><
 host.append(panel);
 const toggle=panel.querySelector('#wholeBookOpen'),body=panel.querySelector('#wholeBookBody'),modes=panel.querySelector('#wholeBookModes');
 body.inert=true;
-function selectedBook(){const grade=(document.getElementById('courseTitle').textContent.match(/\d+/)||[])[0];return window.LEXIGO_DATA.books.find(b=>String(b.grade)===String(grade))}
+function selectedBook(){const grade=((location.hash.match(/^#\/(?:course|book)\/(\d)/)||[])[1])||(document.getElementById('courseTitle').textContent.match(/\d+/)||[])[0];return window.LEXIGO_DATA.books.find(b=>String(b.grade)===String(grade))}
 const roundKey=(grade,mode)=>'B'+grade+'|'+mode;
 function lexical(b){const seen=new Set();return b.sections.flatMap(s=>s.words).filter(w=>(typeof isLexicalEntry!=='function'||isLexicalEntry(w))&&!seen.has(w.id)&&seen.add(w.id))}
 function eligibleFor(words,mode){
@@ -82,5 +82,13 @@ function mixDialog(b){
 toggle.addEventListener('click',()=>{const on=!panel.classList.contains('open');if(on)render();setOpen(on);if(on)setTimeout(()=>panel.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'}),360)});
 window.addEventListener('hashchange',()=>{if(panel.classList.contains('open'))render()});
 document.querySelectorAll('[data-mode],#quickStart').forEach(el=>el.addEventListener('click',()=>{window.LexigoWholeBook.current=null}));
-window.LexigoWholeBook={current:null,render,mixDialog:()=>{const b=selectedBook();if(b)mixDialog(b)}};
+/* запуск по адресу #/book/<класс>/play/<игра> (обновление страницы, «Назад», «Дальше: …») — без диалогов, с последним выбором */
+function playRoute(g,mode){const b=window.LEXIGO_DATA.books.find(x=>String(x.grade)===String(g));if(!b)return false;
+ if(mode==='mixed')begin(b,'mixed',lexical(b),savedMix());
+ else if(mode==='boss')begin(b,'boss',eligibleFor(lexical(b),'boss'),window.LexigoPlus?window.LexigoPlus.bossTypes():undefined);
+ else if(mode==='review')review(b);
+ else if(configs.some(c=>c[0]===mode))play(b,mode);
+ return !!game}
+window.LexigoWholeBook={current:null,render,play:playRoute,mixDialog:()=>{const b=selectedBook();if(b)mixDialog(b)}};
+if(/^#\/book\//.test(location.hash)){const go=()=>{if(window.LexigoNav&&!game)window.LexigoNav.refresh()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go()}
 })();

@@ -334,7 +334,7 @@
     if (r[0] === 'boss' && g.firstCorrect < (g.words.length - (g.retries || 0)) * .7) return ['review', 'Работа над ошибками', 'Сначала исправь ошибки, потом страж.'];
     return r;
   }
-  function lessonHash() { return '/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + [...new Set(book.sections.map(s => s.module))].indexOf(mod) : unit); }
+  function lessonHash() { const wb = window.LexigoWholeBook && window.LexigoWholeBook.current; if (wb) return '/book/' + wb.grade; return '/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + [...new Set(book.sections.map(s => s.module))].indexOf(mod) : unit); }
 
   /* ---------- header chrome: level chip, streak, calm toggle ---------- */
   function chrome() {

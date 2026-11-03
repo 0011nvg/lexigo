@@ -200,3 +200,18 @@
   .cq-top li{grid-template-columns:28px 1fr auto;}
   .cq-top-stars{display:none}
 }
+/* v3 (2026-11-03): ходы до заданий точками, цикл, счётчик верных слов, номер задания в блоке */
+.cq-moves.words{background:linear-gradient(160deg,#1fc497,#0c7f8f)}
+.cq-moves small{font-size:11.5px;text-align:center;line-height:1.2;max-width:96px}
+.cq-dots{display:flex;gap:4px;margin-top:5px}
+.cq-dots i{width:8px;height:8px;border-radius:50%;background:#fff}
+.cq-dots i.used{background:rgba(255,255,255,.3)}
+.cq-cycle{margin-left:auto;font-size:12px;font-weight:800;color:var(--w-mute);white-space:nowrap}
+.cq-score-top{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.cq-wordsbox b{display:block;font:800 18px/1.1 var(--w-display);color:var(--w-ink);margin-bottom:4px}
+.cq-word-dots{display:flex;gap:5px;margin:4px 0 2px}
+.cq-word-dots i{width:10px;height:10px;border-radius:50%;background:#e1e8f8}
+.cq-word-dots i.ok{background:#1fc497}.cq-word-dots i.miss{background:#ff9a8a}.cq-word-dots i.now{background:#2c56f5;box-shadow:0 0 0 3px rgba(44,86,245,.2)}
+.cq-res-tip{display:block;margin-top:6px;font-size:14px;color:var(--w-ink2)}
+@media (max-width:520px){.cq-cycle{margin-left:0;width:100%}}
+.cq-map-head h2{color:#fff!important}

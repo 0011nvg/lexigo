@@ -17,10 +17,21 @@
       document.head.append(s);
     });
   }
+  /* 2026-11-03: запрос к серверу аккаунтов не висит бесконечно (медленная или ограниченная сеть):
+     через 15 с он прерывается, сайт продолжает работать в гостевом режиме и показывает понятное сообщение */
+  const TIMEOUT_MS = 15000;
+  function timedFetch(input, init = {}) {
+    if (typeof AbortController !== 'function') return fetch(input, init);
+    const ctl = new AbortController(), outer = init.signal;
+    if (outer) { if (outer.aborted) ctl.abort(); else outer.addEventListener('abort', () => ctl.abort(), { once: true }); }
+    const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+    return fetch(input, { ...init, signal: ctl.signal }).catch(e => { if (ctl.signal.aborted && !(outer && outer.aborted)) throw new Error('Сервер не отвечает (timeout)'); throw e; }).finally(() => clearTimeout(timer));
+  }
   function client(opts = {}) {
     if (!configured) return Promise.reject(new Error('not-configured'));
     if (!clientPromise) clientPromise = loadVendor().then(() => window.supabase.createClient(cfg.url.replace(/\/$/, ''), cfg.anonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: !!opts.detectSessionInUrl, flowType: 'implicit', storageKey: 'lexigo-auth' }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: !!opts.detectSessionInUrl, flowType: 'implicit', storageKey: 'lexigo-auth' },
+      global: { fetch: timedFetch }
     }));
     return clientPromise;
   }
@@ -208,7 +219,8 @@
     if (m.includes('password') && (m.includes('at least') || m.includes('weak') || m.includes('short'))) return 'Пароль слишком простой: нужно минимум 8 символов, лучше с цифрами.';
     if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) return 'Слишком много попыток. Подожди минуту и попробуй снова.';
     if (m.includes('invalid email') || m.includes('unable to validate email')) return 'Проверь адрес электронной почты.';
-    if (m.includes('failed to fetch') || m.includes('network') || m.includes('загрузить модуль')) return 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.';
+    if (m.includes('timeout') || m.includes('не отвечает')) return 'Сервер аккаунтов сейчас не отвечает. Игры работают и без входа — прогресс сохранится на этом устройстве. Попробуй войти позже.';
+    if (m.includes('failed to fetch') || m.includes('network') || m.includes('load failed') || m.includes('загрузить модуль')) return 'Нет связи с сервером аккаунтов. Проверь интернет и попробуй ещё раз — игры работают и без входа.';
     if (m.includes('same_password') || m.includes('different from the old')) return 'Новый пароль должен отличаться от старого.';
     if (m.includes('not-configured')) return 'Облачные аккаунты пока не подключены.';
     if (m.includes('otp_expired') || m.includes('expired') || m.includes('invalid or has expired')) return 'Ссылка устарела или уже использована. Запроси новую.';

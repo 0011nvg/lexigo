@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Проверка связи — LEXI</title>
+<link rel="icon" href="assets/lexi-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="world.css?v=20261103d">
+<link rel="stylesheet" href="polish.css?v=20261103d">
+<style>
+ body{margin:0;background:#f5f7fd;font-family:var(--w-text);color:var(--w-ink)}
+ main{max-width:720px;margin:0 auto;padding:24px 16px 60px}
+ h1{font:800 clamp(22px,5vw,30px)/1.15 var(--w-display);margin:0 0 8px}
+ p{line-height:1.5;color:var(--w-ink2)}
+ ol{list-style:none;padding:0;margin:20px 0;display:grid;gap:10px}
+ li{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start;background:#fff;border-radius:16px;padding:12px 14px;box-shadow:var(--w-shadow)}
+ li .st{font-size:22px;line-height:1}
+ li b{display:block}
+ li small{color:var(--w-mute);font-size:13.5px;line-height:1.4;display:block;overflow-wrap:break-word}
+ .btns{display:flex;flex-wrap:wrap;gap:10px}
+ .btn{border:0;border-radius:999px;padding:12px 20px;font:800 15px/1 var(--w-text);background:var(--w-blue,#2c56f5);color:#fff;cursor:pointer}
+ .btn.secondary{background:#e8eefc;color:var(--w-ink)}
+ #summary{font-weight:800;color:var(--w-ink)}
+</style>
+</head>
+<body>
+<main>
+ <h1>Проверка связи LEXI</h1>
+ <p>Страница проверяет из твоей сети всё, от чего зависит LEXI: файлы сайта, шрифты, озвучку слов и сервер аккаунтов. Открой её с телефона или компьютера <b>без VPN</b> и пришли отчёт учителю или автору LEXI.</p>
+ <div class="btns"><button class="btn" id="run" type="button">Проверить ещё раз</button><button class="btn secondary" id="copy" type="button">Скопировать отчёт</button></div>
+ <p id="summary" role="status" aria-live="polite">Проверяем…</p>
+ <ol id="list"></ol>
+</main>
+<script src="config.js?v=20261103d"></script>
+<script>
+(() => {
+  'use strict';
+  const cfg = window.LEXIGO_CLOUD || {}, cloud = String(cfg.url || '').replace(/\/$/, ''), key = cfg.anonKey || '';
+  const list = document.getElementById('list'), summary = document.getElementById('summary');
+  let report = [];
+  /* загрузить ресурс целиком: важно для ограничений «только первые 16 КБ», когда сайт открывается, но большие файлы обрываются */
+  async function load(url, opts = {}, ms = 20000) {
+    const ctl = new AbortController(), t0 = performance.now(), timer = setTimeout(() => ctl.abort(), ms);
+    try {
+      const r = await fetch(url, { cache: 'no-store', ...opts, signal: ctl.signal });
+      const buf = await r.arrayBuffer();
+      return { ok: r.ok, status: r.status, bytes: buf.byteLength, ms: Math.round(performance.now() - t0) };
+    } catch (e) { return { ok: false, error: ctl.signal.aborted ? 'нет ответа за ' + ms / 1000 + ' с' : (e.message || String(e)), ms: Math.round(performance.now() - t0) }; }
+    finally { clearTimeout(timer); }
+  }
+  const kb = n => (n / 1024).toFixed(0) + ' КБ';
+  const checks = [
+    ['Главная страница', () => load('index.html'), r => r.ok && r.bytes > 30000],
+    ['Большой файл со словами (≈150 КБ)', () => load('data.js'), r => r.ok && r.bytes > 100000],
+    ['Словарь Spotlight 9', () => load('vocabulary/spotlight-9.js'), r => r.ok && r.bytes > 50000],
+    ['Шрифт LEXI (хранится на сайте)', () => load('assets/fonts/nunito-cyrillic-800-normal.woff2'), r => r.ok && r.bytes > 5000],
+    ['Картинки', () => load('assets/soft-premium-worlds.webp'), r => r.ok && r.bytes > 20000],
+    ['Модуль аккаунтов (≈200 КБ)', () => load('vendor/supabase-2.118.0.min.js'), r => r.ok && r.bytes > 100000],
+    ['Сервер аккаунтов: вход и регистрация', () => cloud ? load(cloud + '/auth/v1/health', { headers: { apikey: key } }) : Promise.resolve({ ok: false, error: 'облако не подключено' }), r => r.ok],
+    ['Сервер аккаунтов: данные и рейтинг', () => cloud ? load(cloud + '/rest/v1/rpc/leaderboard_top', { method: 'POST', headers: { apikey: key, 'content-type': 'application/json' }, body: JSON.stringify({ p_board: 'quiz|lesson|5|0' }) }) : Promise.resolve({ ok: false, error: 'облако не подключено' }), r => r.ok || (r.status >= 400 && r.status < 500)],
+    ['Озвучка английских слов (голос браузера)', () => new Promise(res => {
+      if (!('speechSynthesis' in window)) return res({ ok: false, error: 'браузер не умеет озвучивать' });
+      const done = () => { const v = speechSynthesis.getVoices().filter(x => /^en/i.test(x.lang)); res({ ok: v.length > 0, voices: v.length, names: v.slice(0, 3).map(x => x.name).join(', ') }); };
+      if (speechSynthesis.getVoices().length) done(); else { speechSynthesis.addEventListener('voiceschanged', done, { once: true }); setTimeout(done, 2500); }
+    }), r => r.ok]
+  ];
+  async function run() {
+    list.replaceChildren(); report = []; summary.textContent = 'Проверяем…';
+    let bad = 0;
+    for (const [name, fn, good] of checks) {
+      const li = document.createElement('li'), st = document.createElement('span'), box = document.createElement('div'), b = document.createElement('b'), sm = document.createElement('small');
+      st.className = 'st'; st.textContent = '⏳'; b.textContent = name; box.append(b, sm); li.append(st, box); list.append(li);
+      const r = await fn(), ok = good(r);
+      if (!ok) bad++;
+      st.textContent = ok ? '✅' : '❌';
+      sm.textContent = r.voices != null ? (ok ? 'английских голосов: ' + r.voices + (r.names ? ' (' + r.names + ')' : '') : 'английских голосов нет — аудиозадания будут заменены письменными') :
+        (ok ? 'загружено ' + kb(r.bytes || 0) + ' за ' + (r.ms / 1000).toFixed(1) + ' с' : (r.error ? r.error : 'ответ ' + r.status + (r.bytes != null ? ', загружено только ' + kb(r.bytes) : '')) + ' · ' + (r.ms / 1000).toFixed(1) + ' с');
+      report.push((ok ? 'OK  ' : 'ERR ') + name + ' — ' + sm.textContent);
+    }
+    summary.textContent = bad ? 'Есть проблемы: ' + bad + ' из ' + checks.length + '. Скопируй отчёт и пришли его.' : 'Всё работает: ' + checks.length + ' из ' + checks.length + '.';
+    report.unshift('LEXI проверка связи · ' + new Date().toLocaleString('ru-RU') + ' · ' + navigator.userAgent, location.href, '');
+  }
+  document.getElementById('run').onclick = run;
+  document.getElementById('copy').onclick = async () => { const t = report.join('\n'); try { await navigator.clipboard.writeText(t); summary.textContent = 'Отчёт скопирован.'; } catch { prompt('Скопируй отчёт:', t); } };
+  run();
+})();
+</script>
+</body>
+</html>

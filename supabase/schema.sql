@@ -882,3 +882,95 @@ begin
 end $$;
 revoke all on function public.rounds_save(text, text[], int) from public, anon;
 grant execute on function public.rounds_save(text, text[], int) to authenticated;
+
+-- =====================================================================
+-- v5 · «Кристальная экспедиция» v3 (2026-11-03): свободный обмен кристаллов и циклы «5 ходов → 5 заданий на слова».
+-- Верный ответ больше не даёт +1 ход: ходов на уровне ровно cycles × 5. Звёзды: очки И точность ответов
+-- (2★ — от 60 %, 3★ — от 80 %). Рейтинг: точность ответов весит больше (600), очки уровня — 400 с пределом.
+-- Клиент v3 присылает "v": 3; результаты старых версий страницы (без "v") проверяются по прежним правилам.
+-- =====================================================================
+create or replace function public.crystal_cfg3(p_level int, out moves int, out cycles int, out s1 int, out s2 int, out s3 int, out words int, out score_goal boolean)
+language sql immutable set search_path = '' as $$
+  select c.moves, c.cycles, c.s1, c.s2, c.s3, c.words, c.score_goal from (values
+    (1, 20, 4, 1500, 2300, 3000, 12, true),
+    (2, 20, 4, 1900, 2800, 3600, 13, true),
+    (3, 25, 5, 3200, 4600, 5800, 16, true),
+    (4, 25, 5, 2000, 3000, 3900, 16, false),
+    (5, 25, 5, 2400, 3400, 4300, 17, true)
+  ) as c(level, moves, cycles, s1, s2, s3, words, score_goal) where c.level = p_level
+$$;
+
+create or replace function public.crystal_rating3(p_level int, p_won boolean, p_stars int, p_score int, p_moves_left int, p_words_ok int, p_words_tried int)
+returns int language plpgsql immutable set search_path = '' as $$
+declare c record; top numeric;
+begin
+  if not coalesce(p_won, false) then return 0; end if;
+  select * into c from public.crystal_cfg3(p_level); if c.moves is null then return 0; end if;
+  top := c.s3 * 2;
+  return p_stars * 1000 + round(400 * least(p_score, top) / top)::int + 10 * least(greatest(p_moves_left, 0), 30)
+       + round(600 * (case when p_words_tried > 0 then p_words_ok::numeric / p_words_tried else 0 end))::int;
+end $$;
+
+create or replace function public.crystal_finish(p jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); r public.crystal_runs; c record; prev int; v3 boolean;
+  v_won boolean; v_score int; v_left int; v_used int; v_ok int; v_tried int; v_stars int; v_rating int; v_acc numeric; v_blocks int; tt record;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  begin
+    select * into r from public.crystal_runs where id = (p->>'run_id')::uuid and user_id = uid for update;
+  exception when others then return jsonb_build_object('ok', false, 'reason', 'run'); end;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'run'); end if;
+  if r.finished_at is not null then   -- повторная отправка той же партии ничего не меняет
+    select * into tt from public.crystal_totals(uid);
+    return jsonb_build_object('ok', true, 'duplicate', true, 'counted', r.rating > 0, 'rating', r.rating, 'total', tt.total, 'place', tt.place, 'improved', false);
+  end if;
+  if r.started_at < now() - interval '6 hours' then return jsonb_build_object('ok', false, 'reason', 'expired'); end if;
+  v3 := coalesce(p->>'v', '') = '3';
+  begin
+    v_won := coalesce((p->>'won')::boolean, false); v_score := (p->>'score')::int; v_left := (p->>'moves_left')::int; v_used := (p->>'moves_used')::int;
+    v_ok := (p->>'words_ok')::int; v_tried := (p->>'words_tried')::int;
+  exception when others then return jsonb_build_object('ok', false, 'reason', 'bad'); end;
+  if v3 then
+    select * into c from public.crystal_cfg3(r.level);
+    v_blocks := ceil(coalesce(v_used, 0) / 5.0)::int;
+    -- правдоподобие v3: ходов ровно cycles × 5; после каждых 5 ходов — 5 заданий; очки не выше предела; на ход и задание нужно время
+    if v_score is null or v_left is null or v_used is null or v_ok is null or v_tried is null
+       or v_score < 0 or v_left < 0 or v_used < 1 or v_ok < 0 or v_ok > v_tried
+       or v_used + v_left <> c.moves
+       or v_tried > c.cycles * 5 or v_tried < 5 * (v_blocks - 1) or v_tried > 5 * v_blocks
+       or (not v_won and (v_left <> 0 or v_tried <> c.cycles * 5))
+       or v_score > v_used * 3000 + v_tried * 70 + c.cycles * 150 + c.moves * 50
+       or now() - r.started_at < make_interval(secs => v_used * 0.7 + v_tried * 0.5)
+       or (v_won and v_ok < c.words)
+       or (v_won and c.score_goal and v_score < c.s1) then
+      update public.crystal_runs set finished_at = now(), won = false, stars = 0, score = 0, moves_left = 0, moves_used = least(greatest(coalesce(v_used, 0), 0), 300), words_ok = 0, words_tried = 0, rating = 0 where id = r.id;
+      return jsonb_build_object('ok', false, 'reason', 'implausible');
+    end if;
+    v_acc := case when v_tried > 0 then v_ok::numeric / v_tried else 0 end;
+    v_stars := case when v_won then 1 + (v_score >= c.s2 and v_acc >= 0.6)::int + (v_score >= c.s3 and v_acc >= 0.8)::int else 0 end;
+    v_rating := public.crystal_rating3(r.level, v_won, v_stars, v_score, v_left, v_ok, v_tried);
+  else
+    select * into c from public.crystal_cfg(r.level);
+    if v_score is null or v_left is null or v_used is null or v_ok is null or v_tried is null
+       or v_score < 0 or v_left < 0 or v_used < 1 or v_ok < 0 or v_ok > v_tried or v_tried > 60
+       or v_used + v_left <> c.moves + v_ok
+       or (not v_won and v_left <> 0)
+       or v_score > v_used * 9000 + (c.moves + 15) * 250 + 40 * 150
+       or now() - r.started_at < make_interval(secs => v_used * 0.7)
+       or (v_won and v_ok < c.words)
+       or (v_won and c.score_goal and v_score < c.s1) then
+      update public.crystal_runs set finished_at = now(), won = false, stars = 0, score = 0, moves_left = 0, moves_used = least(greatest(coalesce(v_used, 0), 0), 300), words_ok = 0, words_tried = 0, rating = 0 where id = r.id;
+      return jsonb_build_object('ok', false, 'reason', 'implausible');
+    end if;
+    v_stars := case when v_won then 1 + (v_score >= c.s2)::int + (v_score >= c.s3)::int else 0 end;
+    v_rating := public.crystal_rating(r.level, v_won, v_stars, v_score, v_left, v_ok, v_tried);
+  end if;
+  select coalesce(max(rating), 0) into prev from public.crystal_runs where user_id = uid and level = r.level and finished_at is not null;
+  update public.crystal_runs set finished_at = now(), won = v_won, stars = v_stars, score = v_score, moves_left = v_left, moves_used = v_used,
+    words_ok = v_ok, words_tried = v_tried, rating = v_rating where id = r.id;
+  select * into tt from public.crystal_totals(uid);
+  return jsonb_build_object('ok', true, 'counted', v_rating > 0, 'stars', v_stars, 'rating', v_rating, 'total', tt.total, 'place', tt.place, 'improved', v_rating > prev);
+end $$;
+revoke all on function public.crystal_cfg3(int), public.crystal_rating3(int, boolean, int, int, int, int, int), public.crystal_finish(jsonb) from public, anon;
+grant execute on function public.crystal_finish(jsonb), public.crystal_cfg3(int), public.crystal_rating3(int, boolean, int, int, int, int, int) to authenticated;

@@ -1,4 +1,6 @@
-/* LEXI — «Кристальная экспедиция» v2: экран игры (2026-11-02).
+/* LEXI — «Кристальная экспедиция» v2: экран игры (2026-11-02). v3 (2026-11-03): свободный обмен кристаллов
+ * (без ряда кристаллы остаются на новых местах), циклы «5 ходов → блок из 5 заданий на слова», очки за слова и серию,
+ * звёзды с учётом точности ответов; слова уровня — по порядку набора (word-rounds.js), ошибки повторяются в следующем блоке.
  * Правила — crystal-engine.js. Здесь: карта уровней, поле (перетаскивание, касания, клавиатура), анимации,
  * «Энергия Лекси» и задания со словами модуля или урока учителя, пауза, итоги, рекорды и рейтинг.
  *
@@ -97,8 +99,7 @@
 
   function begin(game) {
     loadData(); sprite();
-    G = { game, queue: [], wordCount: 0, answers: [], st: null, busy: false, sel: null, focus: 0, tiles: new Map(), view: [], hintTimer: 0, run: null };
-    G.queue = game.words.map(w => ({ w }));
+    G = { game, queue: [], retries: [], asked: new Set(), wordCount: 0, answers: [], st: null, busy: false, sel: null, focus: 0, tiles: new Map(), view: [], hintTimer: 0, run: null };
     game.crystals = 0; game.crystalPoints = 0;
     if (!adapter && window.LexigoLocalGameAdapter) adapter = window.LexigoLocalGameAdapter.create({ getState: () => game_(), shuffle, normalize, audioAvailable, speak, record, renderQuestion: () => {}, answerUI: onAnswer, textAnswerHints });
     flushQueue();
@@ -121,7 +122,7 @@
     const img = el('img', 'cq-map-lexi'); img.src = 'assets/lexi-head.webp'; img.alt = '';
     const htext = el('div');
     const h2 = el('h2', null, 'Выбери уровень'); h2.id = 'cqMapTitle'; h2.tabIndex = -1;
-    htext.append(h2, el('p', null, 'Собирай кристаллы, заряжай «Энергию Лекси» и отвечай на вопросы по словам — за верный ответ +1 ход. Сегодня у всех игроков одинаковое поле: «Экспедиция дня».'));
+    htext.append(h2, el('p', null, 'Меняй местами любые соседние кристаллы и готовь комбинации. После каждых 5 ходов — 5 заданий на слова: верные ответы приносят очки и звёзды. Сегодня у всех одинаковое поле — «Экспедиция дня».'));
     head.append(img, htext);
     const list = el('div', 'cq-levels');
     for (const L of E.LEVELS) {
@@ -135,12 +136,12 @@
         el('span', 'cq-level-txt'), stars);
       const t = b.querySelector('.cq-level-txt');
       t.append(el('b', null, L.name), el('small', null, open ? L.intro : 'Откроется после уровня ' + (L.id - 1)),
-        el('small', 'cq-level-meta', open ? (r && r.best ? 'Рекорд: ' + fmt(r.best) + ' · ' : '') + ruN(L.moves, 'ход', 'хода', 'ходов') + ' · ' + L.goals.length + ' ' + (L.goals.length < 5 ? 'цели' : 'целей') : ''));
+        el('small', 'cq-level-meta', open ? (r && r.best ? 'Рекорд: ' + fmt(r.best) + ' · ' : '') + ruN(L.cycles, 'цикл', 'цикла', 'циклов') + ': ' + L.moves + ' ходов и ' + L.moves + ' заданий' : ''));
       list.append(b);
     }
     const tools = el('div', 'cq-map-tools');
     tools.append(prefButton('muted'), prefButton('calm'));
-    const words = el('p', 'cq-map-words muted tiny', 'Слова для заданий: ' + ruN(G.game.words.length, 'слово', 'слова', 'слов') + (isPreview(G.game) ? ' · тренировка учителя: все уровни открыты, в рейтинг не попадает' : ''));
+    const words = el('p', 'cq-map-words muted tiny', 'Слова для заданий: ' + ruN(wordPool(G).length, 'слово', 'слова', 'слов') + (G.game.round ? ' — по порядку, с места, где остановился' : '') + (isPreview(G.game) ? ' · тренировка учителя: все уровни открыты, в рейтинг не попадает' : ''));
     const board = el('section', 'cq-rating'); board.setAttribute('aria-labelledby', 'cqRatingTitle');
     wrap.append(head, list, tools, words, board);
     $('play').replaceChildren(wrap);
@@ -221,11 +222,12 @@
     const g = G, L = E.level(id);
     clearTimeout(g.hintTimer);
     g.level = L; g.st = E.create(id, E.dailySeed(id, today())); g.busy = false; g.sel = null; g.focus = 0; g.tiles = new Map(); g.view = []; g.answers = [];
-    g.shown = { score: 0, energy: 0 };
+    g.shown = { score: 0 }; g.idleSaid = 0;
+    planWords(g);
     g.run = { id: null, day: today(), t0: Date.now() };
     lvl(id).plays++; persist();
     renderPlay();
-    say(L.intro, 3200);
+    say(L.intro + ' Через ' + ruN(E.CYCLE, 'ход', 'хода', 'ходов') + ' — задания на слова.', 3600);
     if (signedIn() && !isPreview(g.game)) cloud().then(session => session && session.sb.rpc('crystal_start', { p_level: id, p_day: g.run.day })).then(r => { if (r && !r.error && r.data && r.data.ok && alive(g)) g.run.id = r.data.run_id; }).catch(() => { /* рейтинг без связи недоступен — игра продолжается */ });
   }
   function renderPlay() {
@@ -233,13 +235,13 @@
     $('gameTitle').textContent = '💎 ' + L.id + '. ' + L.name;
     const play = el('div', 'cq-play' + (reduced() ? ' calm' : ''));
     play.innerHTML = `<div class="cq-hud">
-        <div class="cq-moves" aria-live="polite"><b id="cqMoves"></b><small>ходов</small></div>
-        <div class="cq-scorebox"><div class="cq-score-top"><b id="cqScore">0</b><small>очков</small></div><div class="cq-starbar" aria-hidden="true"><i id="cqStarFill"></i></div></div>
-        <div class="cq-energy" title="Энергия Лекси: собирай кристаллы — получишь задание со словом"><img src="assets/lexi-head.webp" alt=""><div><small>Энергия Лекси</small><div class="cq-energy-bar"><i id="cqEnergy"></i></div></div></div>
+        <div class="cq-moves" aria-live="polite"><b id="cqMoves"></b><small id="cqMovesTxt">до заданий</small><span class="cq-dots" id="cqDots" aria-hidden="true"></span></div>
+        <div class="cq-scorebox"><div class="cq-score-top"><b id="cqScore">0</b><small>очков</small><span class="cq-cycle" id="cqCycle"></span></div><div class="cq-starbar" aria-hidden="true"><i id="cqStarFill"></i></div></div>
+        <div class="cq-energy cq-wordsbox"><img src="assets/lexi-head.webp" alt=""><div><small>Слова: верно</small><b id="cqWords">0</b><div class="cq-energy-bar"><i id="cqEnergy"></i></div></div></div>
       </div>
       <ul class="cq-goals" id="cqGoals" aria-label="Цели уровня"></ul>
       <div class="cq-stage"><div class="cq-board" id="cqBoard" role="group" tabindex="0"></div><div class="cq-fx" id="cqFx" aria-hidden="true"></div><p class="cq-toast" id="cqToast" role="status" aria-live="polite"></p></div>
-      <p class="cq-help muted tiny">Проведи кристалл к соседнему или нажми два соседних кристалла. С клавиатуры: стрелки — выбрать, Enter — взять кристалл, стрелка — поменять.</p>
+      <p class="cq-help muted tiny">Проведи кристалл к соседнему или нажми два соседних — они поменяются местами, даже без ряда. С клавиатуры: стрелки, Enter — взять кристалл, стрелка — поменять.</p>
       <div class="cq-tools"></div>`;
     const marks = play.querySelector('.cq-starbar');
     L.stars.forEach((s, k) => { const m = el('span', 'cq-starmark', '★'); m.style.left = Math.min(98, s / L.stars[2] * 92) + '%'; m.dataset.k = k; marks.append(m); });
@@ -338,15 +340,9 @@
     if (!E.neighbors(g.st, a, b)) return;
     clearHint(); g.busy = true; markSelection();
     const res = E.swap(g.st, a, b);
-    if (!res.ok) {
-      const ta = tileAt(a), tb = tileAt(b);
-      if (ta && tb) { place(ta, b); place(tb, a); await wait(T().back); if (!alive(g)) return; place(ta, a); place(tb, b); }
-      sound('bad'); g.bad = (g.bad || 0) + 1;
-      if (g.bad <= 2) say('Нужно собрать три одинаковых в ряд — кристаллы вернулись, ход не потрачен.', 2600);
-      await wait(T().back); if (!alive(g)) return;
-      g.busy = false; hintLater(); return;
-    }
+    if (!res.ok) { g.busy = false; return; }
     await runSteps(res.steps, g); if (!alive(g)) return;
+    if (res.idle && g.idleSaid++ < 2) say('Без ряда кристаллы остаются на новых местах — так можно готовить комбинацию. Ход потрачен.', 2600);
     await afterMove(g);
   }
 
@@ -354,7 +350,7 @@
   async function runSteps(steps, g) {
     for (const s of steps) {
       if (!alive(g)) return;
-      if (s.t === 'swap') { sync(s.cells); sound('swap'); await wait(T().swap); }
+      if (s.t === 'swap') { sync(s.cells); sound('swap'); await wait(T().swap); hud(); }
       else if (s.t === 'transform' || s.t === 'reward') { sync(s.cells); const t = s.i != null ? tileAt(s.i) : null; if (t) { t.classList.add('born'); setTimeout(() => t.classList.remove('born'), 600); } sound('special'); await wait(T().flash); }
       else if (s.t === 'clear') {
         const prev = G.view, fx = $('cqFx');
@@ -366,7 +362,7 @@
         if (s.created.length) say(s.created.map(i => SPECIAL_NAME[s.cells[i].s]).map(n => 'Особый кристалл: ' + n + '!').join(' '), 1600);
         sound(s.fired.length ? 'special' : 'match', s.chain);
         syncIce(s.iceMap);
-        g.shown.score += s.points; g.shown.energy += s.cleared.length; hud(true);
+        g.shown.score += s.points; hud(true);
         await wait(T().pop); if (!alive(g)) return;
         sync(s.cells);
         for (const i of s.created) { const t = tileAt(i); if (t) { t.classList.add('born'); setTimeout(() => t.classList.remove('born'), 600); } }
@@ -380,7 +376,7 @@
         sync(s.cells); await wait(reduced() ? 60 : 500);
       }
     }
-    if (alive(g)) { g.shown.score = g.st.score; g.shown.energy = g.st.energy; hud(); }
+    if (alive(g)) { g.shown.score = g.st.score; hud(); }
   }
   function cellCenter(i) { const [x, y] = E.xy(G.st, i); return [(x + 0.5) / G.st.size * 100, (y + 0.5) / G.st.size * 100]; }
   function burst(i, p) {
@@ -410,12 +406,18 @@
   /* ---------- HUD: ходы, очки и звёзды, энергия, цели ---------- */
   function hud(partial) {
     const g = G; if (!g || !g.st) return;
-    const st = g.st, L = g.level, score = partial ? g.shown.score : st.score, energy = partial ? g.shown.energy : st.energy;
-    const m = $('cqMoves'); if (m) { m.textContent = st.moves; m.parentElement.classList.toggle('low', st.moves <= 5); }
+    const st = g.st, L = g.level, score = partial ? g.shown.score : st.score;
+    const words = st.phase === 'words', m = $('cqMoves');
+    if (m) { m.textContent = words ? '📖' : st.cycleLeft; m.parentElement.classList.toggle('low', !words && st.cycleLeft <= 1 && st.moves > 1); m.parentElement.classList.toggle('words', words); }
+    const mt = $('cqMovesTxt'); if (mt) mt.textContent = words ? 'задания' : st.moves <= st.cycleLeft && st.cycle >= st.cycles ? (st.cycleLeft === 1 ? 'последний ход' : 'последние ходы') : ruN(st.cycleLeft, 'ход', 'хода', 'ходов').replace(/^\d+ /, '') + ' до заданий';
+    const dots = $('cqDots'); if (dots) dots.replaceChildren(...Array.from({ length: E.CYCLE }, (_, k) => el('i', k < E.CYCLE - (words ? 0 : st.cycleLeft) ? 'used' : null)));
+    const cy = $('cqCycle'); if (cy) cy.textContent = 'Уровень ' + L.id + ' · цикл ' + Math.min(st.cycle, st.cycles) + ' из ' + st.cycles;
     const s = $('cqScore'); if (s) s.textContent = fmt(score);
     const f = $('cqStarFill'); if (f) f.style.width = Math.min(100, score / L.stars[2] * 92) + '%';
     document.querySelectorAll('.cq-starmark').forEach(mk => mk.classList.toggle('on', score >= L.stars[Number(mk.dataset.k)]));
-    const en = $('cqEnergy'); if (en) { en.style.width = Math.min(100, energy / st.energyNeed * 100) + '%'; en.parentElement.classList.toggle('full', energy >= st.energyNeed); }
+    const need = (E.goals(st).find(x => x.type === 'words') || {}).need || L.moves;
+    const wv = $('cqWords'); if (wv) wv.textContent = st.wordsOk + ' / ' + need;
+    const en = $('cqEnergy'); if (en) { en.style.width = Math.min(100, st.wordsOk / need * 100) + '%'; en.parentElement.classList.toggle('full', st.wordsOk >= need); }
     const list = $('cqGoals');
     if (list) {
       list.replaceChildren(...E.goals(st).map(x => {
@@ -426,53 +428,97 @@
         return li;
       }));
     }
-    const board = $('cqBoard'); if (board) board.setAttribute('aria-label', 'Поле кристаллов ' + st.size + ' на ' + st.size + '. Ходов: ' + st.moves + '. Очков: ' + st.score);
-    $('counter').textContent = 'Ходов: ' + st.moves + ' · очков: ' + fmt(st.score);
-    $('bar').style.width = Math.round(st.movesUsed / Math.max(1, st.movesUsed + st.moves) * 100) + '%';
+    const board = $('cqBoard'); if (board) board.setAttribute('aria-label', 'Поле кристаллов ' + st.size + ' на ' + st.size + '. Ходов до заданий: ' + st.cycleLeft + '. Очков: ' + st.score);
+    $('counter').textContent = 'Цикл ' + Math.min(st.cycle, st.cycles) + ' из ' + st.cycles + ' · ходов до заданий: ' + (words ? 0 : st.cycleLeft) + ' · слов верно: ' + st.wordsOk + ' · очков: ' + fmt(st.score);
+    $('bar').style.width = Math.round((st.movesUsed + st.wordsTried) / Math.max(1, L.moves * 2) * 100) + '%';
   }
   /* подсказка, если ученик долго думает */
   function clearHint() { if (!G) return; clearTimeout(G.hintTimer); document.querySelectorAll('#cqBoard .hint').forEach(t => t.classList.remove('hint')); }
   function hintLater() {
     if (!G) return; const g = G; clearTimeout(g.hintTimer);
-    g.hintTimer = setTimeout(() => { if (!alive(g) || g.busy || !g.st || g.st.over) return; const mv = E.findMove(g.st); if (mv) mv.forEach(i => tileAt(i)?.classList.add('hint')); }, 7000);
+    g.hintTimer = setTimeout(() => { if (!alive(g) || g.busy || !g.st || g.st.over || g.st.phase !== 'move') return; const mv = E.findMove(g.st); if (mv) mv.forEach(i => tileAt(i)?.classList.add('hint')); }, 7000);
   }
 
-  /* ---------- после хода: слова → цели → конец ходов ---------- */
+  /* ---------- после хода: цели → блок заданий (после 5 ходов) → следующий цикл или конец уровня ---------- */
   async function afterMove(g) {
-    if (alive(g) && E.takeEnergy(g.st)) { hud(); await askWord(g); }
     if (!alive(g)) return;
     if (E.goalsMet(g.st)) return finishLevel(g);
-    if (g.st.moves <= 0) return finishLevel(g);
+    if (E.wordsDue(g.st)) {
+      await wordBlock(g); if (!alive(g)) return;
+      if (E.goalsMet(g.st) || g.st.over) return finishLevel(g);
+      say('Снова ' + ruN(g.st.cycleLeft, 'ход', 'хода', 'ходов') + ' с кристаллами!', 1600);
+    }
     g.busy = false; hintLater();
-    if (g.st.moves === 3) say('Осталось 3 хода!', 1800);
   }
 
-  /* ---------- задания со словами ---------- */
-  const TYPES = { 1: ['quiz', 'truefalse'], 2: ['quiz', 'fix', 'truefalse'], 3: ['quiz', 'builder', 'fix', 'truefalse'], 4: ['builder', 'quiz', 'fix', 'truefalse'], 5: ['builder', 'spell', 'fix', 'quiz'] };
-  function nextWord(g) {
-    if (!g.queue.length) g.queue = shuffle(g.game.words).map(w => ({ w }));
-    const item = g.queue.shift();
-    let type = item.retry ? 'quiz' : TYPES[g.level.id][g.wordCount % TYPES[g.level.id].length];
+  /* ---------- слова уровня: по порядку набора, без лишних повторов; ошибки — в следующем блоке ---------- */
+  const TYPES = { 1: ['quiz', 'truefalse', 'quiz', 'fix', 'truefalse'], 2: ['quiz', 'builder', 'truefalse', 'fix', 'quiz'], 3: ['quiz', 'builder', 'fix', 'spell', 'truefalse'],
+    4: ['builder', 'spell', 'quiz', 'fix', 'truefalse'], 5: ['spell', 'builder', 'fix', 'quiz', 'spell'] };
+  const singleWord = w => typeof isSingleVocabularyWord === 'function' ? isSingleVocabularyWord(w.en) : /^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/.test(String(w.en).trim());
+  /* весь набор слов (у урока, модуля, всего учебника — по порядку); у урока учителя — его слова */
+  function wordPool(g) {
+    const r = g.game.round;
+    if (r && r.poolIds && typeof wordById === 'function') { const ws = r.poolIds.map(wordById).filter(w => w && singleWord(w)); if (ws.length) return ws; }
+    return g.game.words;
+  }
+  function planWords(g) {
+    const pool = wordPool(g), tasks = g.level.moves, r = g.game.round;
+    let fresh = pool;
+    if (r && window.LexiRounds) fresh = LexiRounds.plan({ key: r.key, pool, mode: 'crystals', size: tasks }).words;
+    else fresh = shuffle(pool);
+    g.queue = fresh.slice(); g.retries = []; g.asked = new Set(); g.pool = pool;
+    /* трудные слова набора (ошибки, «пора повторить») — по одному в блоке */
+    g.review = shuffle(pool.filter(w => { try { return isReviewWord(w) && !fresh.includes(w); } catch { return false; } })).slice(0, g.level.cycles);
+  }
+  function pickBlock(g) {
+    const out = [], has = w => out.some(x => x.w.id === w.id);
+    while (out.length < 2 && g.retries.length) { const w = g.retries.shift(); if (!has(w)) out.push({ w, retry: true }); }
+    if (g.review && g.review.length && out.length < E.BLOCK) { const w = g.review.shift(); if (!has(w)) out.push({ w, review: true }); }
+    for (let guard = 0; out.length < E.BLOCK && guard < 200; guard++) {
+      if (!g.queue.length) g.queue = shuffle(g.pool.filter(w => !g.asked.has(w.id)).length ? g.pool.filter(w => !g.asked.has(w.id)) : g.pool);
+      const w = g.queue.shift(); if (!w) break;
+      if (!has(w) || g.pool.length < E.BLOCK) out.push({ w });
+    }
+    return out.slice(0, E.BLOCK);
+  }
+  function typeFor(g, item, k) {
+    let type = item.retry ? 'quiz' : TYPES[g.level.id][k % TYPES[g.level.id].length];
     if (type === 'builder' && !(window.LexiWordBuilder && window.LexiWordBuilder.isBuilderWord(item.w))) type = 'quiz';
-    if (['quiz', 'truefalse'].includes(type) && g.game.words.length < 2 && !findBook(item.w)) type = 'spell';
-    g.wordCount++;
-    return { ...item, type };
+    if (['quiz', 'truefalse'].includes(type) && g.pool.length < 2 && !findBook(item.w)) type = 'spell';
+    return type;
   }
   const findBook = w => window.LEXIGO_DATA && window.LEXIGO_DATA.books.some(b => b.sections.some(s => s.words.some(x => x.id === w.id)));
-  function askWord(g) {
+  /* блок из 5 заданий: поле закрыто, сверху — номер задания */
+  async function wordBlock(g) {
+    clearHint(); g.busy = true; hud();
+    say('📖 Время слов: 5 заданий!', 1400);
+    await wait(reduced() ? 60 : 450); if (!alive(g)) return;
+    const items = pickBlock(g);
+    for (let k = 0; k < items.length; k++) { await askWord(g, { ...items[k], type: typeFor(g, items[k], k) }, k, items.length); if (!alive(g)) return; }
+    while (g.st.block.n < E.BLOCK && g.st.phase === 'words') E.wordAnswered(g.st, false);   // слов меньше пяти (крайний случай)
+    const res = E.endBlock(g.st);
+    hud();
+    say(res.perfect ? '🌟 5 из 5! +' + res.bonus + ' и особый кристалл!' : res.bonus ? res.ok + ' из 5 — бонус +' + res.bonus + '!' : res.ok + ' из 5. Ошибки повторим в следующем блоке.', 2200);
+    if (res.steps.length) await runSteps(res.steps, g);
+  }
+  function askWord(g, item, k, total) {
     return new Promise(resolve => {
-      const item = nextWord(g), game = g.game;
+      const game = g.game;
+      g.wordCount++; g.asked.add(item.w.id);
       game.answered = false; game.hinted = false; game.activeQuestionMode = item.type; game.retryActive = !!item.retry;
       const stage = document.getElementById('play'); if (!stage || !document.querySelector('.cq-stage')) return resolve();
       const box = el('div', 'cq-word'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'cqWordTitle');
       const card = el('div', 'cq-word-card');
       const head = el('div', 'cq-word-head'); const img = el('img'); img.src = 'assets/lexi-head.webp'; img.alt = '';
-      const ht = el('div'); const title = el('b', null, item.retry ? 'Вернёмся к этому слову' : 'Энергия Лекси заряжена!'); title.id = 'cqWordTitle';
-      ht.append(title, el('small', null, 'Ответь верно — получишь +1 ход' + (g.st.specials.length ? ' и особый кристалл' : '') + '.'));
+      const ht = el('div'); const title = el('b', null, 'Задание ' + (k + 1) + ' из ' + total + (item.retry ? ' · повторим' : '')); title.id = 'cqWordTitle';
+      const dots = el('span', 'cq-word-dots'); dots.setAttribute('aria-hidden', 'true');
+      for (let j = 0; j < total; j++) dots.append(el('i', j < k ? (g.blockMarks && g.blockMarks[j] ? 'ok' : 'miss') : j === k ? 'now' : null));
+      ht.append(title, dots, el('small', null, 'Верно — +' + E.WORD_POINTS + ' очков, серия верных — больше.'));
       head.append(img, ht);
       const q = el('div', 'question');
       card.append(head, q); box.append(card); stage.append(box);
-      g.pending = { item, resolve, box, q };
+      if (k === 0) g.blockMarks = [];
+      g.pending = { item, resolve, box, q, k };
       try {
         const { model, actions } = adapter.question(item.type, item.w);
         const entry = LexigoGameEngine.question(q, model, actions);
@@ -490,16 +536,18 @@
     else record(w, counted, skill);
     if (counted && !game.retryActive) game.firstCorrect = (game.firstCorrect || 0) + 1;
     g.answers.push({ w, ok: counted });
-    if (!counted) g.queue.splice(Math.min(1, g.queue.length), 0, { w, retry: true });
+    if (!counted && !item.retry && !g.retries.some(x => x.id === w.id)) g.retries.push(w);
     const res = E.wordAnswered(g.st, counted);
+    if (g.blockMarks) g.blockMarks[g.pending.k] = counted;
+    hud();
     g.pending.q.querySelectorAll('button.option, .options button, .buttons button').forEach(b => { b.disabled = true; });
     const right = !!correct;
     g.pending.q.querySelectorAll('button, input').forEach(b => { b.disabled = true; });
     const d = el('div', 'feedback' + (right ? ' fb-quick' : '')); d.dataset.result = counted ? 'ok' : hinted ? 'hint' : 'miss'; d.setAttribute('role', 'status');
     /* 2026-11-03: верно — короткая плашка и сразу обратно к кристаллам; ошибка — правильный ответ и «Продолжить ▶» */
-    if (right) d.append(el('strong', null, counted ? '✓ Верно! +1 ход' + (res.steps.length ? ' и особый кристалл' : '') : '✓ Верно — с подсказкой'));
+    if (right) d.append(el('strong', null, counted ? '✓ Верно! +' + res.points + (res.streak >= 3 ? ' · серия ×' + res.streak : '') : '✓ Верно — с подсказкой'));
     else d.append(el('strong', null, 'Почти! Запомни правильный ответ'), el('div', null, msg),
-      el('div', 'learning-tip', 'Это слово вернётся чуть позже. Ходы не сгорают — ошибаться не страшно.'));
+      el('div', 'learning-tip', 'Это слово вернётся в следующем блоке.'));
     const next = right ? null : btn('Продолжить ▶', 'btn good cq-continue', () => close());
     g.pending.q.append(d); if (next) g.pending.q.append(next);
     sound(counted ? 'word' : 'soft');
@@ -510,7 +558,7 @@
       if (closed) return; closed = true;
       const p = g.pending; g.pending = null; p.box.remove();
       $('cqBoard')?.focus({ preventScroll: true });
-      await runSteps(res.steps, g); hud();
+      hud();
       p.resolve();
     }
   }
@@ -563,7 +611,7 @@
   }
   function submit(g, f) {
     if (!signedIn() || isPreview(g.game) || !g.run) return;
-    const p = { run_id: g.run.id, client_id: 'cq' + g.run.t0.toString(36) + '-' + g.level.id, level: g.level.id, day: g.run.day, won: f.won, score: f.score, moves_left: f.movesLeft, moves_used: f.movesUsed, words_ok: f.wordsOk, words_tried: f.wordsTried, seconds: Math.round((Date.now() - g.run.t0) / 1000) };
+    const p = { v: 3, run_id: g.run.id, client_id: 'cq' + g.run.t0.toString(36) + '-' + g.level.id, level: g.level.id, day: g.run.day, won: f.won, score: f.score, moves_left: f.movesLeft, moves_used: f.movesUsed, words_ok: f.wordsOk, words_tried: f.wordsTried, seconds: Math.round((Date.now() - g.run.t0) / 1000) };
     if (!p.run_id) { queuePush(p); return; }
     cloud().then(session => session && session.sb.rpc('crystal_finish', { p })).then(r => {
       if (!r) return;
@@ -587,9 +635,10 @@
     const lead = el('p', 'cq-res-lead', f.won
       ? 'Очки: ' + fmt(f.score) + (f.bonus ? ' (бонус за ' + ruN(f.movesLeft, 'оставшийся ход', 'оставшихся хода', 'оставшихся ходов') + ': +' + fmt(f.bonus) + ')' : '')
       : 'Не хватило совсем чуть-чуть: ' + goalsLeft.map(x => x.label.toLowerCase() + ' (' + x.have + ' / ' + x.need + ')').join(', ') + '. Попробуй ещё раз — поле будет тем же, и ты уже знаешь, где искать комбинации!');
+    if (f.won && f.stars < 3 && E.accuracy(st) < 0.8) lead.append(el('span', 'cq-res-tip', ' Третья звезда — за 80% верных ответов на слова.'));
     const stats = el('div', 'cq-res-stats');
     const metric = (v, t) => { const m = el('div', 'cq-metric'); m.append(el('b', null, v), el('small', null, t)); return m; };
-    stats.append(metric(fmt(f.score), 'очков'), metric(fmt(lvl(L.id).best), 'рекорд уровня'), metric(f.wordsOk + ' / ' + f.wordsTried, 'верных ответов'), metric(st.stats.cleared, 'кристаллов собрано'));
+    stats.append(metric(fmt(f.score), 'очков'), metric(fmt(lvl(L.id).best), 'рекорд уровня'), metric(f.wordsOk + ' / ' + f.wordsTried, 'верных ответов · ' + Math.round(E.accuracy(st) * 100) + '%'), metric('+' + fmt(f.wordPoints), 'очков за слова'));
     const badges = el('div', 'cq-res-badges');
     if (extra.record) badges.append(el('span', 'cq-badge gold', '🏅 Новый рекорд!'));
     if (st.stats.maxChain >= 3) badges.append(el('span', 'cq-badge', '⛓ Цепочка ×' + st.stats.maxChain));

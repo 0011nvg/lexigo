@@ -1,4 +1,8 @@
-/* LEXI — «Кристальная экспедиция»: игровой движок «три в ряд» (2026-11-02, v2).
+/* LEXI — «Кристальная экспедиция»: игровой движок «три в ряд» (2026-11-02, v2; 2026-11-03, v3).
+ * v3: любые два соседних кристалла можно поменять местами — без ряда они остаются на новых местах (ход тратится, очков нет),
+ * так можно готовить комбинации. Уровень — циклы: 5 ходов → блок из 5 заданий на слова → снова 5 ходов…
+ * Очки: 3 в ряд — 30, 4 — 50, 5 — 80, уголок/«Т» — 100, цепочки ×1,5 / ×2…; верное слово — 20 + серия до +50,
+ * блок 5 из 5 — +150 и особый кристалл, 4 из 5 — +60. Звёзды: очки И точность ответов (2★ — от 60%, 3★ — от 80%).
  * Чистая логика без DOM: одинаково работает в браузере, в тестах (node) и в симуляторе сложности.
  * Полностью детерминирован: поле и новые кристаллы берутся из генератора с «зерном» (seed),
  * поэтому у всех игроков «Экспедиции дня» одинаковые условия, а партию можно воспроизвести по ходам.
@@ -23,21 +27,23 @@
   const ICE4 = [], ICE5 = [];
   for (let y = 2; y <= 5; y++) for (let x = 2; x <= 5; x++) ICE4.push([y * 8 + x, 1]);
   for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-    if ((y === 3 || y === 4) || (x === 3 || x === 4)) ICE5.push([y * 8 + x, (y === 3 || y === 4) && (x === 3 || x === 4) ? 2 : 1]);
+    if (((y === 3 || y === 4) && x >= 1 && x <= 6) || ((x === 3 || x === 4) && y >= 1 && y <= 6)) ICE5.push([y * 8 + x, (y === 3 || y === 4) && (x === 3 || x === 4) ? 2 : 1]);
   }
+  const CYCLE = 5, BLOCK = 5;                     // ходов в цикле, заданий в блоке
   const LEVELS = [
-    { id: 1, name: 'Первые кристаллы', intro: 'Собирай по три одинаковых кристалла в ряд.', size: 7, colors: 5, moves: 20, energy: 18, specials: [],
-      goals: [{ type: 'score', n: 3000 }, { type: 'words', n: 3 }], stars: [3000, 4800, 6600] },
-    { id: 2, name: 'Мастер комбинаций', intro: 'Четыре в ряд — «линия», пять в ряд — «призма».', size: 7, colors: 5, moves: 20, energy: 22, specials: ['row', 'col', 'prism'],
-      goals: [{ type: 'score', n: 4600 }, { type: 'special', n: 2 }, { type: 'words', n: 3 }], stars: [4600, 6800, 8600] },
-    { id: 3, name: 'Кристальный взрыв', intro: 'Уголок или «Т» из пяти — «бомба» 3×3. Меняй особые кристаллы друг с другом!', size: 8, colors: 5, moves: 22, energy: 30, specials: ALL,
-      goals: [{ type: 'score', n: 6800 }, { type: 'bomb', n: 2 }, { type: 'words', n: 4 }], stars: [6800, 10000, 12500] },
-    { id: 4, name: 'Цепная реакция', intro: 'Падающие кристаллы складываются в новые ряды — это цепочка. Разбей лёд!', size: 8, colors: 6, moves: 24, energy: 24, specials: ALL, ice: ICE4,
-      goals: [{ type: 'ice' }, { type: 'collect', color: 3, n: 24 }, { type: 'cascade', n: 2 }, { type: 'words', n: 4 }], stars: [5500, 8200, 10200] },
-    { id: 5, name: 'Легенда кристаллов', intro: 'Несколько целей сразу и толстый лёд в центре. Продумывай ходы!', size: 8, colors: 6, moves: 26, energy: 26, specials: ALL, ice: ICE5,
-      goals: [{ type: 'ice' }, { type: 'collect', color: 0, n: 22 }, { type: 'score', n: 8000 }, { type: 'words', n: 5 }], stars: [8000, 10500, 12500] }
+    { id: 1, name: 'Первые кристаллы', intro: 'Собирай по три одинаковых. После пяти ходов — задания на слова.', size: 7, colors: 5, cycles: 4, specials: [],
+      goals: [{ type: 'score', n: 1500 }, { type: 'words', n: 12 }], stars: [1500, 2300, 3000] },
+    { id: 2, name: 'Мастер комбинаций', intro: 'Четыре в ряд — «линия», пять в ряд — «призма». Готовь их заранее!', size: 7, colors: 5, cycles: 4, specials: ['row', 'col', 'prism'],
+      goals: [{ type: 'score', n: 1900 }, { type: 'special', n: 2 }, { type: 'words', n: 13 }], stars: [1900, 2800, 3600] },
+    { id: 3, name: 'Кристальный взрыв', intro: 'Уголок или «Т» из пяти — «бомба» 3×3. Меняй особые кристаллы друг с другом!', size: 8, colors: 5, cycles: 5, specials: ALL,
+      goals: [{ type: 'score', n: 3200 }, { type: 'bomb', n: 1 }, { type: 'words', n: 16 }], stars: [3200, 4600, 5800] },
+    { id: 4, name: 'Цепная реакция', intro: 'Падающие кристаллы складываются в новые ряды — это цепочка. Разбей лёд!', size: 8, colors: 6, cycles: 5, specials: ALL, ice: ICE4,
+      goals: [{ type: 'ice' }, { type: 'collect', color: 3, n: 16 }, { type: 'words', n: 16 }], stars: [2000, 3000, 3900] },
+    { id: 5, name: 'Легенда кристаллов', intro: 'Несколько целей сразу и толстый лёд в центре. Продумывай ходы!', size: 8, colors: 6, cycles: 5, specials: ALL, ice: ICE5,
+      goals: [{ type: 'ice' }, { type: 'collect', color: 0, n: 12 }, { type: 'score', n: 2400 }, { type: 'words', n: 17 }], stars: [2400, 3400, 4300] }
   ];
-  const MOVE_BONUS = 250, WORD_POINTS = 150, MAX_CHAIN = 60;
+  for (const L of LEVELS) L.moves = L.cycles * CYCLE;
+  const MOVE_BONUS = 50, WORD_POINTS = 20, STREAK_STEP = 10, STREAK_MAX = 50, BLOCK_BONUS = { 5: 150, 4: 60 }, PAIR_BONUS = 60, MAX_CHAIN = 60;
 
   /* ---------- генератор случайных чисел (mulberry32) ---------- */
   function hashSeed(text) { let h = 2166136261 >>> 0; for (const ch of String(text)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
@@ -57,8 +63,9 @@
   function create(levelId, seed) {
     const L = level(levelId); if (!L) throw new Error('unknown level');
     const st = { level: L.id, size: L.size, n: L.size * L.size, colors: L.colors, specials: L.specials.slice(), cells: [], ice: Array(L.size * L.size).fill(0),
-      rng: hashSeed(seed), seed: String(seed), nextId: 0, moves: L.moves, movesUsed: 0, score: 0, energy: 0, energyNeed: L.energy, wordsOk: 0, wordsTried: 0,
-      stats: { collected: Array(6).fill(0), specials: 0, bombs: 0, cascades: 0, cleared: 0, maxChain: 0, iceStart: 0 }, over: false, finished: null };
+      rng: hashSeed(seed), seed: String(seed), nextId: 0, moves: L.moves, movesUsed: 0, score: 0, wordsOk: 0, wordsTried: 0,
+      cycles: L.cycles, cycle: 1, cycleLeft: CYCLE, phase: 'move', block: { n: 0, ok: 0 }, streak: 0, wordPoints: 0,
+      stats: { collected: Array(6).fill(0), specials: 0, bombs: 0, cascades: 0, cleared: 0, maxChain: 0, iceStart: 0, idle: 0, blocksPerfect: 0 }, over: false, finished: null };
     for (const [i, n] of L.ice || []) if (i < st.n) st.ice[i] = n;
     st.stats.iceStart = st.ice.reduce((a, b) => a + b, 0);
     fillFresh(st);
@@ -103,7 +110,7 @@
       : max === 4 ? [g.runs[0].dir === 'h' ? 'row' : 'col'] : [];
     return want.find(k => k && st.specials.includes(k)) || null;
   }
-  function groupPoints(g) { const n = g.cells.size, max = Math.max(...g.runs.map(r => r.cells.length)); return n <= 3 ? 60 : max >= 5 ? 200 + (n - 5) * 20 : g.runs.length > 1 ? 160 + (n - 5) * 20 : 120; }
+  function groupPoints(g) { const n = g.cells.size, max = Math.max(...g.runs.map(r => r.cells.length)); return n <= 3 ? 30 : max >= 5 ? 80 + (n - 5) * 10 : g.runs.length > 1 ? 100 + (n - 5) * 10 : 50; }
 
   /* ---------- ходы ---------- */
   function validSwap(st, a, b) {
@@ -132,13 +139,16 @@
   }
   function commonColor(st) { const n = Array(st.colors).fill(0); for (const p of st.cells) if (p && p.c >= 0) n[p.c]++; return n.indexOf(Math.max(...n)); }
 
-  /* Ход игрока. → { ok:false } (кристаллы вернутся, ход не списан) или { ok:true, steps } */
+  /* Ход игрока: любые два соседних кристалла. → { ok:false } (не соседи, нет ходов, идут задания)
+     или { ok:true, steps, idle } — idle: ряда нет, кристаллы остались на новых местах (ход потрачен, очков нет) */
   function swap(st, a, b) {
-    if (st.over || st.moves <= 0 || !neighbors(st, a, b) || !validSwap(st, a, b)) return { ok: false, steps: [{ t: 'swap', a, b }, { t: 'back', a, b }] };
+    if (st.over || st.phase !== 'move' || st.moves <= 0 || !neighbors(st, a, b) || !st.cells[a] || !st.cells[b]) return { ok: false, steps: [] };
+    const match = validSwap(st, a, b);
     const p = st.cells[a], q = st.cells[b];
     st.cells[a] = q; st.cells[b] = p;
     st.moves--; st.movesUsed++;
     const steps = [{ t: 'swap', a, b, cells: snap(st) }];
+    if (!match) { st.stats.idle++; spend(st); return { ok: true, idle: true, steps }; }
     let forced = null;
     // особые кристаллы, поменянные друг с другом или с призмой
     if (p.s === 'prism' || q.s === 'prism') {
@@ -159,10 +169,16 @@
       else if (kinds.includes('bomb')) { for (let d = -1; d <= 1; d++) { if (by + d >= 0 && by + d < st.size) addRow(by + d); if (bx + d >= 0 && bx + d < st.size) addCol(bx + d); } }
       else { addRow(by); addCol(bx); }
       st.cells[a].s = null; st.cells[b].s = null;          // сработали как пара — повторно не взрываются
-      forced = clear;
+      forced = clear; st.score += PAIR_BONUS;
     }
     resolve(st, [a, b], steps, forced);
+    spend(st);
     return { ok: true, steps };
+  }
+  /* цикл: после пятого хода — блок заданий на слова */
+  function spend(st) {
+    st.cycleLeft--;
+    if (st.cycleLeft <= 0 || st.moves <= 0) { st.phase = 'words'; st.block = { n: 0, ok: 0 }; }
   }
 
   /* очистка → падение → новые ряды, пока поле не успокоится */
@@ -203,7 +219,7 @@
       let cleared = 0, iceHit = [];
       for (const i of clear) {
         const p = st.cells[i];
-        if (p) { if (p.c >= 0) st.stats.collected[p.c]++; cleared++; if (!fromMatch.has(i)) points += 20; }
+        if (p) { if (p.c >= 0) st.stats.collected[p.c]++; cleared++; if (!fromMatch.has(i)) points += 5; }
         if (st.ice[i] > 0) { st.ice[i]--; iceHit.push(i); }
         st.cells[i] = null;
       }
@@ -215,7 +231,7 @@
       }
       const mult = 1 + 0.5 * (chain - 1);
       const gained = Math.round(points * mult);
-      st.score += gained; movePoints += gained; st.stats.cleared += cleared; st.energy += cleared;
+      st.score += gained; movePoints += gained; st.stats.cleared += cleared;
       steps.push({ t: 'clear', chain, cleared: [...clear], fired: [...fired], created: created.map(x => x.i), ice: iceHit, points: gained, cells: snap(st), iceMap: st.ice.slice() });
       forced = null;
       const fall = gravity(st);
@@ -224,7 +240,6 @@
     st.stats.maxChain = Math.max(st.stats.maxChain, chain);
     if (chain >= 3) st.stats.cascades++;
     if (!findMove(st)) { shuffle(st); steps.push({ t: 'shuffle', cells: snap(st) }); }
-    if (st.moves <= 0) st.over = true;
     return movePoints;
   }
   /* кристаллы падают вниз, сверху появляются новые: → [{ id, drop }] — новый падает из-за края поля на drop клеток */
@@ -255,27 +270,35 @@
     fillFresh(st); return true;
   }
 
-  /* ---------- слова и бонусы ---------- */
-  const energyFull = st => st.energy >= st.energyNeed;
-  function useEnergy(st) { st.energy = Math.max(0, st.energy - st.energyNeed); }
-  /* не больше одного задания со словом за ход: лишняя энергия переходит на следующий раз, но не больше половины шкалы;
-     когда все цели выполнены, заданий больше нет — уровень заканчивается */
-  function takeEnergy(st) {
-    if (!energyFull(st) || goalsMet(st) || st.finished) return false;
-    st.energy = Math.min(st.energy - st.energyNeed, Math.floor(st.energyNeed / 2));
-    return true;
-  }
-  /* верный ответ: +1 ход, +150 очков и (с уровня 2) особый кристалл на поле */
+  /* ---------- слова: блок из 5 заданий после каждых 5 ходов ---------- */
+  const wordsDue = st => st.phase === 'words' && !st.finished;
+  /* ответ на задание: верно — 20 очков + серия (3-й верный подряд +10, 4-й +20 … до +50); ошибка без штрафа */
   function wordAnswered(st, correct) {
-    st.wordsTried++;
-    if (!correct) return { steps: [] };
-    st.wordsOk++; st.moves++; st.score += WORD_POINTS; st.over = false;
-    const kinds = st.specials.filter(k => k !== 'prism'), steps = [];
-    if (kinds.length) {
-      const free = []; st.cells.forEach((p, i) => { if (p && !p.s) free.push(i); });
-      if (free.length) { const i = free[rint(st, free.length)], kind = kinds[rint(st, kinds.length)]; st.cells[i].s = kind; if (kind === 'bomb') st.stats.bombs++; st.stats.specials++; steps.push({ t: 'reward', i, kind, cells: snap(st) }); }
+    if (st.phase !== 'words') return { points: 0, steps: [] };
+    st.wordsTried++; st.block.n++;
+    let points = 0;
+    if (correct) { st.wordsOk++; st.block.ok++; st.streak++; points = WORD_POINTS + Math.min(STREAK_MAX, Math.max(0, st.streak - 2) * STREAK_STEP); st.score += points; st.wordPoints += points; }
+    else st.streak = 0;
+    return { points, streak: st.streak, steps: [], blockDone: st.block.n >= BLOCK };
+  }
+  /* конец блока: бонус за точность; 5 из 5 — особый кристалл на поле (со 2-го уровня); затем следующий цикл или конец уровня */
+  function endBlock(st) {
+    if (st.phase !== 'words') return { bonus: 0, steps: [] };
+    const ok = st.block.ok, bonus = BLOCK_BONUS[ok] || 0, steps = [];
+    st.score += bonus; st.wordPoints += bonus;
+    if (ok >= BLOCK) {
+      st.stats.blocksPerfect++;
+      const kinds = st.specials.filter(k => k !== 'prism');
+      if (kinds.length) {
+        const free = []; st.cells.forEach((p, i) => { if (p && !p.s) free.push(i); });
+        if (free.length) { const i = free[rint(st, free.length)], kind = kinds[rint(st, kinds.length)]; st.cells[i].s = kind; if (kind === 'bomb') st.stats.bombs++; st.stats.specials++; steps.push({ t: 'reward', i, kind, cells: snap(st) }); }
+      }
     }
-    return { steps };
+    const result = { ok, n: st.block.n, bonus, perfect: ok >= BLOCK, steps };
+    if (st.moves > 0) { st.phase = 'move'; st.cycle++; st.cycleLeft = Math.min(CYCLE, st.moves); }
+    else { st.phase = 'done'; st.over = true; }
+    st.block = { n: 0, ok: 0 };
+    return result;
   }
 
   /* ---------- цели, звёзды, итог ---------- */
@@ -294,25 +317,27 @@
     });
   }
   const goalsMet = st => goals(st).every(g => g.done);
-  function starsFor(st, won) { const L = level(st.level); return !won ? 0 : 1 + (st.score >= L.stars[1] ? 1 : 0) + (st.score >= L.stars[2] ? 1 : 0); }
+  /* звёзды: очки и точность ответов на слова — без верных ответов три звезды не получить */
+  const accuracy = st => st.wordsTried ? st.wordsOk / st.wordsTried : 0;
+  function starsFor(st, won) { const L = level(st.level), acc = accuracy(st); return !won ? 0 : 1 + (st.score >= L.stars[1] && acc >= 0.6 ? 1 : 0) + (st.score >= L.stars[2] && acc >= 0.8 ? 1 : 0); }
   /* конец уровня: цели выполнены — оставшиеся ходы превращаются в бонус */
   function finish(st) {
     if (st.finished) return st.finished;
     const won = goalsMet(st), left = st.moves, bonus = won ? left * MOVE_BONUS : 0;
     st.score += bonus; st.over = true;
-    st.finished = { won, stars: starsFor(st, won), score: st.score, bonus, movesLeft: left, movesUsed: st.movesUsed, wordsOk: st.wordsOk, wordsTried: st.wordsTried, level: st.level };
+    st.finished = { won, stars: starsFor(st, won), score: st.score, bonus, movesLeft: left, movesUsed: st.movesUsed, wordsOk: st.wordsOk, wordsTried: st.wordsTried, wordPoints: st.wordPoints, level: st.level, v: 3 };
     return st.finished;
   }
   /* верхняя граница очков для проверки на сервере (щедрая: никакая честная партия её не превысит) */
-  function scoreCap(levelId, movesUsed) { const L = level(levelId); return Math.round((movesUsed || 0) * 9000 + (L.moves + 15) * MOVE_BONUS + 40 * WORD_POINTS); }
+  function scoreCap(levelId, movesUsed, wordsTried) { const L = level(levelId); return Math.round((movesUsed || 0) * 3000 + (wordsTried || 0) * (WORD_POINTS + STREAK_MAX) + L.cycles * BLOCK_BONUS[5] + L.moves * MOVE_BONUS); }
   /* рейтинговые очки уровня — считаются и на сервере тем же способом: звёзды важнее удачи */
   function rating(levelId, f) {
     const L = level(levelId); if (!L || !f || !f.won) return 0;
     const top = L.stars[2] * 2, acc = f.wordsTried ? f.wordsOk / f.wordsTried : 0;
-    return f.stars * 1000 + Math.round(500 * Math.min(f.score, top) / top) + 15 * Math.min(f.movesLeft, 30) + Math.round(300 * acc);
+    return f.stars * 1000 + Math.round(400 * Math.min(f.score, top) / top) + 10 * Math.min(f.movesLeft, 30) + Math.round(600 * acc);
   }
   const clone = st => JSON.parse(JSON.stringify(st));
 
-  return Object.freeze({ LEVELS, COLORS, COLORS_GEN, MOVE_BONUS, WORD_POINTS, level, create, swap, validSwap, findMove, allMoves, neighbors, runs, groups, goals, goalsMet, finish, starsFor,
-    energyFull, useEnergy, takeEnergy, wordAnswered, shuffle, dailySeed, hashSeed, scoreCap, rating, clone, xy });
+  return Object.freeze({ LEVELS, COLORS, COLORS_GEN, MOVE_BONUS, WORD_POINTS, STREAK_STEP, STREAK_MAX, BLOCK_BONUS, CYCLE, BLOCK, VERSION: 3, level, create, swap, validSwap, findMove, allMoves, neighbors, runs, groups, goals, goalsMet, finish, starsFor, accuracy,
+    wordsDue, wordAnswered, endBlock, shuffle, dailySeed, hashSeed, scoreCap, rating, clone, xy });
 });

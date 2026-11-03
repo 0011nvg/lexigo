@@ -48,13 +48,14 @@ try {
   await a.locator('.cq-res-rating', { hasText: 'Рейтинг экспедиции' }).waitFor({ timeout: 10000 });
   assert.match(await a.locator('.cq-res-rating').innerText(), /место \d+/);
   const A = uid('anya');
-  const row = sql(`select won||'|'||stars||'|'||rating||'|'||(moves_used+moves_left-words_ok) from crystal_runs where user_id='${A}' and finished_at is not null`);
+  const row = sql(`select won||'|'||stars||'|'||rating||'|'||(moves_used+moves_left) from crystal_runs where user_id='${A}' and finished_at is not null`);
   const [won, stars, rating, base] = row.split('|');
   assert.equal(won, 'true'); assert.ok(Number(stars) >= 1 && Number(rating) > 1000); assert.equal(base, '20', 'moves identity checked by the server');
   await a.waitForTimeout(1500);
   assert.equal(sql(`select count(*) from sessions where user_id='${A}' and mode='crystals' and finished`), '1', 'word answers saved as a finished session');
   assert.ok(Number(sql(`select count(*) from word_progress where user_id='${A}' and left(word_id, 3) = 's5_'`)) >= 2, 'word progress in the account');
-  ok('student: level 1 played through the UI → server run (won, ' + stars + '★, rating ' + rating + ', moves identity 20), place shown; word answers = finished session + word progress');
+  assert.ok(Number(sql(`select words_tried from crystal_runs where user_id='${A}' and finished_at is not null`)) >= 12, 'v3: at least 12 word tasks');
+  ok('student: level 1 (v3: 4 cycles of 5 moves + 5 words) played through the UI → server run (won, ' + stars + '★, rating ' + rating + ', 20 moves), place shown; word answers = finished session + word progress');
 
   /* 2. ник и рейтинг без личных данных */
   await a.locator('.crystal-result button', { hasText: 'Карта уровней' }).click();
@@ -92,6 +93,11 @@ try {
   await b.waitForTimeout(7000);
   const s3 = (await rpc(b, 'crystal_start', { p_level: 1, p_day: null })).data; await b.waitForTimeout(7500);
   assert.equal((await rpc(b, 'crystal_finish', { p: { run_id: s3.run_id, won: true, score: 6000, moves_left: 12, moves_used: 10, words_ok: 3, words_tried: 3 } })).data.reason, 'implausible', 'moves do not add up (10 + 12 ≠ 20 + 3)');
+  /* v3: ходы ровно 20, после каждых 5 ходов — 5 заданий; без заданий или с лишними ходами — «implausible» */
+  const v1 = (await rpc(b, 'crystal_start', { p_level: 1, p_day: null })).data; await b.waitForTimeout(3000);
+  assert.equal((await rpc(b, 'crystal_finish', { p: { v: 3, run_id: v1.run_id, won: true, score: 2000, moves_left: 15, moves_used: 5, words_ok: 12, words_tried: 12 } })).data.reason, 'implausible', 'v3: 12 words after only 5 moves');
+  const v2 = (await rpc(b, 'crystal_start', { p_level: 1, p_day: null })).data; await b.waitForTimeout(3000);
+  assert.equal((await rpc(b, 'crystal_finish', { p: { v: 3, run_id: v2.run_id, won: true, score: 2000, moves_left: 2, moves_used: 20, words_ok: 15, words_tried: 20 } })).data.reason, 'implausible', 'v3: moves do not add up (20 + 2 ≠ 20)');
   assert.equal((await rpc(b, 'crystal_finish', { p: { run_id: s1.run_id, won: true, score: 5000, moves_left: 11, moves_used: 12, words_ok: 3, words_tried: 3 } })).data.duplicate, true, 'a finished run cannot be sent again');
   const aRun = sql(`select id from crystal_runs where user_id='${A}' and finished_at is not null limit 1`);
   assert.equal((await rpc(b, 'crystal_finish', { p: { run_id: aRun, won: true, score: 5000, moves_left: 11, moves_used: 12, words_ok: 3, words_tried: 3 } })).data.reason, 'run', 'someone else\'s run');

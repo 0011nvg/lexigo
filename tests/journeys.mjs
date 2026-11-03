@@ -40,7 +40,7 @@ async function scenario(viewport){
   await page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.cq-word'),null,{timeout:10000});
  }
  assert.ok(await page.evaluate(()=>LexiCrystalQuest.state().movesUsed>=1),'moves were made');
- assert.match(await page.locator('.cq-goals').innerText(),/Набери 3000 очков/);
+ assert.match(await page.locator('.cq-goals').innerText(),/Набери 1500 очков[\s\S]*Ответь верно на 12 слов/);
  await page.locator('#back').click();
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'true');

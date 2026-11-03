@@ -1,8 +1,9 @@
 // Общие помощники тестов «Кристальной экспедиции»: дождаться конца анимации, ответить на карточку слова, пройти уровень.
 export const idle = page => page.waitForFunction(() => !LexiCrystalQuest.debug().busy || document.querySelector('.cq-word') || document.querySelector('.crystal-result'), null, { timeout: 20000 });
-export const st = page => page.evaluate(() => { const s = LexiCrystalQuest.state(); return s && { moves: s.moves, used: s.movesUsed, score: s.score, wordsOk: s.wordsOk, tried: s.wordsTried, energy: s.energy, need: s.energyNeed }; });
+export const st = page => page.evaluate(() => { const s = LexiCrystalQuest.state(); return s && { moves: s.moves, used: s.movesUsed, score: s.score, wordsOk: s.wordsOk, tried: s.wordsTried, phase: s.phase, cycle: s.cycle, cycleLeft: s.cycleLeft }; });
 /* ответить на карточку со словом: верно (по слову из задания) или неверно */
 export async function answer(page, right) {
+  const n0 = await page.evaluate(() => LexiCrystalQuest.debug().wordCount);
   const w = await page.evaluate(() => { const g = LexiCrystalQuest.debug(); const it = g.pending && g.pending.item; return it && { en: it.w.en, ru: it.w.ru, type: game.activeQuestionMode }; });
   const box = page.locator('.cq-word');
   if (await box.locator('.builder-bank').count()) {
@@ -29,14 +30,16 @@ export async function answer(page, right) {
   // 2026-11-03: a right answer closes the card by itself (no «Продолжить»); a mistake keeps the button
   if (right) { if (await page.locator('.cq-word .cq-continue').count()) throw new Error('a right answer must not ask to press «Продолжить»'); }
   else await box.locator('.cq-continue').click();
-  await page.waitForFunction(() => !document.querySelector('.cq-word'), null, { timeout: 8000 });
+  // the card closes; the next card of the block (if any) is a new one
+  await page.waitForFunction(n => { const g = LexiCrystalQuest.debug(); return !g || !g.pending || g.wordCount !== n; }, n0, { timeout: 8000 });
 }
 /* сыграть уровень «внимательным игроком»: лучший видимый ход, слова — верно */
-export async function playLevel(page, { maxMoves = 80, wrongFirst = false } = {}) {
+export async function playLevel(page, { maxMoves = 160, wrongFirst = false } = {}) {
   let wrong = wrongFirst;
   for (let k = 0; k < maxMoves; k++) {
     if (await page.locator('.crystal-result').count()) return;
     if (await page.locator('.cq-word').count()) { await answer(page, !wrong); wrong = false; await idle(page); continue; }
+    if (await page.evaluate(() => LexiCrystalQuest.state().phase !== 'move')) { await page.waitForTimeout(80); continue; }
     const mv = await page.evaluate(() => { const E = LexiCrystalEngine, s = LexiCrystalQuest.state(); let best = null, bv = -1; for (const [a, b] of E.allMoves(s)) { const c = E.clone(s); E.swap(c, a, b); const v = c.score - s.score; if (v > bv) { bv = v; best = [a, b]; } } return best; });
     await page.locator(`#cqBoard .cq-gem[data-i="${mv[0]}"]`).click(); await page.locator(`#cqBoard .cq-gem[data-i="${mv[1]}"]`).click();
     await idle(page);

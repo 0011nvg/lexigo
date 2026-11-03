@@ -5,11 +5,13 @@
 window.LexigoGameEngine=(()=>{
  const C=LexigoGameComponents;
  const supported=new Set(['quiz','spell','truefalse','fix','audio','cards','daily','pairs','crystals','boss','mixed','builder','listen','review']);
+ /* 2026-11-03: длинное слово в заголовке задания не рвётся по буквам — шрифт уменьшается, пока слово не поместится (не меньше 16 px) */
+ function fitHeading(h){const go=()=>{if(!h.isConnected||!h.clientWidth)return;const wrap=h.style.overflowWrap;h.style.overflowWrap='normal';h.style.removeProperty('font-size');let size=parseFloat(getComputedStyle(h).fontSize),guard=0;while(h.scrollWidth>h.clientWidth+1&&size>16&&guard++<40){size-=1;h.style.setProperty('font-size',size+'px','important')}h.style.overflowWrap=wrap};requestAnimationFrame(go);try{document.fonts&&document.fonts.ready.then(()=>requestAnimationFrame(go))}catch{}}
  function question(root,model,actions){
   if(!supported.has(model.mode))throw Error('Неизвестный режим');
   const kind=model.kind||model.mode;
   if(model.instruction)root.append(C.element('p',model.instruction,'muted'));
-  if(model.prompt!=null)root.append(C.element(model.headingTag||'h2',model.prompt));
+  if(model.prompt!=null){const h=C.element(model.headingTag||'h2',model.prompt);root.append(h);fitHeading(h)}
   if(model.proposed!=null){const proposed=C.element('p',(model.proposedPrefix||'')+model.proposed);proposed.style.fontSize=kind==='truefalse'&&!model.headingTag?'20px':'';root.append(proposed)}
   if(kind==='cards')return C.render(model.mode==='daily'?'daily':'cards',root,{...model.card,...actions});
   if((kind==='audio'||kind==='listen')&&actions.speak)root.append(C.button('🔊 Прослушать',actions.speak,'btn secondary'));

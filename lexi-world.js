@@ -407,7 +407,7 @@
   }
   function decorateCourseCards() {
     document.querySelectorAll('#courseCards .course-card').forEach(card => {
-      const grade = (card.className.match(/grade-(\d)/) || [])[1]; const b = DB.books.find(x => String(x.grade) === grade); if (!b) return;
+      const grade = (card.className.match(/grade-(\d+)/) || [])[1]; const b = DB.books.find(x => String(x.grade) === grade); if (!b) return;
       card.classList.toggle('teen', Number(grade) >= 5);
       let meter = card.querySelector('.book-meter'); if (!meter) { meter = el('div', 'book-meter'); meter.append(el('i'), el('span')); card.querySelector('.course-caption')?.append(meter); }
       const s = bookStats(b); meter.querySelector('i').style.setProperty('--p', (s.practiced / Math.max(1, s.total) * 100).toFixed(1) + '%');

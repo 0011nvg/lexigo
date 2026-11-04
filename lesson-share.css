@@ -1,0 +1,66 @@
+/* LEXI · свой урок учителя: «Создайте свой урок» на главной, ссылка для учеников, рабочий лист A4 (2026-11-04).
+ * Подключается на index.html и me.html. Палитра — world.css (--w-*). */
+
+/* ---------- главная учителя ---------- */
+.tl-teacher-home{margin:0 0 18px}
+.teacher-start{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px 18px;padding:16px 20px;border:1px solid #dfe6f7;border-radius:22px;background:linear-gradient(110deg,#ffffff 0%,#f3f7ff 60%,#f4fbe2 100%);box-shadow:0 6px 22px rgba(30,52,120,.06)}
+.teacher-start img{width:58px;height:58px;border-radius:18px;background:#eaf0ff}
+.teacher-start .eyebrow{margin:0 0 2px;font-size:11px;letter-spacing:.12em;color:var(--w-blue,#2c56f5)}
+.teacher-start h2{margin:0 0 4px;font-size:21px;line-height:1.2;color:var(--w-ink,#141b3d)}
+.teacher-start p{margin:0;color:#56607c;font-size:14.5px;line-height:1.45}
+.teacher-start-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.teacher-start-actions .btn{min-height:46px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+@media (max-width:760px){
+  .teacher-start{grid-template-columns:auto minmax(0,1fr);align-items:start;padding:16px}
+  .teacher-start img{width:48px;height:48px;border-radius:14px}
+  .teacher-start h2{font-size:19px}
+  .teacher-start-actions{grid-column:1/-1;justify-content:stretch}
+  .teacher-start-actions .btn{flex:1 1 140px}
+}
+
+/* ---------- ссылка для учеников ---------- */
+.share-box{margin:0 0 14px;padding:16px 18px;border:1px solid #dfe6f7;border-radius:18px;background:#fff}
+.share-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:8px}
+.share-head h3{margin:0;font-size:17px;color:var(--w-ink,#141b3d)}
+.share-flag{font-size:13px;font-weight:800;color:#6c7593}
+.share-flag.on{color:#11795a}
+.share-text{margin:0 0 6px;color:#2c3758;font-size:14.5px;line-height:1.45}
+.share-note{margin:8px 0 0;color:#6c7593;font-size:13px;line-height:1.45}
+.share-row{display:flex;gap:8px;align-items:stretch}
+.share-url{flex:1;min-width:0;min-height:46px;padding:10px 12px;border:1.5px solid #d6def3;border-radius:12px;background:#f7f9ff;color:#22305a;font:600 14px/1.3 inherit;text-overflow:ellipsis}
+.share-url:focus{outline:none;border-color:#7d93e6;box-shadow:0 0 0 3px #e3e9ff;background:#fff}
+.share-row .btn,.share-row .btn-acc{flex:none;min-height:46px;white-space:nowrap}
+.share-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.share-actions .btn,.share-actions .btn-acc{min-height:44px;text-decoration:none;display:inline-flex;align-items:center}
+.share-off{margin-left:auto;padding:8px 4px;border:0;background:none;color:#b3402f;font:700 14px inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.share-off:disabled{opacity:.5;cursor:default}
+.share-status{margin:8px 0 0;font-size:13.5px;font-weight:700;color:#4b5677;min-height:1.2em}
+.share-status.ok{color:#11795a}.share-status.err{color:#b3402f}
+@media (max-width:560px){
+  .share-row{flex-direction:column}
+  .share-row .btn,.share-row .btn-acc{width:100%;justify-content:center}
+  .share-off{margin-left:0}
+}
+.ml-shared{margin:6px 0 0;font-size:12.5px;font-weight:800;color:#11795a}
+.dialog .share-box{border:0;padding:0;margin:0}
+
+/* ---------- рабочий лист A4 по своему уроку ---------- */
+.my-tools{display:flex;flex-direction:column;gap:0;margin:0 0 14px}
+.ws-panel{padding:0!important;overflow:hidden}
+.ws-panel>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:14px 18px;cursor:pointer;list-style:none}
+.ws-panel>summary::-webkit-details-marker{display:none}
+.ws-panel>summary::before{content:"🖨";margin-right:2px}
+.ws-panel>summary::after{content:"▾";margin-left:auto;color:#6c7593}
+.ws-panel[open]>summary::after{content:"▴"}
+.ws-panel>summary b{font-size:16px;color:var(--w-ink,#141b3d)}
+.ws-panel>summary span{font-size:13.5px;color:#6c7593}
+.ws-body{padding:0 18px 16px}
+.ws-field{display:flex;flex-direction:column;gap:4px;max-width:320px;font-size:13.5px;font-weight:700;color:#4b5677}
+.ws-field select{min-height:44px;border-radius:12px;padding:8px 10px}
+.ws-label{margin:12px 0 4px;font-size:13.5px;font-weight:700;color:#4b5677}
+.ws-types{display:flex;flex-wrap:wrap;gap:8px 16px}
+.ws-types label{display:flex;align-items:center;gap:6px;min-height:40px;font-size:14.5px}
+.ws-types input{width:20px;height:20px}
+.ws-note{margin:8px 0 12px;font-size:12.5px;color:#6c7593;line-height:1.45}
+.ws-msg{margin:8px 0 0;color:#b3402f;font-size:13.5px;font-weight:700}
+@media print{.my-tools,.tl-teacher-home{display:none!important}}

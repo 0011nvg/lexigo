@@ -974,3 +974,45 @@ begin
 end $$;
 revoke all on function public.crystal_cfg3(int), public.crystal_rating3(int, boolean, int, int, int, int, int), public.crystal_finish(jsonb) from public, anon;
 grant execute on function public.crystal_finish(jsonb), public.crystal_cfg3(int), public.crystal_rating3(int, boolean, int, int, int, int, int) to authenticated;
+
+-- ---------------------------------------------------------------------
+-- v6 · Урок учителя по ссылке (2026-11-04)
+-- Учитель сам включает «доступ по ссылке» для своего урока. Ссылка содержит случайный токен
+-- (32 hex-символа, 128 бит). Кто знает ссылку, тот видит название, слова и игры урока — и только это:
+-- ни имени учителя, ни его id, ни классов, ни учеников. Изменять и удалять урок по ссылке нельзя.
+-- Выключить доступ — токен стирается, старая ссылка перестаёт работать; включить снова — новая ссылка.
+-- ---------------------------------------------------------------------
+alter table public.custom_lessons add column if not exists share_token text;
+alter table public.custom_lessons drop constraint if exists custom_lessons_share_token_check;
+alter table public.custom_lessons add constraint custom_lessons_share_token_check check (share_token is null or share_token ~ '^[0-9a-f]{32}$');
+create unique index if not exists custom_lessons_share_token_idx on public.custom_lessons(share_token) where share_token is not null;
+-- токен меняет только функция ниже: прямой записи столбца у клиента нет (гранты insert/update перечисляют столбцы)
+
+create or replace function public.lesson_share(l uuid, enable boolean) returns text
+language plpgsql security definer set search_path = public as $$
+declare tok text;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  if not exists (select 1 from public.custom_lessons c where c.id = l and c.owner_id = auth.uid()) then raise exception 'not your lesson'; end if;
+  if enable then
+    update public.custom_lessons set share_token = coalesce(share_token, replace(gen_random_uuid()::text, '-', '') )
+      where id = l and owner_id = auth.uid() returning share_token into tok;
+    -- gen_random_uuid: 122 случайных бита; формат 32 hex
+    return tok;
+  end if;
+  update public.custom_lessons set share_token = null where id = l and owner_id = auth.uid();
+  return null;
+end $$;
+
+-- Урок по ссылке: работает и без входа (anon). Отдаёт только содержимое урока.
+create or replace function public.shared_lesson(t text)
+returns table (id uuid, title text, words jsonb, modes text[], updated_at timestamptz, mine boolean)
+language sql stable security definer set search_path = public as $$
+  select c.id, c.title, c.words, c.modes, c.updated_at, (auth.uid() is not null and c.owner_id = auth.uid())
+  from public.custom_lessons c
+  where t ~ '^[0-9a-f]{32}$' and c.share_token = t
+$$;
+
+revoke all on function public.lesson_share(uuid, boolean), public.shared_lesson(text) from public, anon;
+grant execute on function public.lesson_share(uuid, boolean) to authenticated;
+grant execute on function public.shared_lesson(text) to anon, authenticated;

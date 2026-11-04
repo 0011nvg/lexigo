@@ -113,12 +113,16 @@ try {
   /* 7. Lexi speaks English on the home page; taps work on a phone; no line twice in a row; no autoplay sound */
   const phone = await fresh({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   await phone.addInitScript(() => { window.__spoken = 0; const S = window.speechSynthesis; if (S) { const o = S.speak.bind(S); S.speak = u => { window.__spoken++; try { o(u); } catch { /* headless */ } }; } });
-  await phone.goto(BASE + '#/home'); await phone.locator('.lexi-live-bubble.show').waitFor();
-  assert.match(await phone.locator('.lexi-live-bubble b').innerText(), /[A-Za-z]/, 'the greeting is in English');
+  await phone.goto(BASE + '#/home'); await phone.locator('.lexi-live-bubble.show').waitFor({ state: 'attached' });
+  assert.match(await phone.locator('.lexi-live-bubble b').textContent(), /[A-Za-z]/, 'the greeting is in English');
+  // 2026-11-04: на телефоне в синем блоке облачко не показывается — для него нет места, не закрывающего текст и кнопку
+  assert.equal(await phone.locator('.lexi-hero .lexi-live-bubble').isVisible(), false, 'no bubble over the welcome on a phone');
   assert.equal(await phone.evaluate(() => window.__spoken), 0, 'no sound without a tap');
   const lines = [];
-  for (let i = 0; i < 5; i++) { await phone.locator('.lexi-live-hit').tap(); lines.push(await phone.locator('.lexi-live-bubble b').innerText()); }
+  for (let i = 0; i < 5; i++) { await phone.locator('.lexi-live-hit').tap(); lines.push(await phone.locator('.lexi-live-bubble b').textContent()); }
   for (let i = 1; i < lines.length; i++) assert.notEqual(lines[i], lines[i - 1], 'no immediate repeat');
+  // и на планшете облачко не закрывает кнопку и текст приветствия
+  await phone.setViewportSize({ width: 768, height: 1024 }); await phone.locator('.lexi-live-hit').click(); await phone.locator('.lexi-hero .lexi-live-bubble.show').waitFor();
   const bubble = await phone.locator('.lexi-live-bubble').boundingBox(), go = await phone.locator('.lexi-hero .hero-go').boundingBox();
   const overlap = (a, c) => a.x < c.x + c.width && c.x < a.x + a.width && a.y < c.y + c.height && c.y < a.y + a.height;
   assert.equal(overlap(bubble, go), false, 'the bubble does not cover the main button');

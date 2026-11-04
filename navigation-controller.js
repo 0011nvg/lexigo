@@ -6,7 +6,7 @@
  const originalStart=start,originalStop=stop;let applying=false,revealWords=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
  /* 2026-11-02 v2: уроки от учителя и свои уроки учителя — полноценные страницы #/my/a-<задание> и #/my/t-<урок>
     (my-lessons.js). Старые ссылки index.html?task=<id> и ?lesson=<id> переводятся на них. */
- let custom=null;const MY_KEY=/^[at]-[0-9a-f-]{36}$/i;
+ let custom=null;const MY_KEY=/^(?:[at]-[0-9a-f-]{36}|s-[0-9a-z]{1,40})$/i;
  (()=>{const q=new URLSearchParams(location.search),t=q.get('task'),l=q.get('lesson'),id=t||l;if(id&&/^[0-9a-f-]{36}$/i.test(id)){q.delete('task');q.delete('lesson');const rest=q.toString();history.replaceState({},'',location.pathname+(rest?'?'+rest:'')+'#/my/'+(t?'a-':'t-')+id)}})();
  const modules=b=>[...new Set(b.sections.map(s=>s.module))];
  const currentKey=()=>unit==='__all'?'m'+modules(book).indexOf(mod):String(unit);
@@ -55,6 +55,8 @@
   const route=location.hash.slice(1)||'/home';if(lastURL===route)return;lastURL=route;applying=true;
   try{
    if(game)originalStop();const parts=route.split('/').filter(Boolean);
+   /* 2026-11-04: урок учителя по ссылке — #/s/<токен> (короткий адрес для учеников) → страница урока #/my/s-<токен> */
+   if(parts[0]==='s'){const tok=String(parts[1]||'').toLowerCase();lastURL='';history.replaceState({},'','#'+(/^[0-9a-f]{32}$/.test(tok)?'/my/s-'+tok:'/my/s-invalid'));render();return}
    if(parts[0]!=='my')custom=null;
    if(parts[0]==='my'&&MY_KEY.test(parts[1]||'')){
     const ML=window.LexigoMyLessons,mode=parts[2]==='play'&&Object.hasOwn(modeNames,parts[3])?parts[3]:null;

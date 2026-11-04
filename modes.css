@@ -1,0 +1,25 @@
+/* LEXI · значки и карточки игровых режимов (2026-11-04). Значки — один набор (progress-ui.js → gamePaths)
+ * для «Игр», страницы урока и уроков учителя; здесь только их плашки и цвета. Перенесено из встроенного <style> index.html. */
+.mode[data-mode] .mode-symbol,.mode.daily-mode .mode-symbol{display:grid!important;place-items:center!important;width:48px!important;height:48px!important;flex:0 0 48px!important;border-radius:16px!important;background-image:none!important;box-shadow:none!important;font-size:0!important}
+.mode[data-mode] .mode-symbol,.mode.daily-mode .mode-symbol{text-indent:0!important;overflow:visible!important}
+.mode[data-mode] .mode-symbol svg,.mode.daily-mode .mode-symbol svg{display:block;width:28px;height:28px}
+.mode>.mode-arrow{color:#526da8}
+@media (max-width:760px){
+ html{scroll-padding-bottom:calc(130px + env(safe-area-inset-bottom, 0px))}
+ body[data-page]:not([data-page="play"]){padding-bottom:calc(130px + env(safe-area-inset-bottom, 0px))!important}
+ .stage-modes .mode{min-height:76px!important;padding:12px 14px!important;column-gap:12px!important}
+ .stage-modes .mode>.mode-arrow{display:block;color:#526da8;font-size:19px}
+}
+.mode[data-mode="cards"] .mode-symbol{background:#e9efff!important;color:#365ee7!important}
+.mode[data-mode="quiz"] .mode-symbol{background:#e6f8ed!important;color:#238b5c!important}
+.mode[data-mode="spell"] .mode-symbol{background:#fff3d8!important;color:#a46a0a!important}
+.mode[data-mode="pairs"] .mode-symbol{background:#f2eaff!important;color:#8151bf!important}
+.mode[data-mode="truefalse"] .mode-symbol{background:#e5f7f7!important;color:#118388!important}
+.mode[data-mode="fix"] .mode-symbol{background:#ffedf0!important;color:#c25170!important}
+.mode[data-mode="audio"] .mode-symbol{background:#e9edff!important;color:#4e5fd0!important}
+.mode[data-mode="crystals"] .mode-symbol{background:#e1f7ff!important;color:#078bb9!important}
+.mode[data-mode="boss"] .mode-symbol{background:#fff2d5!important;color:#ac740b!important}
+.mode[data-mode="builder"] .mode-symbol{background:#fff0e5!important;color:#c66b25!important}
+.mode[data-mode="listen"] .mode-symbol{background:#e9f5ff!important;color:#1e75bc!important}
+.mode[data-mode="review"] .mode-symbol{background:#f1edff!important;color:#7055bb!important}
+.mode.daily-mode .mode-symbol{background:#edf7df!important;color:#5e8e23!important}

@@ -99,9 +99,9 @@ body.calm .lexi-spark{display:none}
 .course-card:not(.teen) .course-caption p{color:var(--w-ink2)!important;font-weight:700}
 
 /* ---------- Account entry in the header ---------- */
-.acct-btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px 6px 6px;background:var(--w-ink);color:#fff!important;font-weight:800;font-size:13px;text-decoration:none;min-height:40px;white-space:nowrap}
-.acct-btn:hover{background:var(--w-blue)}
-.acct-btn .acct-ava{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--w-lime);color:var(--w-ink);font-size:15px}
+.acct-btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px 6px 6px;background:#fff;color:var(--w-ink)!important;box-shadow:var(--w-shadow);font-weight:800;font-size:13px;text-decoration:none;min-height:40px;white-space:nowrap}
+.acct-btn:hover{background:#f1f5ff;color:var(--w-blue)!important}
+.acct-btn .acct-ava{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:var(--w-lime);color:var(--w-ink);font-size:15px;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(27,42,107,.22)}
 .acct-btn.guest{background:#fff;color:var(--w-ink)!important;box-shadow:var(--w-shadow);padding:6px 14px}
 .acct-btn.guest:hover{color:var(--w-blue)!important}
 .acct-btn .acct-ico{display:none}

@@ -230,5 +230,66 @@
     return 'Что-то пошло не так. Попробуй ещё раз чуть позже.';
   }
 
-  window.LexigoCloud = Object.freeze({ PLAY_EXTRA, assignmentWords, lessonState, knownLocal, knownRow, loadStudentLessons, sortLessons, lessonCard, lessonHref, ruN, configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, fmtDate, localDay, clientId, authMessage });
+  /* ---------- урок по ссылке (2026-11-04, v6 базы) ----------
+   * Ссылка вида index.html#/s/<32 hex>. Токен создаёт и стирает только сервер (lesson_share), открывает урок
+   * функция shared_lesson — она отдаёт название, слова и игры, без имени учителя, классов и учеников. */
+  const SHARE_RE = /^[0-9a-f]{32}$/;
+  function shareUrl(token) {
+    if (!SHARE_RE.test(String(token || ''))) return '';
+    const u = new URL('index.html', location.href); u.search = ''; u.hash = '/s/' + token; return u.href;
+  }
+  async function copyText(text) {
+    try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch { /* fall back */ }
+    try {
+      const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+      document.body.append(t); t.select(); t.setSelectionRange(0, text.length); const ok = document.execCommand('copy'); t.remove(); return !!ok;
+    } catch { return false; }
+  }
+  /* Блок «Ссылка для учеников» для своего урока учителя. lesson: { id, title, share_token }.
+     onChange(token) — после включения/выключения. Сообщение «скопирована» — только если копирование удалось. */
+  function sharePanel(sb, lesson, opts = {}) {
+    const box = h('section', { class: 'share-box', 'aria-label': 'Ссылка для учеников' });
+    let token = lesson.share_token || null, busy = false;
+    const status = h('p', { class: 'share-status', role: 'status', 'aria-live': 'polite' });
+    const say = (t, kind) => { status.textContent = t || ''; status.className = 'share-status' + (kind ? ' ' + kind : ''); };
+    async function toggle(enable) {
+      if (busy) return; busy = true; paint(); say(enable ? 'Включаем доступ…' : 'Выключаем доступ…');
+      try {
+        const { data, error } = await sb.rpc('lesson_share', { l: lesson.id, enable });
+        if (error) throw error;
+        token = enable ? (SHARE_RE.test(String(data || '')) ? data : null) : null;
+        if (enable && !token) throw new Error('no token');
+        lesson.share_token = token; busy = false; paint();
+        say(enable ? 'Доступ по ссылке включён. Скопируйте ссылку и отправьте ученикам.' : 'Доступ выключен: старая ссылка больше не открывает урок.', 'ok');
+        opts.onChange && opts.onChange(token);
+      } catch (e) { busy = false; paint(); say(/fetch|network|timeout|не отвечает/i.test(String(e && e.message)) ? 'Нет связи с сервером. Ссылка не изменилась — попробуйте ещё раз.' : 'Не получилось изменить доступ. Обновите страницу и попробуйте ещё раз.', 'err'); console.warn('LEXI share', e); }
+    }
+    function paint() {
+      const head = h('div', { class: 'share-head' }, h('h3', { text: 'Ссылка для учеников' }), h('span', { class: 'share-flag' + (token ? ' on' : ''), text: token ? '● Доступ по ссылке включён' : '○ Доступ по ссылке выключен' }));
+      if (!token) {
+        box.replaceChildren(head,
+          h('p', { class: 'share-text', text: 'Включите доступ — и урок откроется по ссылке на любом телефоне или компьютере, даже без входа в аккаунт.' }),
+          h('p', { class: 'share-note', text: 'По ссылке видны только название урока, слова и игры. Ваше имя, классы и ученики не видны. Ссылку сможет открыть любой, кому её перешлют.' }),
+          h('div', { class: 'share-actions' }, h('button', { type: 'button', class: opts.btn || 'btn good', disabled: busy, text: '🔗 Открыть доступ по ссылке', onclick: () => toggle(true) })), status);
+        return;
+      }
+      const url = shareUrl(token);
+      const field = h('input', { class: 'share-url', type: 'text', readonly: true, value: url, 'aria-label': 'Ссылка на урок', onfocus: e => e.target.select() });
+      const copy = h('button', { type: 'button', class: opts.btn || 'btn good', text: 'Скопировать ссылку', onclick: async () => {
+        const ok = await copyText(url);
+        if (ok) { say('Ссылка скопирована ✓ Вставьте её в сообщение ученикам.', 'ok'); copy.textContent = 'Скопировано ✓'; setTimeout(() => { copy.textContent = 'Скопировать ссылку'; }, 2200); }
+        else { field.focus(); field.select(); say('Не получилось скопировать автоматически. Ссылка выделена в поле — скопируйте её вручную.', 'err'); }
+      } });
+      const send = navigator.share ? h('button', { type: 'button', class: opts.ghost || 'btn secondary', text: 'Отправить…', onclick: () => navigator.share({ title: lesson.title, text: 'Урок LEXI: ' + lesson.title, url }).catch(() => {}) }) : null;
+      box.replaceChildren(head,
+        h('div', { class: 'share-row' }, field, copy),
+        h('div', { class: 'share-actions' }, send, h('a', { class: opts.ghost || 'btn secondary', href: url, target: '_blank', rel: 'noopener', text: 'Проверить, как видят ученики' }),
+          h('button', { type: 'button', class: 'share-off', disabled: busy, text: 'Выключить доступ', onclick: () => { if (confirm('Выключить доступ по ссылке? Старая ссылка перестанет открывать урок.')) toggle(false); } })),
+        h('p', { class: 'share-note', text: 'Ссылка открывает урок у любого, кто её получит. Если вы измените слова, ученики увидят новую версию при следующем открытии. Ученики не могут менять или удалять урок.' }), status);
+    }
+    paint();
+    return box;
+  }
+
+  window.LexigoCloud = Object.freeze({ PLAY_EXTRA, assignmentWords, lessonState, knownLocal, knownRow, loadStudentLessons, sortLessons, lessonCard, lessonHref, ruN, configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, shareUrl, copyText, sharePanel, SHARE_RE, fmtDate, localDay, clientId, authMessage });
 })();

@@ -1,0 +1,69 @@
+/* LEXI · главная: синий приветственный блок, «копилка» слов и карточки классов (2026-11-04).
+ * Подключается последним из стилей главной и задаёт раскладку блока окончательно (#lexiHome — выше по
+ * специфичности, чем накопившиеся правки в polish.css / lexi-home-polish.css). Заменяет встроенные стили index.html. */
+
+/* ---------- копилка слов ---------- */
+#lexiHome .lexi-personal-progress{position:relative;display:flex;align-items:center;gap:10px;width:fit-content;max-width:100%;box-sizing:border-box;margin:0 0 18px;padding:8px 14px 8px 8px;border:1px solid rgba(226,255,160,.42);border-radius:16px;background:linear-gradient(110deg,rgba(255,255,255,.2),rgba(176,212,255,.1));box-shadow:0 0 0 1px rgba(255,255,255,.04),0 8px 22px rgba(10,22,96,.2),0 0 26px rgba(205,255,110,.14);color:#fff;font-size:15px;font-weight:800;line-height:1.3;overflow:visible}
+#lexiHome .lexi-personal-progress .pp-badge{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:radial-gradient(circle at 50% 45%,#f2ffbf 0,#d4ff6a 46%,#b4ef3a 100%);box-shadow:0 0 14px rgba(212,255,106,.55),inset 0 -2px 0 rgba(70,110,0,.25)}
+#lexiHome .lexi-personal-progress .pp-star{width:20px;height:20px;fill:#2b4c00}
+#lexiHome .lexi-personal-progress .pp-text{min-width:0;overflow-wrap:break-word}
+#lexiHome .lexi-personal-progress strong{color:#e2ff8f;font-size:1.12em;white-space:nowrap}
+#lexiHome .lexi-personal-progress.is-empty strong{white-space:normal}
+#lexiHome .lexi-personal-progress::before,#lexiHome .lexi-personal-progress::after{content:none!important}
+/* искорки: три лимонные звёздочки у правого верхнего угла плашки — мерцают по очереди, ничего не закрывают */
+.pp-glints{position:absolute;right:-6px;top:-12px;width:46px;height:30px;pointer-events:none}
+.pp-g{position:absolute;fill:#e9ff9e;filter:drop-shadow(0 0 4px rgba(218,255,120,.9));opacity:.5;animation:ppTwinkle 3.2s ease-in-out infinite}
+.pp-g.g1{width:13px;height:13px;right:2px;top:0}
+.pp-g.g2{width:8px;height:8px;right:20px;top:9px;animation-delay:-1.1s}
+.pp-g.g3{width:6px;height:6px;right:-2px;top:19px;animation-delay:-2.1s}
+@keyframes ppTwinkle{0%,100%{opacity:.25;transform:scale(.7) rotate(0)}45%{opacity:1;transform:scale(1.08) rotate(12deg)}60%{opacity:.9;transform:scale(1) translateY(-1px)}}
+#lexiHome .lexi-personal-progress{animation:ppGlow 4s ease-in-out infinite}
+@keyframes ppGlow{0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.04),0 8px 22px rgba(10,22,96,.2),0 0 18px rgba(205,255,110,.1)}50%{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 22px rgba(10,22,96,.2),0 0 30px rgba(205,255,110,.26)}}
+@media (prefers-reduced-motion:reduce){.pp-g,#lexiHome .lexi-personal-progress{animation:none!important}.pp-g{opacity:.85}}
+body.calm .pp-g,body.calm #lexiHome .lexi-personal-progress{animation:none}
+
+/* ---------- синий блок: текст не делит ширину с Лекси там, где ему тесно ---------- */
+#lexiHome .lexi-hero-title,#lexiHome .lexi-hero-sub{overflow-wrap:break-word!important;word-break:normal!important;hyphens:manual}
+#lexiHome .lexi-hero .hero-go span{white-space:nowrap}
+#lexiHome .lexi-hero .hero-go small{overflow-wrap:break-word;white-space:normal}
+#lexiHome .lexi-hero-sub{margin-bottom:14px}
+
+/* компьютер: облачко Лекси справа над котом, не над заголовком */
+@media (min-width:901px){
+  #lexiHome .lexi-hero .lexi-live-bubble{left:16%!important;right:auto!important;top:1%!important;bottom:auto!important;width:max-content;max-width:min(230px,60%)!important}
+}
+/* планшет: облачко внутри блока, не обрезается сверху */
+@media (min-width:641px) and (max-width:900px){
+  #lexiHome .lexi-hero .lexi-live-bubble{left:6%!important;right:auto!important;top:-6%!important;bottom:auto!important;width:max-content;max-width:min(230px,70%)!important}
+}
+
+/* телефон: заголовок и кнопка во всю ширину; Лекси справа от приветствия и копилки. */
+@media (max-width:640px){
+  #lexiHome .lexi-hero{display:grid!important;grid-template-columns:minmax(0,1fr) clamp(100px,31vw,140px)!important;grid-template-rows:auto auto 1fr auto auto;grid-template-areas:"eyebrow eyebrow" "title title" "sub art" "pill art" "go go";column-gap:6px;align-items:end;padding:20px 16px 18px 18px!important;min-height:0!important;height:auto!important}
+  #lexiHome .lexi-hero>.lexi-hero-text{display:contents}
+  #lexiHome .lexi-hero .eyebrow{grid-area:eyebrow;position:relative;z-index:2;font-size:10.5px;letter-spacing:.1em;margin-bottom:8px!important}
+  #lexiHome .lexi-hero-title{grid-area:title;position:relative;z-index:2;max-width:none!important;font-size:clamp(25px,7.6vw,31px)!important;margin-bottom:8px!important}
+  #lexiHome .lexi-hero-sub{grid-area:sub;align-self:start;position:relative;z-index:2;max-width:none!important;font-size:15px!important;line-height:1.4;margin:0 0 12px!important}
+  #lexiHome .lexi-personal-progress{grid-area:pill;z-index:2;margin:0 0 14px;font-size:13.5px;padding:6px 10px 6px 6px;gap:8px;border-radius:14px}
+  #lexiHome .lexi-personal-progress .pp-badge{width:28px;height:28px;border-radius:9px}
+  #lexiHome .lexi-personal-progress .pp-star{width:17px;height:17px}
+  #lexiHome .lexi-hero-actions{grid-area:go;position:relative;z-index:2}
+  #lexiHome .lexi-hero .hero-go{max-width:100%!important;width:100%;min-width:0!important;box-sizing:border-box;padding:13px 18px!important}
+  #lexiHome .lexi-hero .hero-go span{font-size:19px!important}
+  #lexiHome .lexi-hero .hero-go small{font-size:12.5px!important;line-height:1.3}
+  #lexiHome .lexi-hero>.lexi-hero-art{grid-area:art;position:relative!important;right:auto!important;bottom:auto!important;width:auto!important;margin:0 -8px 4px 0!important;transform:none!important;align-self:end;z-index:1}
+  #lexiHome .lexi-hero>.lexi-hero-art .lexi-live,#lexiHome .lexi-hero .lexi-live{width:100%!important;margin:0!important;transform:none!important}
+  /* на телефоне в синем блоке нет свободного места для облачка, не закрывающего текст или кнопку: Лекси машет и подпрыгивает по касанию,
+     а его приветствие — текст блока. На планшете и компьютере облачко с английской фразой и 🔊 остаётся. */
+  #lexiHome .lexi-hero .lexi-live-bubble{display:none!important}
+}
+@media (max-width:359px){
+  #lexiHome .lexi-hero{grid-template-columns:minmax(0,1fr) 92px!important;padding-left:16px!important}
+  #lexiHome .lexi-hero-sub{font-size:14px!important}
+}
+
+/* ---------- карточки классов: без синих стрелок; «Мой класс» — надпись, а не только цвет ---------- */
+#courseCards .course-card:not(.course-coming) .course-caption>span:not(.my-class-badge){display:none!important}
+#courseCards .course-card:not(.course-coming) .course-caption>span.my-class-badge{display:inline-flex!important;align-items:center;gap:4px;width:auto!important;height:auto!important;min-height:0!important;margin:0 0 8px!important;padding:4px 10px!important;border-radius:999px!important;background:var(--w-lime,#b4ef3a)!important;color:#20380a!important;font-size:12px!important;font-weight:900!important;line-height:1.2!important;letter-spacing:0;box-shadow:none!important;border:0!important;order:-1;align-self:flex-start;justify-self:start;max-width:max-content!important;pointer-events:none}
+#courseCards .course-card:not(.course-coming) .course-caption>span.my-class-badge::after,#courseCards .course-card:not(.course-coming) .course-caption>span.my-class-badge::before{content:none!important}
+#courseCards .course-coming{pointer-events:none}

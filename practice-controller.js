@@ -4,26 +4,28 @@ const GRADE_SCALE_KEY='lexigo_grade_scale_v1';
 function gradeScale(){let saved={};try{saved=JSON.parse(localStorage.getItem(GRADE_SCALE_KEY)||'{}')||{}}catch{saved={}}const num=(id,d)=>{const el=document.getElementById(id),v=Number(el?el.value:NaN);return Number.isFinite(v)&&v>=1&&v<=100?Math.round(v):d};const s={p5:num('gs5',saved.p5||90),p4:num('gs4',saved.p4||75),p3:num('gs3',saved.p3||50),partial:document.getElementById('gsPartial')?!!document.getElementById('gsPartial').checked:!!saved.partial};if(!(s.p5>s.p4&&s.p4>s.p3)){s.p5=90;s.p4=75;s.p3=50}try{localStorage.setItem(GRADE_SCALE_KEY,JSON.stringify(s))}catch{}return s}
 function restoreGradeScale(){let s={};try{s=JSON.parse(localStorage.getItem(GRADE_SCALE_KEY)||'{}')||{}}catch{s={}}for(const [id,k] of [['gs5','p5'],['gs4','p4'],['gs3','p3']]){const el=document.getElementById(id);if(el&&s[k])el.value=s[k]}const pc=document.getElementById('gsPartial');if(pc)pc.checked=!!s.partial}
 function gradeRanges(max,scale){const step=scale.partial?.5:1,fmt=x=>String(x).replace('.',','),need=p=>Math.min(max,Math.ceil(max*p/100/step)*step);const m5=need(scale.p5),m4=need(scale.p4),m3=need(scale.p3);const range=(lo,hi)=>hi<lo?'—':lo===hi?fmt(lo):fmt(lo)+'–'+fmt(hi);return [['5',range(m5,max),scale.p5+'% и выше'],['4',range(m4,m5-step),scale.p4+'–'+(scale.p5-1)+'%'],['3',range(m3,m4-step),scale.p3+'–'+(scale.p4-1)+'%'],['2',range(0,m3-step),'меньше '+scale.p3+'%']]}
-function teacherCriteriaSheet(answers,total,safe){
+function teacherCriteriaSheet(answers,total,safe,subtitle){
  const scale=gradeScale(),names={quiz:'Выбери перевод',spell:'Напиши слово',fix:'Исправь ошибку',truefalse:'Верно или неверно'};
  const counts={};answers.forEach(a=>counts[a.kind]=(counts[a.kind]||0)+1);
  const rules={quiz:'1 балл — выбран один верный вариант. 0 баллов — неверный вариант, несколько вариантов или нет ответа.',truefalse:'1 балл — отмечен верный вариант. 0 баллов — неверно, отмечены оба варианта или нет ответа.',spell:'1 балл — слово написано без ошибок.'+(scale.partial?' 0,5 балла — одна ошибка в букве (пропуск, лишняя или неверная буква).':'')+' 0 баллов — две и больше ошибок, другое слово или нет ответа.',fix:'1 балл — слово написано правильно целиком.'+(scale.partial?' 0,5 балла — исправлена нужная буква, но допущена одна другая ошибка.':'')+' 0 баллов — ошибка не исправлена или нет ответа.'};
  const kinds=Object.keys(counts);
  const brand='<div class="print-brand">'+(document.querySelector('.site-header .lexi-mark')?.outerHTML||'')+'LEXI</div>';
  const ranges=gradeRanges(total,scale);
- return '<div class="print-sheet print-key print-teacher"><div class="print-head">'+brand+'<div class="print-caption">ДЛЯ УЧИТЕЛЯ · НЕ ВЫДАВАТЬ УЧЕНИКАМ</div></div><h1>Критерии оценивания для учителя</h1><p class="print-subtitle">'+safe(book.grade)+' класс'+' · '+safe(mod)+' · '+safe(unit==='__all'?'Все уроки':(book.sections[Number(unit)]?.title||'Выбранный урок'))+'</p>'
+ return '<div class="print-sheet print-key print-teacher"><div class="print-head">'+brand+'<div class="print-caption">ДЛЯ УЧИТЕЛЯ · НЕ ВЫДАВАТЬ УЧЕНИКАМ</div></div><h1>Критерии оценивания для учителя</h1><p class="print-subtitle">'+(subtitle?subtitle:safe(book.grade)+' класс'+' · '+safe(mod)+' · '+safe(unit==='__all'?'Все уроки':(book.sections[Number(unit)]?.title||'Выбранный урок')))+'</p>'
   +'<div class="crit-summary"><div><b>'+total+'</b><span>заданий</span></div><div><b>'+total+'</b><span>максимальный первичный балл</span></div><div><b>'+(scale.partial?'0 / 0,5 / 1':'0 / 1')+'</b><span>балл за задание</span></div></div>'
   +'<h2>Начисление баллов</h2><table class="crit-rules"><thead><tr><th>Тип задания</th><th>Заданий</th><th>Правило</th></tr></thead><tbody>'+kinds.map(k=>'<tr><td>'+names[k]+'</td><td>'+counts[k]+'</td><td>'+rules[k]+'</td></tr>').join('')+'</tbody></table>'
   +'<h2>Перевод в отметку</h2><table class="crit-scale"><thead><tr><th>Отметка</th><th>Первичный балл</th><th>Доля от максимума</th></tr></thead><tbody>'+ranges.map(r=>'<tr><td>«'+r[0]+'»</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('')+'</tbody></table>'
   +'<p class="crit-note">Шкала по умолчанию: «5» — от 90%, «4» — от 75%, «3» — от 50%. Её можно изменить в настройках проверочной работы под нормы вашей школы.</p>'
   +'<h2>Ключи</h2><ol class="crit-keys'+(answers.length>20?' many':'')+'">'+answers.map(a=>'<li><span class="ck-type">'+names[a.kind]+'</span> '+safe(a.answer)+'</li>').join('')+'</ol></div>';
 }
-function printTeacherTest(){
- if(!document.body.classList.contains('teacher-mode'))return;
- const words=uniquePairs(selectedWords().filter(isLexicalEntry)),types=[...document.querySelectorAll('#taskTypes input:checked')].map(x=>x.value).filter(x=>['quiz','spell','fix','truefalse'].includes(x));
+/* 2026-11-04: тот же рабочий лист и для своего урока учителя (my-lessons.js): printTeacherTest({words,types,amount,subtitle}) */
+function printTeacherTest(opts){
+ const custom=!!(opts&&Array.isArray(opts.words));
+ if(!custom&&!document.body.classList.contains('teacher-mode'))return;
+ const words=uniquePairs((custom?opts.words:selectedWords()).filter(isLexicalEntry)),types=(custom?(opts.types||[]):[...document.querySelectorAll('#taskTypes input:checked')].map(x=>x.value)).filter(x=>['quiz','spell','fix','truefalse'].includes(x));
  if(!words.length){alert('Сначала отметь слова для теста в библиотеке.');return}
  if(!types.length){alert('Выбери хотя бы один тип письменного задания.');return}
- const amount=$('testCount').value,requested=amount==='all'?words.length:Number(amount);
+ const amount=custom?String(opts.amount||'all'):$('testCount').value,requested=amount==='all'?words.length:Number(amount);
  const items=shuffle(words).slice(0,requested);
  const questions=[],answers=[];const safe=x=>escapeHTML(String(x));const scramble=w=>{const letters=[...w.en],alphabet='abcdefghijklmnopqrstuvwxyz';const index=letters.findIndex(c=>/[a-z]/i.test(c));if(index<0)return null;const old=letters[index],replacement=alphabet[(alphabet.indexOf(old.toLowerCase())+7)%26];letters[index]=old===old.toUpperCase()?replacement.toUpperCase():replacement;return letters.join('')};
  items.forEach((w,i)=>{let kind=types[i%types.length],body='',answer=w.en+' — '+w.ru;
@@ -37,12 +39,12 @@ function printTeacherTest(){
  const sheets=[];
  for(let offset=0;offset<questions.length;offset+=20){
   const pageQuestions=questions.slice(offset,offset+20),half=Math.min(10,pageQuestions.length);
-  const subtitle=safe(book.grade)+' класс'+' · '+safe(mod)+' · '+safe(unit==='__all'?'Все уроки':(book.sections[Number(unit)]?.title||'Выбранный урок'));
+  const subtitle=custom?safe(opts.subtitle||'Урок учителя'):safe(book.grade)+' класс'+' · '+safe(mod)+' · '+safe(unit==='__all'?'Все уроки':(book.sections[Number(unit)]?.title||'Выбранный урок'));
   const textLen=list=>list.reduce((n,q)=>n+q.replace(/<[^>]+>/g,'').length,0),density=Math.max(textLen(pageQuestions.slice(0,half)),textLen(pageQuestions.slice(half)));
   const dense=density>1850?' print-xdense print-xxdense':density>1350?' print-xdense':density>950?' print-dense':'';
   sheets.push('<div class="print-sheet print-student-sheet'+dense+'" data-density="'+density+'"><div class="print-head"><div class="print-brand"><svg class="lexi-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="15" fill="#2c56f5"/><g class="lexi-mark-face"><path d="M12.4 25.2C12.9 20.7 13.4 11.2 16.5 11.2C18.8 11.2 23.8 15.3 26.4 17.5C30.1 16.9 33.9 16.9 37.6 17.5C40.2 15.3 45.2 11.2 47.5 11.2C50.6 11.2 51.1 20.7 51.6 25.2C53 29 53.6 32.3 53.2 35.8C52.4 45.7 45.4 51.8 32 51.8C18.6 51.8 11.6 45.7 10.8 35.8C10.4 32.3 11 29 12.4 25.2Z" fill="#fff"/><path d="M28.6 35.4H35.4C36.1 35.4 36.5 36.2 36 36.8L33 40.3C32.5 40.9 31.5 40.9 31 40.3L28 36.8C27.5 36.2 27.9 35.4 28.6 35.4Z" fill="#2c56f5"/></g></svg>LEXI</div><div class="print-caption">АНГЛИЙСКИЙ ЯЗЫК · ПРОВЕРОЧНАЯ РАБОТА</div></div><h1>Vocabulary Check</h1><p class="print-subtitle">'+subtitle+'</p><div class="print-student"><span class="ps-name">Имя и фамилия</span><span class="ps-class">Класс</span><span class="ps-date">Дата</span></div><div class="print-meta">Задания '+(offset+1)+'–'+(offset+pageQuestions.length)+' из '+questions.length+' · '+(gradeScale().partial?'до 1 балла':'1 балл')+' за задание · максимум '+questions.length+'</div><div class="print-questions"><div>'+pageQuestions.slice(0,half).join('')+'</div><div>'+pageQuestions.slice(half).join('')+'</div></div><div class="print-result">Результат: ______ / '+questions.length+' &nbsp;&nbsp; Оценка: ______</div><div class="print-page-footer">LEXI · '+subtitle+' · Страница '+(sheets.length+1)+'</div></div>');
  }
- host.innerHTML=sheets.join('')+teacherCriteriaSheet(answers,questions.length,safe);
+ host.innerHTML=sheets.join('')+teacherCriteriaSheet(answers,questions.length,safe,custom?safe(opts.subtitle||'Урок учителя'):null);
  document.getElementById('lexigoPrint')?.remove();document.body.append(host);
  const cleanup=()=>{host.remove();window.removeEventListener('afterprint',cleanup)};window.addEventListener('afterprint',cleanup);window.print();
 }

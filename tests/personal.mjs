@@ -136,7 +136,8 @@ try {
   await page.locator('#lessonCards a.lesson-card').nth(1).click(); await page.locator('#launcher').waitFor();
   await page.goto(BASE + '#/home');
   assert.match(await page.locator('.desk-class').innerText(), /6 класс/);
-  assert.match(await page.locator('.desk-continue').innerText(), /5 класс/, 'continue shows the last opened lesson (5th grade)');
+  assert.match(await page.locator('.lexi-hero .hero-go').innerText(), /5 класс/, 'continue shows the last opened lesson (5th grade)');
+  assert.equal(await page.locator('.desk-continue').count(), 0, 'one «continue» action: the lemon button, no duplicate card');
   await page.locator('.desk-class a.btn').click(); await page.waitForURL(/#\/course\/6\/0$/);
   ok('temporary 5th grade: main class stays 6 on home and «Открыть уроки» leads to Spotlight 6; continue card points to the 5th-grade lesson');
 
@@ -145,14 +146,15 @@ try {
   const ctx = page.context(); const p2 = await ctx.newPage(); p2.on('pageerror', e => errors.push(e.message));
   await p2.goto(BASE + '#/home'); await p2.locator('.lexi-desk').waitFor();
   assert.match(await p2.locator('.lexi-hero-sub').innerText(), /С возвращением! Продолжим учить слова\?/);
-  assert.match(await p2.locator('.desk-continue').innerText(), /Конструктор слов · не завершена/);
-  assert.match(await p2.locator('.desk-continue').innerText(), /начнётся сначала/);
+  // 2026-11-04: одно действие — лимонная кнопка; модуль большой (раунды), поэтому «дальше по словам», а не «сначала»
+  assert.equal(await p2.locator('.desk-continue').count(), 0);
   assert.match(await p2.locator('.lexi-hero .hero-go').innerText(), /Продолжить/);
+  assert.match(await p2.locator('.lexi-hero .hero-go small').innerText(), /Конструктор слов, дальше по словам/);
   assert.match(await p2.locator('.desk-device').innerText(), /на этом устройстве/, 'honest note: stored on this device only');
-  await p2.locator('.desk-continue a.btn', { hasText: 'Продолжить' }).click();
+  await p2.locator('.lexi-hero .hero-go').click();
   await p2.waitForURL(/#\/lesson\/6\/m1\/play\/builder$/);
   assert.equal(await p2.evaluate(() => game?.mode), 'builder');
-  ok('return visit: «С возвращением! Продолжим учить слова?», continue card «Конструктор слов · не завершена» → opens it');
+  ok('return visit: «С возвращением! Продолжим учить слова?», the lemon «Продолжить» says «Конструктор слов, дальше по словам» → opens it');
   await ctx.close();
 
   /* 8. Old saved selection format (array of ids) is still read */
@@ -180,7 +182,7 @@ try {
       assert.ok(over <= 1, name + ' ' + path + ' overflows by ' + over + 'px');
     }
     await m.goto(BASE + '#/home');
-    for (const sel of ['.desk-class', '.desk-favs', '.desk-hard', '.desk-continue']) assert.ok(await m.locator(sel).isVisible(), sel + ' visible on ' + name);
+    for (const sel of ['.desk-class', '.desk-favs', '.desk-hard', '.lexi-hero .hero-go']) assert.ok(await m.locator(sel).isVisible(), sel + ' visible on ' + name);
     await m.screenshot({ path: 'test-results/personal-home-' + name + '.png', fullPage: true }).catch(() => {});
     ok(name + ' iPhone: home desk, ☆ words, word set and favourites work without horizontal scroll');
     await m.context().close(); if (b !== browser) await b.close();

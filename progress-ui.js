@@ -13,7 +13,7 @@ window.LexigoDashboard=(()=>{
  boss:'<path d="M8 5h8v3a4 4 0 0 1-8 0V5ZM8 6H5v2a3 3 0 0 0 3 3M16 6h3v2a3 3 0 0 1-3 3M12 12v4M8 19h8M9 16h6"/>',
  mixed:'<circle cx="12" cy="12" r="7"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/><path d="m9 12 2 2 4-4"/>',
  builder:'<rect x="3.5" y="4" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="4" width="7.5" height="7.5" rx="1.5"/><rect x="8.25" y="13" width="7.5" height="7.5" rx="1.5"/><path d="m5.7 9 1.6-3 1.6 3M5.9 8.3h2.8M15 9V6h1.2c1 0 1 .9.4 1.3.8.3.7 1.7-.4 1.7H15Z"/>',
- listen:'<path d="M5 13v-1a7 7 0 0 1 14 0v1"/><rect x="4" y="12" width="3" height="6" rx="1.3"/><rect x="17" y="12" width="3" height="6" rx="1.3"/><path d="m9 15 2 2 4-4"/>',
+ listen:'<path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.7 6.6a7.6 7.6 0 0 1 0 10.8"/>',
  review:'<path d="M19 8a7.5 7.5 0 1 0 .3 7M19 4v4h-4"/><path d="m9 12 2 2 4-4"/>'
  };
  const gameIcon=key=>'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(gamePaths[key]||gamePaths.quiz)+'</svg>';
@@ -33,7 +33,7 @@ window.LexigoDashboard=(()=>{
   }
   host.append(el('p','Свободная практика на этом устройстве. Это не подтверждённая школьная оценка.','dashboard-note'));
   if(page==='profile'){
-   const stats=el('div',undefined,'progress-stats');stats.append(tile(s.practiced,'слов в практике'),tile(s.correct,'слов с верным ответом'),tile(s.recalled,'слов написал дважды'));host.append(stats);
+   const stats=el('div',undefined,'progress-stats');stats.append(tile(s.practiced,'слов в практике'),tile(s.correct,'слов в копилке'),tile(s.recalled,'слов написал дважды'));host.append(stats);host.append(el('p','В копилку попадает слово, на которое ты хотя бы раз ответил верно. «Написал дважды» — слово, которое ты дважды написал по памяти без подсказки.','dashboard-note'));
    host.append(el('h2','Мои учебники'));for(const b of s.courses){const row=el('article',undefined,'course-progress');row.append(el('h3',b.grade+' класс'),el('p',b.practiced+' из '+b.total+' слов в практике'));const bar=el('progress');bar.max=b.total;bar.value=b.practiced;bar.setAttribute('aria-label','Слова в практике: '+b.grade+' класс');row.append(bar,link('Открыть учебник','/course/'+b.grade+'/0','text-button'));host.append(row)}
    if(!s.practiced)host.append(el('p','Начни первую тренировку — здесь появятся твои результаты.','dashboard-note'));
    host.append(link('К тренировкам','/games','btn dashboard-cta'));
@@ -44,5 +44,7 @@ window.LexigoDashboard=(()=>{
   }
   host.append(el('p',(window.LexigoAccountHint&&window.LexigoAccountHint.uid())?'Прогресс сохраняется в твоём аккаунте и доступен на любом устройстве после входа.':'Прогресс сохраняется на этом устройстве. Войди в аккаунт, чтобы он не потерялся и был доступен везде.','dashboard-note'));
  }
- return Object.freeze({sync,render});
+ /* 2026-11-04: one icon set — the lesson page (#launcher, and lessons cloned from it) takes the same icons as «Игры» */
+ for(const b of document.querySelectorAll('#launcher .mode[data-mode], #launcher #quickStart')){const key=b.dataset.mode||'mixed',s=b.querySelector('.mode-symbol');if(s&&gamePaths[key])s.innerHTML=gameIcon(key)}
+ return Object.freeze({sync,render,gameIcon});
 })();

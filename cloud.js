@@ -175,6 +175,7 @@
       progress[r.word_id] = merged;
     }
     try { save(); updateStats(); } catch { /* lesson view not ready */ }
+    window.dispatchEvent(new CustomEvent('lexigo:progress'));   // главная: «слов в копилке» с учётом облака
   }
 
   /* ---------- soft sign-up prompt for guests ---------- */
@@ -249,7 +250,7 @@
   async function init() {
     headerButton();
     if (!C.configured) { done(null); if (Hint.uid()) { Hint.clear(); location.reload(); } return; }
-    const wantsCloud = /^#\/my\//.test(location.hash);
+    const wantsCloud = /^#\/my\/[at]-/.test(location.hash);   // урок по ссылке (#/my/s-…) открывается и без входа
     if (!Hint.uid() && !wantsCloud) {
       // a session may exist from another tab; only then load the library
       try { if (!localStorage.getItem('lexigo-auth')) return done(null); } catch { return done(null); }

@@ -105,13 +105,6 @@
   function sectionCard(cls, title) { const c = el('section', 'desk-card ' + cls); const h = el('h3', 'desk-title', title); c.append(h); return c; }
   function linkBtn(text, href, cls) { const a = el('a', cls || 'btn', text); a.href = href; return a; }
   function btn(text, fn, cls) { const b = el('button', cls || 'btn', text); b.type = 'button'; b.onclick = fn; return b; }
-  function selectionLabel(path) {
-    const info = pathInfo(path); if (!info) return '';
-    const v = readJSON(SEL_KEY, {})[info.grade + ':' + info.unitKey];
-    if (Array.isArray(v) || v?.m === 'chosen') return 'только выбранные слова';
-    if (v?.m === 'hard') return 'только сложные слова';
-    return '';
-  }
   function classPicker(current, suggested, onPick) {
     const row = el('div', 'class-picker'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Выбери свой класс');
     for (const b of BOOKS) {
@@ -137,24 +130,8 @@
       cls.append(classPicker(null, sug, ng => { setMyClass(ng); location.hash = '#/course/' + ng + '/0'; }), el('p', 'desk-note', 'Выбери один раз — Лекси запомнит. Поменять можно в любой момент.'));
     }
     desk.append(cls);
-    // 2. Show next-step choices only when a finished lesson offers them.
-    if (last && last.finished && last.mode && !pathInfo(last.path).whole) {
-      const info = pathInfo(last.path); const c = sectionCard('desk-continue', 'Продолжить обучение');
-      c.append(el('p', 'desk-where', info.grade + ' класс' + ' · ' + info.module), el('p', 'desk-lesson', info.title));
-      const sel = selectionLabel(last.path);
-      if (last.mode && MODE_NAMES[last.mode]) c.append(el('p', 'desk-note', 'Последняя тренировка: ' + MODE_NAMES[last.mode] + (last.finished ? ' · завершена ✓' : ' · не завершена') + (sel ? ' · ' + sel : '')));
-      else if (sel) c.append(el('p', 'desk-note', 'В играх: ' + sel));
-      const row = el('div', 'desk-actions');
-      if (info.whole && last.mode) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Пройденные слова сохранены. При возвращении игра подберёт следующие слова; результат незавершённого раунда не сохраняется.')); }
-      else if (last.mode && !last.finished) { row.append(linkBtn('Продолжить', '#' + last.path + '/play/' + last.mode, 'btn')); c.append(el('p', 'desk-hint', 'Игра начнётся сначала — незаконченная игра не сохраняется.')); }
-      else if (last.mode) {
-        const order = STAGE_ORDER(), i = order.indexOf(last.mode), next = i >= 0 ? order[i + 1] : null;
-        if (next) row.append(linkBtn('Дальше: ' + MODE_NAMES[next], '#' + last.path + '/play/' + next, 'btn'));
-        row.append(linkBtn('Повторить', '#' + last.path + '/play/' + last.mode, next ? 'btn secondary' : 'btn'));
-      } else row.append(linkBtn('Продолжить', '#' + last.path, 'btn'));
-      row.append(linkBtn(info.whole ? 'К учебнику' : 'К уроку', info.whole ? '#/course/' + info.grade + '/0' : '#' + last.path, 'text-button'));
-      c.append(row); desk.append(c);
-    }
+    // 2. «Продолжить обучение» (2026-11-04): одно действие — лимонная кнопка в синем блоке (tuneHero).
+    //    Отдельная карточка его дублировала; «Дальше: следующая игра» теперь на самой кнопке, «Повторить» — на странице урока.
     // 3. favourite modules
     if (favList.length || g) {
       const c = sectionCard('desk-favs', 'Мои модули');
@@ -183,15 +160,36 @@
     desk.append(el('p', 'desk-device', '🔒 ' + DEVICE_NOTE + ' На другом устройстве класс, модули и сложные слова нужно будет отметить заново.'));
     (host.querySelector('.lexi-panel') || host.querySelector('.lexi-hero'))?.after(desk);
   }
+  /* Сколько слов в наборе: большой набор идёт раундами (word-rounds.js) — прерванная игра продолжается со следующих слов,
+     маленький начинается сначала. Те же пороги, что у раундов: «Найди пару» — 9, «Карточки» — 20, остальные — 15. */
+  function setSize(info) {
+    const b = bookOf(info.grade); if (!b) return 0;
+    if (info.whole) return Infinity;
+    if (info.unitKey === '__all') return b.sections.filter(s => s.module === info.module).reduce((n, s) => n + s.words.length, 0);
+    return (b.sections[Number(info.unitKey)] || { words: [] }).words.length;
+  }
+  function continuePlan(last) {
+    const info = pathInfo(last.path); if (!info) return null;
+    const where = info.grade + ' класс · ' + (info.whole ? 'весь учебник' : info.title);
+    if (!last.mode || !MODE_NAMES[last.mode]) return { href: '#' + last.path, label: 'Продолжить', note: where };
+    const rounds = last.mode !== 'crystals' && setSize(info) > ({ pairs: 9, cards: 20 }[last.mode] || 15);
+    if (!last.finished) return { href: '#' + last.path + '/play/' + last.mode, label: 'Продолжить', note: where + ' · ' + MODE_NAMES[last.mode] + (rounds ? ', дальше по словам' : ', начнём сначала') };
+    if (info.whole || rounds) return { href: '#' + last.path + '/play/' + last.mode, label: 'Продолжить', note: where + ' · ' + MODE_NAMES[last.mode] + ', следующие слова' };
+    const order = STAGE_ORDER(), i = order.indexOf(last.mode), next = i >= 0 ? order[i + 1] : null;
+    if (next) return { href: '#' + last.path + '/play/' + next, label: 'Дальше', note: where + ' · ' + MODE_NAMES[next] };
+    return { href: '#' + last.path, label: 'Продолжить', note: where + ' · выбери игру' };
+  }
   function tuneHero(host) {
     const hero = host.querySelector('.lexi-hero'); if (!hero) return;
     const last = lastActivity(), g = myClass(), sub = hero.querySelector('.lexi-hero-sub'), actions = hero.querySelector('.lexi-hero-actions');
-    if (last) {
+    const plan = last ? continuePlan(last) : null;
+    if (plan) {
       if (sub) sub.textContent = 'С возвращением! Продолжим учить слова?';
-      const info = pathInfo(last.path); const go = actions?.querySelector('.hero-go');
-      if (go && info) {
-        go.href = '#' + last.path + (last.mode ? '/play/' + last.mode : '');
-        go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = info.grade + ' класс' + ' · ' + info.title + (last.mode && !last.finished ? ' · раунд заново' : '');
+      const go = actions?.querySelector('.hero-go');
+      if (go) {
+        go.href = plan.href;
+        go.innerHTML = '<span></span><small></small>'; go.querySelector('span').textContent = plan.label; go.querySelector('small').textContent = plan.note;
+        go.setAttribute('aria-label', plan.label + ': ' + plan.note);
         actions.querySelector('.btn.secondary')?.remove();
       }
     } else if (!g) {

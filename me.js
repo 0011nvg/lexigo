@@ -512,18 +512,31 @@
           h('a', { class: 'btn-acc small ghost', href: lessonUrl(l.id), 'aria-label': 'Открыть: ' + l.title, text: 'Открыть' }),
           h('a', { class: 'btn-acc small lime', href: playUrl(l.id), 'aria-label': 'Играть: ' + l.title, text: '▶ Играть' }),
           h('button', { class: 'btn-acc small ghost', type: 'button', 'aria-label': 'Редактировать: ' + l.title, text: 'Редактировать', onclick: () => { lessonEdit = l; teacher(); window.scrollTo({ top: 0 }); } }),
-          h('button', { class: 'btn-acc small', type: 'button', 'aria-label': 'Назначить: ' + l.title, text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } })),
+          h('button', { class: 'btn-acc small', type: 'button', 'aria-label': 'Назначить: ' + l.title, text: 'Назначить', onclick: () => { tab = 'tasks'; openWizard({ lesson: l.id }); } }),
+          h('button', { class: 'btn-acc small ghost', type: 'button', 'aria-label': 'Поделиться ссылкой: ' + l.title, text: l.share_token ? '🔗 Ссылка' : '🔗 Поделиться', onclick: () => shareDialog(l) })),
+        l.share_token ? h('p', { class: 'ml-shared', text: '● Доступ по ссылке включён' }) : null,
         h('div', { class: 'ml-more' }, h('button', { class: 'btn-link', type: 'button', style: { color: 'var(--w-miss)' }, text: 'Удалить', onclick: () => dialog('Удалить урок «' + l.title + '»?', h('p', { text: 'Задания с этим уроком тоже будут удалены.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить', onclick: async () => { const { error } = await sb.from('custom_lessons').delete().eq('id', l.id); if (error) return fail(error); close(); await refresh(); } })]) })));
       grid.append(card);
     }
     wrap.append(grid, h('p', { class: 'acc-small acc-muted', text: '«Открыть» — слова урока и все подходящие игры на отдельной странице; «Играть» — сразу к играм. Ваши тренировки не попадают в статистику класса и не начисляют XP. Ученики видят урок, когда вы назначаете его.' }));
     return wrap;
   }
+  function shareDialog(l) {
+    let changed = false;
+    dialog('Поделиться уроком «' + l.title + '»', C.sharePanel(sb, l, { btn: 'btn-acc', ghost: 'btn-acc ghost', onChange: () => { changed = true; } }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Готово', onclick: () => { close(); if (changed) teacher(); } })]);
+  }
+  /* черновик нового урока: не теряется, если вкладку закрыли, сессия истекла или пропала связь */
+  const DRAFT = 'lexigo_lesson_draft_v1';
+  const readDraft = () => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' ? d : null; } catch { return null; } };
   function lessonForm(editing) {
     const wrap = h('div', { class: 'list' });
     const title = h('input', { class: 'acc-input', maxlength: 80, value: editing ? editing.title : '', placeholder: 'Например: Еда и напитки — дополнительные слова', id: 'lsTitle' });
     const text = h('textarea', { class: 'acc-input', id: 'lsWords', placeholder: 'apple — яблоко\nice cream — мороженое\ncarrot; морковь', value: '' });
     if (editing) text.value = editing.words.map(w => w.en + ' — ' + w.ru).join('\n');
+    const draft = editing ? null : readDraft();
+    if (draft) { title.value = String(draft.title || '').slice(0, 80); text.value = String(draft.text || '').slice(0, 20000); setTimeout(() => toast('Восстановлен черновик урока — продолжайте с того места, где остановились.'), 300); }
+    const keepDraft = () => { if (editing) return; try { if (title.value.trim() || text.value.trim()) localStorage.setItem(DRAFT, JSON.stringify({ title: title.value, text: text.value, at: Date.now() })); else localStorage.removeItem(DRAFT); } catch { /* private mode */ } };
+    title.addEventListener('input', keepDraft); text.addEventListener('input', keepDraft);
     const modes = new Set(editing ? C.lessonModes(editing) : C.ASSIGNABLE);
     const words = () => C.parseWordList(text.value).map((w, i) => ({ id: 'n' + i, en: w.en, ru: w.ru }));
     const preview = h('div', { class: 'preview-words' }), count = h('small');
@@ -551,6 +564,7 @@
       const res = editing ? await sb.from('custom_lessons').update({ title: t, words: ws, modes: list, updated_at: new Date().toISOString() }).eq('id', editing.id)
         : await sb.from('custom_lessons').insert({ owner_id: me.id, title: t, words: ws, modes: list });
       if (res.error) { save.disabled = saveAndPlay.disabled = false; return fail(res.error); }
+      if (!editing) { try { localStorage.removeItem(DRAFT); } catch { /* private mode */ } }
       let id = editing ? editing.id : null;
       // RLS не отдаёт строку в ответ на insert — находим только что созданный урок отдельным запросом
       if (!id && play) { const r = await sb.from('custom_lessons').select('id').eq('owner_id', me.id).eq('title', t).order('created_at', { ascending: false }).limit(1); id = r.data && r.data[0] && r.data[0].id; }
@@ -578,7 +592,8 @@
         if (t && ['groups', 'tasks', 'lessons'].includes(t)) tab = t;
         const edit = q.get('edit'), el = edit && T.lessons.find(l => l.id === edit);
         if (el) { tab = 'lessons'; lessonEdit = el; }
-        if (q.has('assign') || q.has('tab') || q.has('edit')) history.replaceState(null, '', location.pathname);
+        if (q.has('new')) { tab = 'lessons'; lessonEdit = 'new'; }   // «＋ Создать урок» с главной
+        if (q.has('assign') || q.has('tab') || q.has('edit') || q.has('new')) history.replaceState(null, '', location.pathname);
         teacher();
         if (assign && T.lessons.some(l => l.id === assign)) { tab = 'tasks'; openWizard({ lesson: assign }); }
       } else await student();
@@ -591,7 +606,7 @@
     }
     try { sb = await C.client(); } catch (e) { root.replaceChildren(h('p', { class: 'acc-msg err', text: C.authMessage(e) })); return; }
     const { data: { session } } = await sb.auth.getSession();
-    if (!session) { Hint.clear(); location.replace('auth.html?next=me.html'); return; }
+    if (!session) { Hint.clear(); location.replace('auth.html?next=' + encodeURIComponent('me.html' + location.search)); return; }   // «Создать урок» не теряется после входа
     me = session.user;
     const { data: p, error } = await sb.from('profiles').select('*').eq('id', me.id).maybeSingle();
     if (error || !p) { root.replaceChildren(h('p', { class: 'acc-msg err', text: 'Профиль не найден. Попробуйте выйти и войти снова.' }), h('button', { class: 'btn-acc', type: 'button', text: 'Выйти', onclick: logout })); return; }

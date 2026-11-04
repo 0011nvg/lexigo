@@ -149,7 +149,15 @@ select:focus,input:focus{border-color:#718FE0}
 <link rel="stylesheet" href="crystal.css?v=20261103e"><link rel="stylesheet" href="print.css?v=20261103e" media="print"><meta name="theme-color" content="#1b2a6b"><link rel="stylesheet" href="lexi-ui-refinement.css?v=20261104-modes1"><style>
 /* Match lesson mode icons to the Games dashboard. */
 .mode[data-mode] .mode-symbol,.mode.daily-mode .mode-symbol{display:grid!important;place-items:center!important;width:48px!important;height:48px!important;flex:0 0 48px!important;border-radius:16px!important;background-image:none!important;box-shadow:none!important;font-size:0!important}
+.mode[data-mode] .mode-symbol,.mode.daily-mode .mode-symbol{text-indent:0!important;overflow:visible!important}
 .mode[data-mode] .mode-symbol svg,.mode.daily-mode .mode-symbol svg{display:block;width:28px;height:28px}
+.mode>.mode-arrow{color:#526da8}
+@media (max-width:760px){
+ html{scroll-padding-bottom:calc(130px + env(safe-area-inset-bottom, 0px))}
+ body[data-page]:not([data-page="play"]){padding-bottom:calc(130px + env(safe-area-inset-bottom, 0px))!important}
+ .stage-modes .mode{min-height:76px!important;padding:12px 14px!important;column-gap:12px!important}
+ .stage-modes .mode>.mode-arrow{display:block;color:#526da8;font-size:19px}
+}
 .mode[data-mode="cards"] .mode-symbol{background:#e9efff!important;color:#365ee7!important}
 .mode[data-mode="quiz"] .mode-symbol{background:#e6f8ed!important;color:#238b5c!important}
 .mode[data-mode="spell"] .mode-symbol{background:#fff3d8!important;color:#a46a0a!important}

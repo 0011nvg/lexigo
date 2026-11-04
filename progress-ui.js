@@ -33,7 +33,7 @@ window.LexigoDashboard=(()=>{
   }
   host.append(el('p','Свободная практика на этом устройстве. Это не подтверждённая школьная оценка.','dashboard-note'));
   if(page==='profile'){
-   const stats=el('div',undefined,'progress-stats');stats.append(tile(s.practiced,'слов в практике'),tile(s.correct,'слов в копилке'),tile(s.recalled,'слов написал дважды'));host.append(stats);host.append(el('p','В копилку попадает слово, на которое ты хотя бы раз ответил верно. «Написал дважды» — слово, которое ты дважды написал по памяти без подсказки.','dashboard-note'));
+   const stats=el('div',undefined,'progress-stats');stats.append(tile(s.practiced,'слов в практике'),tile(s.correct,'слов с верным ответом'),tile(s.learned,'слов выучено'));host.append(stats);host.append(el('p','Выучено — слово, которое хотя бы дважды написано по памяти, и два последних ответа на него верные. Это число Лекси показывает на главной.','dashboard-note'));
    host.append(el('h2','Мои учебники'));for(const b of s.courses){const row=el('article',undefined,'course-progress');row.append(el('h3',b.grade+' класс'),el('p',b.practiced+' из '+b.total+' слов в практике'));const bar=el('progress');bar.max=b.total;bar.value=b.practiced;bar.setAttribute('aria-label','Слова в практике: '+b.grade+' класс');row.append(bar,link('Открыть учебник','/course/'+b.grade+'/0','text-button'));host.append(row)}
    if(!s.practiced)host.append(el('p','Начни первую тренировку — здесь появятся твои результаты.','dashboard-note'));
    host.append(link('К тренировкам','/games','btn dashboard-cta'));

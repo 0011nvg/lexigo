@@ -1,0 +1,12 @@
+/* LEXI · restrained mobile UI refinement · 2026-11-04 */
+.bottom-nav a svg{width:25px!important;height:25px!important;stroke-width:2.45!important;stroke-linecap:round;stroke-linejoin:round;fill:none;filter:none!important}
+.bottom-nav a{box-shadow:none!important;text-shadow:none!important}
+.bottom-nav a.active,.bottom-nav a[aria-current="page"]{background:#d9eaff!important;color:#14275b!important;box-shadow:none!important}
+.bottom-nav a:not(.active):not([aria-current="page"]){background:transparent!important}
+#lessonHeading.current-lesson{min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden;display:flex;flex-wrap:wrap;align-items:stretch;gap:18px;padding:clamp(20px,5vw,32px)!important}
+#lessonHeading.current-lesson>div{flex:1 1 100%;min-width:0;max-width:100%}
+#lessonHeading #currentLesson{font-size:clamp(27px,7vw,52px)!important;line-height:1.12!important;letter-spacing:-.035em;overflow-wrap:anywhere;word-break:normal;max-width:100%;margin:12px 0 14px!important}
+#lessonHeading #currentLessonDetail{max-width:100%;overflow-wrap:anywhere;line-height:1.5}
+#lessonHeading #changeLesson{flex:1 1 100%;width:100%;max-width:100%;min-width:0;white-space:normal}
+#lessonHeading::before,#lessonHeading::after{background-image:none!important}
+@media(max-width:480px){#lessonHeading.current-lesson{padding:22px 20px!important;gap:16px}#lessonHeading #currentLesson{font-size:clamp(27px,7.5vw,38px)!important}#lessonHeading #changeLesson{min-height:48px}}

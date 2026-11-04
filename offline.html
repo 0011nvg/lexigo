@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1b2a6b">
+  <title>Нет подключения — LEXI</title>
+  <style>
+    *{box-sizing:border-box}
+    html{background:#f5f6fd;color:#1b2a6b;font-family:system-ui,-apple-system,sans-serif}
+    body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;margin:0;padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+    header{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:800;letter-spacing:.04em}
+    header svg{width:40px;height:40px;flex:none}
+    main{width:min(100%,28rem);margin:auto; padding:2rem 0;text-align:center}
+    .icon{width:80px;height:80px;margin:0 auto 1rem}
+    h1{font-size:clamp(1.45rem,5vw,1.85rem);line-height:1.2;margin:.6rem 0}
+    p{color:#506589;line-height:1.55;margin:0 auto 1.5rem}
+    button{min-height:48px;border:0;border-radius:14px;background:#2c56f5;color:white;font:inherit;font-weight:700;padding:12px 22px;cursor:pointer}
+    button:focus-visible{outline:3px solid #1b2a6b;outline-offset:3px}
+    footer{text-align:center;color:#506589;font-size:.85rem;line-height:1.45}
+  </style>
+</head>
+<body>
+  <header aria-label="LEXI"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2c56f5"/><path d="M12.4 25.2C12.9 20.7 13.4 11.2 16.5 11.2C18.8 11.2 23.8 15.3 26.4 17.5C30.1 16.9 33.9 16.9 37.6 17.5C40.2 15.3 45.2 11.2 47.5 11.2C50.6 11.2 51.1 20.7 51.6 25.2C53 29 53.6 32.3 53.2 35.8C52.4 45.7 45.4 51.8 32 51.8C18.6 51.8 11.6 45.7 10.8 35.8C10.4 32.3 11 29 12.4 25.2Z" fill="#fff"/><path d="M28.6 35.4H35.4C36.1 35.4 36.5 36.2 36 36.8L33 40.3C32.5 40.9 31.5 40.9 31 40.3L28 36.8C27.5 36.2 27.9 35.4 28.6 35.4Z" fill="#2c56f5"/></svg><span>LEXI</span></header>
+  <main>
+    <svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#e4ebff"/><path d="M17 26a22 22 0 0 1 30 0M22 32a15 15 0 0 1 20 0M27 38a8 8 0 0 1 10 0" fill="none" stroke="#2c56f5" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="44" r="2" fill="#2c56f5"/><path d="M18 17l28 30" stroke="#1b2a6b" stroke-width="3" stroke-linecap="round"/></svg>
+    <h1>Кажется, интернет отключился</h1>
+    <p>Проверь подключение и попробуй снова. Для открытия уроков и данных аккаунта сейчас нужен интернет.</p>
+    <button type="button" onclick="location.reload()">Попробовать снова</button>
+  </main>
+  <footer>LEXI · учим английский вместе</footer>
+</body>
+</html>

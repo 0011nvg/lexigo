@@ -1,8 +1,9 @@
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 import {PDFDocument} from 'pdf-lib';
 import assert from 'node:assert/strict';
 const browser=await chromium.launch({headless:true});
-const page=await browser.newPage();
+const page=await browser.newPage();await useFakeCloud(page, { role: 'teacher' });
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto('http://127.0.0.1:4173/index.html#/lesson/2/m0/teacher');

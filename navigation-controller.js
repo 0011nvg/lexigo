@@ -14,11 +14,14 @@
  const coursePath=()=>'/course/'+book.grade+'/'+modules(book).indexOf(mod);
  function link(label,path,className=''){const a=make('a',label);a.href=path.startsWith('/')?'#'+path:path;a.className=className;return a}
  function focusPage(){const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
+ /* 2026-11-04: «Материалы для учителя» — только для учителя (роль подтверждает cloud.js по профилю на сервере;
+    до ответа сервера — подсказка с устройства). Учительские данные защищает сервер, здесь — что показывать. */
+ const isTeacher=()=>document.body.dataset.role?document.body.dataset.role==='teacher':!!(window.LexigoAccountHint&&LexigoAccountHint.uid()&&LexigoAccountHint.role()==='teacher');
  function show(page){
   document.body.dataset.page=page;
   LexigoDashboard.sync(page);
-  for(const [id,on] of Object.entries({myLessonPage:page==='mylesson',homePage:page==='home',coursePage:page==='course',learningArea:['lesson','words','teacher','play'].includes(page),lessonHeading:['lesson','words','teacher'].includes(page),catalogAside:['words','teacher'].includes(page),launcher:page==='lesson',teacherPage:page==='teacher',game:page==='play'})){
-   const node=byId(id);node.hidden=!on;if(id==='launcher'||id==='game')node.classList.toggle('hidden',!on);node.toggleAttribute('data-route-active',on&&['myLessonPage','homePage','coursePage','lessonHeading','game'].includes(id));
+  for(const [id,on] of Object.entries({lessonsPage:page==='lessons',myLessonPage:page==='mylesson',homePage:page==='home',coursePage:page==='course',learningArea:['lesson','words','teacher','play'].includes(page),lessonHeading:['lesson','words','teacher'].includes(page),catalogAside:['words','teacher'].includes(page),launcher:page==='lesson',teacherPage:page==='teacher',game:page==='play'})){
+   const node=byId(id);node.hidden=!on;if(id==='launcher'||id==='game')node.classList.toggle('hidden',!on);node.toggleAttribute('data-route-active',on&&['lessonsPage','myLessonPage','homePage','coursePage','lessonHeading','game'].includes(id));
   }
 
   /* 2026-11-04: один список слов. На странице урока он стоит в «Словах урока» (#lessonWords),
@@ -28,7 +31,7 @@
   document.body.classList.toggle('teacher-mode',page==='teacher');
   byId('roleSwitch').setAttribute('aria-pressed',String(page==='teacher'));byId('roleSwitch').textContent=page==='teacher'?'К тренировкам':'Для учителя';
  }
- function crumbs(parts){const nav=byId('breadcrumbs');nav.replaceChildren(link('Уроки','/home'));for(const [label,path] of parts){nav.append(make('span','/'));if(path)nav.append(link(label,path));else{const here=make('span',label);here.setAttribute('aria-current','page');nav.append(here)}}nav.hidden=!parts.length}
+ function crumbs(parts){const nav=byId('breadcrumbs');nav.replaceChildren(link('Уроки','/lessons'));for(const [label,path] of parts){nav.append(make('span','/'));if(path)nav.append(link(label,path));else{const here=make('span',label);here.setAttribute('aria-current','page');nav.append(here)}}nav.hidden=!parts.length}
  function context(grade,key){
   const b=DB.books.find(b=>String(b.grade)===grade);if(!b)return false;
   const group=/^m\d+$/.test(key)?Number(key.slice(1)):null,index=/^\d+$/.test(key)?Number(key):null;
@@ -76,11 +79,13 @@
    if(parts[0]==='lesson'&&context(parts[1],parts[2])){
     /* 2026-11-04: отдельной страницы «Слова» больше нет — старые ссылки …/words открывают урок на словаре */
     if(parts[3]==='words'){revealWords=true;history.replaceState({},'','#'+lessonPath());lastURL=lessonPath();parts.length=3}
+    if(parts[3]==='teacher'&&!isTeacher()){history.replaceState({},'','#'+lessonPath());lastURL=lessonPath();parts.length=3;setTimeout(()=>window.LexiQuest?.toast('Материалы для учителя открываются в аккаунте учителя.','think'),400)}
     const mode=parts[3]==='play'?parts[4]:null;const page=mode&&Object.hasOwn(modeNames,mode)?'play':parts[3]==='teacher'?'teacher':'lesson';
     show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='teacher'?'Материалы':modeNames[mode]);
     if(page==='play'){if(mode==='mixed')quickStart();else originalStart(mode,null,mode==='boss'&&window.LexigoPlus?window.LexigoPlus.bossTypes():undefined);if(!game){lastURL='';history.replaceState({},'','#'+lessonPath());render();return}byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode]}
     document.title=(page==='play'?modeNames[mode]:byId('currentLesson').textContent)+' — LEXI';
    }else if(['games','awards','profile'].includes(parts[0])){const page=parts[0];show(page);crumbs([]);LexigoDashboard.render(page,lessonPath(),book.grade+' класс'+' · '+(unit==='__all'?mod:book.sections[Number(unit)].title),modeNames);document.title=({games:'Игры',awards:'Награды',profile:'Профиль'}[page])+' — LEXI';}
+   else if(parts[0]==='lessons'){show('lessons');crumbs([]);document.title='Уроки — LEXI';window.LexigoLessonsHub?.render()}
    else if(parts[0]==='course'&&DB.books.some(b=>String(b.grade)===parts[1])){show('course');course(parts[1],parts[2])}
 
    else{show('home');crumbs([]);document.title='LEXI — английский по шагам';if(route!=='/home'){history.replaceState({},'','#/home');lastURL='/home'}}
@@ -95,7 +100,7 @@
  /* для страниц уроков учителя (my-lessons.js) */
  window.LexigoNav=Object.freeze({navigate,crumbs,show,focusPage,setCustom(ctx){custom=ctx||null},custom:()=>custom,refresh(){lastURL='';render()}});
  goHome=()=>navigate('/home');goToLibrary=()=>navigate('/course/'+book.grade+'/'+modules(book).indexOf(mod));
- for(const id of ['homeLogo','homeNav','gameHome'])byId(id).onclick=goHome;
+ for(const id of ['homeLogo','gameHome'])byId(id).onclick=goHome;byId('homeNav').onclick=null;   /* «Уроки» — ссылка #/lessons (раздел уроков) */
  byId('heroStart').onclick=goToLibrary;byId('changeLesson').onclick=goToLibrary;byId('back').onclick=()=>stop();
  byId('openWords').onclick=()=>window.LexigoLessonWords?window.LexigoLessonWords.reveal():navigate(lessonPath());byId('wordsDone').onclick=()=>window.LexigoLessonWords&&document.body.dataset.page==='lesson'?window.LexigoLessonWords.toGames():navigate(lessonPath());
  byId('lessonPrint').onclick=()=>navigate(lessonPath()+'/teacher');byId('roleSwitch').onclick=()=>navigate(lessonPath()+(document.body.dataset.page==='teacher'?'':'/teacher'));
@@ -106,7 +111,8 @@
  for(const grade of [10,11]){if(DB.books.some(b=>Number(b.grade)===grade))continue;const card=make('div');card.className='course-card teen grade-'+grade+' course-coming';const caption=make('div');caption.className='course-caption';caption.append(make('h3',grade+' класс'),make('p','Слова появятся позже'),make('span','Скоро'));card.append(caption);courseCards.append(card)}
  document.querySelector('.skip-link').onclick=event=>{event.preventDefault();byId('pageContent').focus()};
  document.addEventListener('click',event=>{const a=event.target.closest('a[href^="#/"]');if(!a||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();navigate(a.getAttribute('href').slice(1))});
- window.addEventListener('popstate',render);window.addEventListener('hashchange',render);
+ window.addEventListener('popstate',render);
+ window.addEventListener('lexigo:account',()=>{if(document.body.dataset.page==='teacher'&&!isTeacher())navigate(lessonPath(),{replace:true});else if(document.body.dataset.page==='lessons'){window.LexigoLessonsHub?.render()}});window.addEventListener('hashchange',render);
  // Preserve the authorized assignment flow; only opaque assignment IDs stay in
  // the query string. Switching screens never clears the in-memory Auth session.
 

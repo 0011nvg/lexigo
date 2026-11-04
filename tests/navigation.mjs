@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {chromium} from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 const browser=await chromium.launch({headless:true});await fs.mkdir('test-results',{recursive:true});
 try{
  for(const width of [1440,390,360]){
@@ -20,7 +21,7 @@ try{
    await page.locator('#lessonWords #words input').first().uncheck();
    const selected=await page.evaluate(()=>selectedWords().map(w=>w.id));await page.locator('#wordsDone').click();assert.deepEqual(await page.evaluate(()=>selectedWords().map(w=>w.id)),selected);
    await page.reload();assert.equal(await page.locator('#launcher').isVisible(),true);assert.match(await page.locator('#currentLessonDetail').innerText(),new RegExp(grade+' класс'));
-   await page.locator('#homeNav').click();
+   await page.locator('#homeLogo').click();
   }
   await page.goto('http://127.0.0.1:4173/#/lesson/2/m0');
   await page.screenshot({path:'test-results/navigation-'+width+'-lesson.png',fullPage:true});
@@ -33,9 +34,11 @@ try{
    await page.reload();await page.locator('#game').waitFor();assert.equal(await page.evaluate(()=>game.mode),mode);
    await page.locator('#back').click();
   }
-  await page.locator('#lessonPrint').click();await page.locator('#printTest').waitFor();assert.equal(await page.locator('#launcher').isVisible(),false);
-  await page.screenshot({path:'test-results/navigation-'+width+'-teacher.png',fullPage:true});
-  await page.locator('#homeNav').click();await page.goto('http://127.0.0.1:4173/#/lesson/999/invalid/play/quiz');assert.equal(await page.locator('#homeTitle').isVisible(),true);
+  assert.equal(await page.locator('#lessonPrint').isVisible(),false,'no teacher materials for a guest');
+  {const tp=await browser.newPage({viewport:{width,height:900},reducedMotion:'reduce'});await useFakeCloud(tp,{role:'teacher'});await tp.goto(page.url().replace(/\/play\/.*$/,''));await tp.locator('#lessonPrint').waitFor({state:'visible',timeout:15000});
+  await tp.locator('#lessonPrint').click();await tp.locator('#printTest').waitFor();assert.equal(await tp.locator('#launcher').isVisible(),false);
+  await tp.screenshot({path:'test-results/navigation-'+width+'-teacher.png',fullPage:true});await tp.close();}
+  await page.locator('#homeLogo').click();await page.goto('http://127.0.0.1:4173/#/lesson/999/invalid/play/quiz');assert.equal(await page.locator('#homeTitle').isVisible(),true);
 
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Horizontal overflow');assert.deepEqual(errors,[]);await page.close();
  }

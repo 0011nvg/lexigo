@@ -1,4 +1,5 @@
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 import assert from 'node:assert/strict';
 const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
@@ -12,7 +13,7 @@ async function scenario(viewport){
  assert.ok(await page.locator('#homeTitle').isVisible(),'Landing page headline visible');
  await page.locator('#courseCards a').first().click();
  assert.ok(await page.locator('#coursePage').isVisible(),'CTA opens the course page');
- await page.locator('#homeNav').click();
+ await page.locator('#homeLogo').click();
  assert.ok(await page.locator('#homeTitle').isVisible(),'Home navigation works');
 
  await page.goto(base+'#/lesson/2/m0');
@@ -42,19 +43,22 @@ async function scenario(viewport){
  assert.ok(await page.evaluate(()=>LexiCrystalQuest.state().movesUsed>=1),'moves were made');
  assert.match(await page.locator('.cq-goals').innerText(),/Набери 1500 очков[\s\S]*Ответь верно на 12 слов/);
  await page.locator('#back').click();
- await page.locator('#roleSwitch').click();
- assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'true');
- assert.ok(await page.locator('.teacher-only').first().isVisible());
- assert.ok(await page.locator('#printTest').isVisible(),'Printable teacher test available');
- await page.evaluate(()=>{window.__printCalled=false;window.print=()=>{window.__printCalled=true};printTeacherTest()});
- assert.equal(await page.evaluate(()=>window.__printCalled),true,'Print dialog invoked');
- assert.ok(await page.locator('#lexigoPrint .print-question').count()>0,'Printable questions generated');
- assert.ok(await page.locator('#lexigoPrint .print-key li').count()>0,'Separate answer key generated');
- await page.locator('#showReport').click();
- assert.ok(await page.locator('#reportContent table tbody tr').count()>0);
- const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexi_class.*csv/);
- await page.locator('#roleSwitch').click();
- assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
+ // 2026-11-04: «Для учителя» — только в аккаунте учителя: тот же урок в отдельной вкладке, вход учителем (fake-cloud)
+ const tp=await browser.newPage({viewport,reducedMotion:'reduce',acceptDownloads:true});await useFakeCloud(tp,{role:'teacher'});await tp.goto(page.url());await tp.locator('#launcher').waitFor();await tp.locator('#roleSwitch').waitFor({state:'visible',timeout:15000});
+ await tp.locator('#roleSwitch').click();
+ assert.equal(await tp.locator('#roleSwitch').getAttribute('aria-pressed'),'true');
+ assert.ok(await tp.locator('.teacher-only').first().isVisible());
+ assert.ok(await tp.locator('#printTest').isVisible(),'Printable teacher test available');
+ await tp.evaluate(()=>{window.__printCalled=false;window.print=()=>{window.__printCalled=true};printTeacherTest()});
+ assert.equal(await tp.evaluate(()=>window.__printCalled),true,'Print dialog invoked');
+ assert.ok(await tp.locator('#lexigoPrint .print-question').count()>0,'Printable questions generated');
+ assert.ok(await tp.locator('#lexigoPrint .print-key li').count()>0,'Separate answer key generated');
+ await tp.locator('#showReport').click();
+ assert.ok(await tp.locator('#reportContent table tbody tr').count()>0);
+ const downloadPromise=tp.waitForEvent('download');await tp.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexi_class.*csv/);
+ await tp.locator('#roleSwitch').click();
+ assert.equal(await tp.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
+ await tp.close();
  await page.locator('#changeLesson').click();await page.locator('#courseTabs a',{hasText:'3 класс'}).click();await page.locator('#lessonCards .lesson-card').nth(1).click();
  await page.locator('#lessonWords .wordrow').first().waitFor();
  assert.ok((await page.locator('#currentLessonDetail').innerText()).includes('3 класс'));

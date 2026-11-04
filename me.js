@@ -34,7 +34,7 @@
 
   /* ---------- account actions shared by both roles ---------- */
   let leaving = false;
-  async function logout() { leaving = true; try { await sb.auth.signOut(); } catch { /* offline: local session is still removed */ } Hint.clear(); location.replace('index.html'); }
+  async function logout() { leaving = true; try { await window.LexigoPush?.beforeSignOut(sb); } catch { /* ignore */ } try { await sb.auth.signOut(); } catch { /* offline: local session is still removed */ } Hint.clear(); location.replace('index.html'); }
   function settings(onSaved) {
     let avatar = profile.avatar;
     const name = h('input', { class: 'acc-input', value: profile.display_name, maxlength: 40, id: 'setName' });
@@ -83,6 +83,75 @@
       h('button', { class: 'cab-ava', type: 'button', 'aria-label': 'Настройки профиля', onclick: () => settings(boot) }, window.LexiProfileAvatars.content(profile.avatar, C.AVATARS[profile.avatar] || (profile.role === 'teacher' ? '🧑‍🏫' : '🐱'))),
       h('div', null, h('h1', { text: profile.display_name }), h('p', { class: 'acc-muted', text: sub })),
       h('div', { class: 'cab-head-actions' }, extra, h('button', { class: 'btn-acc ghost small', type: 'button', text: '⚙ Настройки', onclick: () => settings(boot) })));
+  }
+
+  /* =====================================================================
+     УВЕДОМЛЕНИЯ (2026-11-04): включение на устройстве + настройки аккаунта (общие для всех устройств)
+     ===================================================================== */
+  function notifCard(role) {
+    const P = window.LexigoPush;
+    const card = h('section', { class: 'acc-card span-12 notif-card', id: 'notifications', 'aria-labelledby': 'tNotif' },
+      h('div', { class: 'sec-title' }, h('h2', { id: 'tNotif', text: 'Уведомления' })));
+    const body = h('div'), msg = h('p', { class: 'notif-msg', role: 'status', 'aria-live': 'polite' });
+    const say = (t, kind) => { msg.textContent = t || ''; msg.className = 'notif-msg' + (kind ? ' ' + kind : ''); };
+    card.append(body, msg);
+    let prefs = null;
+    const TIMES = []; for (let hh = 15; hh <= 21; hh++) for (const mm of ['00', '30']) TIMES.push(String(hh).padStart(2, '0') + ':' + mm);
+    async function savePrefs(patch) {
+      const next = { ...prefs, ...patch };
+      const { data, error } = await sb.rpc('notify_prefs_set', { lessons: next.lessons, daily: next.daily, daily_time: next.daily_time, teacher_done: next.teacher_done });
+      if (error) { say('Не получилось сохранить настройку. Проверьте интернет.', 'err'); paint(); return; }
+      prefs = data; say('Сохранено ✓', 'ok');
+    }
+    function opt(label, checked, onchange, extra) {
+      const box = h('input', { type: 'checkbox', checked: !!checked, onchange: e => onchange(e.target.checked) });
+      return h('label', { class: 'notif-opt' }, box, h('span', null, label), extra || null);
+    }
+    function help(state) {
+      if (state === 'ios-install') return h('div', { class: 'notif-help' }, h('b', { text: 'На iPhone уведомления приходят в приложении LEXI на экране «Домой»:' }),
+        h('ol', null, h('li', { text: 'Откройте этот сайт в Safari.' }), h('li', { text: 'Нажмите «Поделиться» (квадрат со стрелкой) → «На экран „Домой“» → «Добавить».' }),
+          h('li', { text: 'Откройте LEXI со значка на экране «Домой», войдите и нажмите здесь «Включить уведомления».' })),
+        h('p', { style: { margin: '6px 0 0' }, text: 'Нужна iOS 16.4 или новее.' }));
+      if (state === 'denied') return h('div', { class: 'notif-help' }, h('b', { text: 'Уведомления для LEXI запрещены в настройках устройства. Чтобы разрешить:' }),
+        h('ol', null, h('li', { text: 'iPhone: «Настройки» → «Уведомления» → LEXI → «Допуск уведомлений».' }),
+          h('li', { text: 'Android (Chrome): ⋮ → «Настройки» → «Настройки сайтов» → «Уведомления» → LEXI → «Разрешить».' }),
+          h('li', { text: 'Компьютер: значок слева от адреса сайта → «Уведомления» → «Разрешить».' })),
+        h('p', { style: { margin: '6px 0 0' }, text: 'Потом обновите эту страницу.' }));
+      if (state === 'unsupported') return h('div', { class: 'notif-help', text: 'Этот браузер не умеет показывать уведомления от сайтов. Подойдут Chrome, Edge, Firefox или Safari; на iPhone — LEXI, добавленный на экран «Домой» (iOS 16.4+).' });
+      return null;
+    }
+    async function paint() {
+      const st = P ? await P.status() : { state: 'unsupported' };
+      if (!prefs) { const r = await sb.rpc('notify_prefs'); prefs = r.data || { lessons: true, daily: true, daily_time: '19:00', teacher_done: true, devices: 0 }; }
+      const stateLine = { on: ['on', '● Включены на этом устройстве'], off: ['off', '○ На этом устройстве уведомления выключены'], denied: ['warn', '⚠ Уведомления запрещены в настройках устройства'],
+        'ios-install': ['warn', 'Чтобы включить уведомления, добавьте LEXI на экран «Домой»'], unsupported: ['warn', 'Этот браузер не поддерживает уведомления'] }[st.state];
+      const actions = h('div', { class: 'notif-actions' });
+      if (st.state === 'off') actions.append(h('button', { type: 'button', class: 'btn-acc', text: '🔔 Включить уведомления', onclick: async e => {
+        e.currentTarget.disabled = true; say('Запрашиваем разрешение…');
+        try { const r = await P.enable(sb); prefs = null; say(r.state === 'on' ? 'Готово! Уведомления включены на этом устройстве.' : r.state === 'denied' ? 'Уведомления запрещены — ниже написано, как их разрешить.' : 'Разрешение не дано. Можно включить позже.', r.state === 'on' ? 'ok' : 'err'); }
+        catch (err) { console.warn(err); say('Не получилось включить уведомления. Проверьте интернет и попробуйте ещё раз.', 'err'); }
+        paint();
+      } }));
+      if (st.state === 'on') actions.append(
+        h('button', { type: 'button', class: 'btn-acc ghost', text: 'Проверить уведомление', onclick: async () => {
+          const { data, error } = await sb.rpc('push_test');
+          say(error ? 'Не получилось отправить. Проверьте интернет.' : data && data.ok ? 'Отправлено — уведомление придёт через несколько секунд. Можно свернуть приложение.' : 'Сначала включите уведомления на этом устройстве.', error ? 'err' : 'ok');
+        } }),
+        h('button', { type: 'button', class: 'btn-link', text: 'Выключить на этом устройстве', onclick: async () => { await P.disable(sb); say('Уведомления на этом устройстве выключены.'); prefs = null; paint(); } }));
+      const opts = h('div', { class: 'notif-opts' });
+      if (role === 'teacher') opts.append(opt('Ученик прошёл все игры назначенного урока', prefs.teacher_done, v => savePrefs({ teacher_done: v })));
+      else {
+        const time = h('select', { 'aria-label': 'Время напоминания', onchange: e => savePrefs({ daily_time: e.target.value }) }, [...new Set([...TIMES, prefs.daily_time])].sort().map(t => h('option', { value: t, text: t, selected: t === prefs.daily_time })));
+        opts.append(opt('Новые уроки от учителя', prefs.lessons, v => savePrefs({ lessons: v })),
+          opt('Напоминание позаниматься каждый день', prefs.daily, v => savePrefs({ daily: v })),
+          h('label', { class: 'notif-opt notif-time' }, h('span', { text: 'Время напоминания:' }), time, h('span', { text: 'по Москве' })));
+      }
+      body.replaceChildren(...[h('p', { class: 'notif-state ' + stateLine[0], text: stateLine[1] }), help(st.state), actions, opts,
+        h('p', { class: 'acc-small acc-muted', text: role === 'teacher' ? 'Настройка общая для всех ваших устройств. Включить уведомления нужно на каждом устройстве.'
+          : 'Напоминание не приходит, если сегодня все миссии дня уже выполнены или ты занимаешься прямо сейчас. Настройки общие для всех устройств; включить уведомления нужно на каждом.' })].filter(Boolean));
+    }
+    paint().catch(e => { console.warn(e); body.replaceChildren(h('p', { class: 'acc-muted', text: 'Настройки уведомлений сейчас недоступны — нет связи с сервером.' })); });
+    return card;
   }
 
   /* =====================================================================
@@ -201,6 +270,7 @@
       h('section', { class: 'acc-card span-12', 'aria-labelledby': 'tBooks' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tBooks', text: 'Мои учебники' })), books),
       h('section', { class: 'acc-card span-12', 'aria-labelledby': 'tBadges' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tBadges', text: 'Достижения' }), h('span', { class: 'chip', text: C.BADGES.filter(b => b[4](stats)).length + ' из ' + C.BADGES.length })), badges),
       h('section', { class: 'acc-card span-7', 'aria-labelledby': 'tHist' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tHist', text: 'История занятий' })), hist),
+      notifCard('student'),
       h('section', { class: 'acc-card span-5', 'aria-labelledby': 'tClass' }, h('div', { class: 'sec-title' }, h('h2', { id: 'tClass', text: 'Мои классы' })), joinForm, h('div', { style: { height: '12px' } }), classes)));
   }
 
@@ -234,8 +304,10 @@
     const totalStudents = new Set(T.members.map(m => m.student_id)).size;
     root.replaceChildren(head('Учитель · ' + T.groups.length + ' ' + plural(T.groups.length, 'класс', 'класса', 'классов') + ' · ' + totalStudents + ' ' + plural(totalStudents, 'ученик', 'ученика', 'учеников'),
       h('span', { class: 'seg' }, h('button', { class: 'btn-acc small ghost', type: 'button', text: '＋ Урок', onclick: () => { tab = 'lessons'; lessonEdit = 'new'; teacher(); } }),
-        h('button', { class: 'btn-acc small', type: 'button', text: '＋ Задание', onclick: () => { tab = 'tasks'; teacher(); openWizard(); } }))), tabBar, view);
+        h('button', { class: 'btn-acc small', type: 'button', text: '＋ Задание', onclick: () => { tab = 'tasks'; teacher(); openWizard(); } }))), tabBar, view,
+      lessonEdit ? null : (teacherNotif = teacherNotif || notifCard('teacher')));
   }
+  let teacherNotif = null;
   const studentName = id => (T.students.get(id) || {}).display_name || 'Ученик';
   function studentRow(id) {
     const ss = T.sessions.filter(s => s.user_id === id), week = ss.filter(s => daysAgo(s.created_at) < 7);
@@ -616,6 +688,7 @@
     document.title = (p.role === 'teacher' ? 'Кабинет учителя' : 'Мой кабинет') + ' — LEXI';
     sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT' && !leaving) { leaving = true; Hint.clear(); location.replace('index.html'); } });
     await boot();
+    window.LexigoPush?.sync(sb);
   }
   init();
 })();

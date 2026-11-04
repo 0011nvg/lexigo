@@ -1,6 +1,7 @@
 // LEXI+ (2026-11-02): chosen words, games right after the word set, configurable final test, honest storage notes, mobile.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';
 const browser = await chromium.launch({ headless: true });
 const errors = [];
@@ -105,8 +106,10 @@ try {
   await page.goto(BASE + '#/lesson/4/3/play/spell'); await page.locator('#play .question').waitFor();
   assert.match(await page.locator('#launcher .progress-note').textContent(), /на этом устройстве/);
   assert.doesNotMatch(await page.locator('body').innerText(), /в этом браузере/i);
-  await page.goto(BASE + '#/lesson/4/3/teacher');
-  assert.equal(await page.locator('#teacherPage .report h3').innerText(), 'Результаты практики');
+  { const tp = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' }); await useFakeCloud(tp, { role: 'teacher' });
+    await tp.goto(BASE + '#/lesson/4/3/teacher'); await tp.locator('#teacherPage .report h3').waitFor({ timeout: 15000 });
+    assert.equal(await tp.locator('#teacherPage .report h3').innerText(), 'Результаты практики'); await tp.close(); }
+  await page.goto(BASE + '#/lesson/4/3');
   assert.equal(await page.locator('#homeNav').innerText(), 'Уроки');
   assert.match(await page.locator('#breadcrumbs').innerText(), /^Уроки/);
   ok('interrupted round restarts cleanly; "Уроки" in navigation; no "в этом браузере"');

@@ -1016,3 +1016,280 @@ $$;
 revoke all on function public.lesson_share(uuid, boolean), public.shared_lesson(text) from public, anon;
 grant execute on function public.lesson_share(uuid, boolean) to authenticated;
 grant execute on function public.shared_lesson(text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- v7 · Push-уведомления (2026-11-04)
+-- Web Push (VAPID). Подписки устройств, настройки, очередь уведомлений; отправляет Edge Function
+-- `push-worker` (supabase/functions/push-worker). Ключи VAPID и секрет вызова хранятся в Vault и
+-- создаются на сервере — их нет ни в репозитории, ни в клиентском JavaScript.
+--   • новый урок → только ученикам, которым назначено задание (триггер на assignments);
+--   • ежедневное напоминание (по умолчанию 19:00 Europe/Moscow) — если сегодня не открыт сундук дня
+--     (все 3 миссии) и не было тренировки за последние 30 минут, не чаще 1 раза в день;
+--   • учителю — когда ученик прошёл все игры назначенного урока;
+--   • повторы исключает уникальный ключ dedupe; недействительные подписки удаляет worker.
+-- ---------------------------------------------------------------------
+create extension if not exists pg_net with schema extensions;   -- в облачном проекте pg_net пока в схеме public (перенос требует подтверждения в панели)
+create extension if not exists pg_cron;
+
+create table if not exists public.push_subscriptions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  endpoint   text not null unique check (endpoint ~ '^https://' and char_length(endpoint) < 1000),
+  p256dh     text not null check (char_length(p256dh) between 20 and 200),
+  auth       text not null check (char_length(auth) between 8 and 100),
+  ua         text check (ua is null or char_length(ua) <= 200),
+  created_at timestamptz not null default now(),
+  last_seen  timestamptz not null default now(),
+  last_ok    timestamptz,
+  fails      int not null default 0
+);
+create index if not exists push_subscriptions_user_idx on public.push_subscriptions(user_id);
+
+create table if not exists public.notification_prefs (
+  user_id      uuid primary key references public.profiles(id) on delete cascade,
+  lessons      boolean not null default true,
+  daily        boolean not null default true,
+  daily_time   time not null default '19:00',
+  tz           text not null default 'Europe/Moscow',
+  teacher_done boolean not null default true,
+  last_daily   date,
+  updated_at   timestamptz not null default now()
+);
+
+create table if not exists public.push_outbox (
+  id         bigserial primary key,
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  kind       text not null check (kind in ('lesson','daily','done','test')),
+  dedupe     text not null unique,
+  title      text not null,
+  body       text not null,
+  url        text not null,
+  created_at timestamptz not null default now(),
+  claimed_at timestamptz,
+  sent_at    timestamptz,
+  attempts   int not null default 0,
+  delivered  int not null default 0
+);
+create index if not exists push_outbox_pending_idx on public.push_outbox(id) where sent_at is null;
+
+alter table public.push_subscriptions enable row level security;
+alter table public.notification_prefs enable row level security;
+alter table public.push_outbox enable row level security;
+revoke all on public.push_subscriptions, public.notification_prefs, public.push_outbox from anon, authenticated;
+grant all on public.push_subscriptions, public.notification_prefs, public.push_outbox to service_role;
+grant usage, select on sequence public.push_outbox_id_seq to service_role;
+
+-- ---------- ключи (Vault): создаются один раз, только сервером ----------
+create or replace function public.push_internal_config() returns jsonb
+language plpgsql security definer set search_path = public, vault as $$
+declare s text;
+begin
+  select decrypted_secret into s from vault.decrypted_secrets where name = 'lexi_push_cron';
+  if s is null then perform vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'lexi_push_cron', 'LEXI: секрет вызова push-worker'); end if;
+  return jsonb_build_object(
+    'cron', (select decrypted_secret from vault.decrypted_secrets where name = 'lexi_push_cron'),
+    'vapid', (select decrypted_secret from vault.decrypted_secrets where name = 'lexi_vapid'));
+end $$;
+create or replace function public.push_store_vapid(v jsonb) returns boolean
+language plpgsql security definer set search_path = public, vault as $$
+begin
+  if exists (select 1 from vault.decrypted_secrets where name = 'lexi_vapid') then return false; end if;
+  if not (v ? 'publicKey' and v ? 'privateKey') then raise exception 'bad keys'; end if;
+  perform vault.create_secret(v::text, 'lexi_vapid', 'LEXI: ключи VAPID для Web Push');
+  return true;
+end $$;
+-- открытый ключ VAPID нужен браузеру для подписки (это не секрет)
+create or replace function public.push_public_key() returns text
+language sql stable security definer set search_path = public, vault as $$
+  select (decrypted_secret::jsonb)->>'publicKey' from vault.decrypted_secrets where name = 'lexi_vapid'
+$$;
+
+-- вызвать worker сразу (новый урок приходит за секунды); если pg_net недоступен — заберёт cron
+create or replace function public.push_kick() returns void
+language plpgsql security definer set search_path = public, vault as $$
+declare s text;
+begin
+  select decrypted_secret into s from vault.decrypted_secrets where name = 'lexi_push_cron';
+  if s is null then return; end if;
+  perform net.http_post(url := 'https://ajzfspevzlhsfduwrlzu.supabase.co/functions/v1/push-worker',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-lexi-cron', s), body := '{}'::jsonb, timeout_milliseconds := 20000);
+exception when others then null;
+end $$;
+
+-- ---------- клиент: подписка устройства, настройки, проверка ----------
+create or replace function public.push_subscribe(endpoint text, p256dh text, auth text, ua text default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  -- одно устройство — один аккаунт: если на телефоне сменили аккаунт, подписка переходит новому
+  insert into public.push_subscriptions(user_id, endpoint, p256dh, auth, ua)
+    values (uid, push_subscribe.endpoint, push_subscribe.p256dh, push_subscribe.auth, left(push_subscribe.ua, 200))
+    on conflict (endpoint) do update set user_id = uid, p256dh = excluded.p256dh, auth = excluded.auth, ua = excluded.ua, last_seen = now(), fails = 0;
+  delete from public.push_subscriptions where user_id = uid and id not in (select id from public.push_subscriptions where user_id = uid order by last_seen desc limit 10);
+  insert into public.notification_prefs(user_id) values (uid) on conflict (user_id) do nothing;
+  return jsonb_build_object('ok', true, 'devices', (select count(*) from public.push_subscriptions where user_id = uid));
+end $$;
+
+create or replace function public.push_unsubscribe(endpoint text) returns boolean
+language sql security definer set search_path = public as $$
+  delete from public.push_subscriptions where push_subscriptions.endpoint = push_unsubscribe.endpoint and user_id = auth.uid() returning true
+$$;
+
+create or replace function public.notify_prefs() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); p public.notification_prefs;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  select * into p from public.notification_prefs where user_id = uid;
+  return jsonb_build_object('lessons', coalesce(p.lessons, true), 'daily', coalesce(p.daily, true), 'daily_time', to_char(coalesce(p.daily_time, '19:00'::time), 'HH24:MI'),
+    'tz', coalesce(p.tz, 'Europe/Moscow'), 'teacher_done', coalesce(p.teacher_done, true),
+    'devices', (select count(*) from public.push_subscriptions where user_id = uid), 'role', public.my_role());
+end $$;
+
+create or replace function public.notify_prefs_set(lessons boolean, daily boolean, daily_time text, teacher_done boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); t time;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  if daily_time !~ '^([01][0-9]|2[0-3]):(00|15|30|45)$' then raise exception 'bad time'; end if;
+  t := daily_time::time;
+  insert into public.notification_prefs as n(user_id, lessons, daily, daily_time, teacher_done, updated_at)
+    values (uid, coalesce(notify_prefs_set.lessons, true), coalesce(notify_prefs_set.daily, true), t, coalesce(notify_prefs_set.teacher_done, true), now())
+    on conflict (user_id) do update set lessons = excluded.lessons, daily = excluded.daily, daily_time = excluded.daily_time, teacher_done = excluded.teacher_done, updated_at = now(),
+      last_daily = case when n.daily_time <> excluded.daily_time then null else n.last_daily end;
+  return public.notify_prefs();
+end $$;
+
+-- «Проверить уведомление» в кабинете: себе, не чаще раза в минуту
+create or replace function public.push_test() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); n int;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = '42501'; end if;
+  select count(*) into n from public.push_subscriptions where user_id = uid;
+  if n = 0 then return jsonb_build_object('ok', false, 'reason', 'no-devices'); end if;
+  insert into public.push_outbox(user_id, kind, dedupe, title, body, url)
+    values (uid, 'test', 'test:' || uid || ':' || floor(extract(epoch from now()) / 60)::bigint, '🐱 Лекси на связи!', 'Уведомления работают. Так будут приходить новые уроки и напоминания.', 'me.html')
+    on conflict (dedupe) do nothing;
+  return jsonb_build_object('ok', true, 'devices', n);
+end $$;
+
+-- ---------- события → очередь ----------
+create or replace function public.push_on_assignment() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare st uuid; ttl text := coalesce(nullif(btrim(new.title), ''), 'Новый урок');
+begin
+  for st in
+    select m.student_id from public.group_members m join public.profiles p on p.id = m.student_id
+    where m.group_id = new.group_id and p.role = 'student' and (new.student_id is null or m.student_id = new.student_id)
+  loop
+    if coalesce((select lessons from public.notification_prefs where user_id = st), true) is false then continue; end if;
+    if not exists (select 1 from public.push_subscriptions where user_id = st) then continue; end if;
+    -- двойное назначение того же урока в ту же минуту — одно уведомление
+    if exists (select 1 from public.push_outbox o where o.user_id = st and o.kind = 'lesson' and o.created_at > now() - interval '10 minutes'
+               and o.body like '%«' || left(ttl, 60) || '»%') then continue; end if;
+    insert into public.push_outbox(user_id, kind, dedupe, title, body, url)
+      values (st, 'lesson', 'lesson:' || new.id || ':' || st, '🐱 Лекси: новый урок!',
+              'Учитель подготовил для тебя «' || left(ttl, 60) || '». Посмотрим, что интересного?', 'index.html#/my/a-' || new.id)
+      on conflict (dedupe) do nothing;
+  end loop;
+  return null;
+end $$;
+drop trigger if exists push_on_assignment on public.assignments;
+create trigger push_on_assignment after insert on public.assignments for each row execute function public.push_on_assignment();
+
+create or replace function public.push_on_session() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare a public.assignments; who text;
+begin
+  if not new.finished or new.assignment_id is null then return null; end if;
+  select * into a from public.assignments where id = new.assignment_id;
+  if a.id is null or a.teacher_id = new.user_id then return null; end if;
+  if exists (select 1 from unnest(a.modes) m where not exists (select 1 from public.sessions s where s.assignment_id = a.id and s.user_id = new.user_id and s.finished and s.mode = m)) then return null; end if;
+  if coalesce((select teacher_done from public.notification_prefs where user_id = a.teacher_id), true) is false then return null; end if;
+  if not exists (select 1 from public.push_subscriptions where user_id = a.teacher_id) then return null; end if;
+  select display_name into who from public.profiles where id = new.user_id;
+  insert into public.push_outbox(user_id, kind, dedupe, title, body, url)
+    values (a.teacher_id, 'done', 'done:' || a.id || ':' || new.user_id, '✅ Урок выполнен',
+            coalesce(who, 'Ученик') || ': все игры урока «' || left(coalesce(a.title, 'урок'), 60) || '» пройдены.', 'me.html?tab=tasks')
+    on conflict (dedupe) do nothing;
+  return null;
+end $$;
+drop trigger if exists push_on_session on public.sessions;
+create trigger push_on_session after insert on public.sessions for each row execute function public.push_on_session();
+
+create or replace function public.push_on_outbox() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin perform public.push_kick(); return null; end $$;
+drop trigger if exists push_on_outbox on public.push_outbox;
+create trigger push_on_outbox after insert on public.push_outbox for each statement execute function public.push_on_outbox();
+
+-- ежедневное напоминание: ставит в очередь тех, кому пора (вызывается каждые 5 минут)
+create or replace function public.push_queue_daily() returns int
+language plpgsql security definer set search_path = public as $$
+declare r record; n int := 0; lines text[][] := array[
+  array['🐱 Лекси скучает!', 'Найдём 5 минут для английского? Я уже приготовил задания!'],
+  array['✨ Время для английского!', 'Пять минут с Лекси — и ты ещё ближе к своей цели!'],
+  array['💙 Лекси ждёт тебя!', 'Давай выучим несколько новых слов? Это займёт всего пару минут!'],
+  array['🌟 Маленький шаг — большой результат!', 'Пора потренировать английский. Лекси уже ждёт!']];
+  k int;
+begin
+  for r in
+    select np.user_id, (now() at time zone np.tz)::date as d
+    from public.notification_prefs np join public.profiles p on p.id = np.user_id
+    where np.daily and p.role = 'student'
+      and exists (select 1 from public.push_subscriptions s where s.user_id = np.user_id)
+      and (now() at time zone np.tz)::time >= np.daily_time
+      and (now() at time zone np.tz)::time < np.daily_time + interval '3 hours'
+      and np.last_daily is distinct from (now() at time zone np.tz)::date
+  loop
+    update public.notification_prefs set last_daily = r.d where user_id = r.user_id;
+    -- уже открыт сундук дня (все миссии) или прямо сейчас занимается — не беспокоим
+    if exists (select 1 from public.xp_claims c where c.user_id = r.user_id and c.day = r.d and c.claim = 'chest') then continue; end if;
+    if exists (select 1 from public.sessions s where s.user_id = r.user_id and s.created_at > now() - interval '30 minutes') then continue; end if;
+    k := 1 + (extract(doy from r.d)::int % 4);
+    insert into public.push_outbox(user_id, kind, dedupe, title, body, url)
+      values (r.user_id, 'daily', 'daily:' || r.user_id || ':' || r.d, lines[k][1], lines[k][2], 'index.html#/home')
+      on conflict (dedupe) do nothing;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- ---------- worker: забрать порцию и отметить результат ----------
+create or replace function public.push_claim(n int default 100) returns setof public.push_outbox
+language sql security definer set search_path = public as $$
+  update public.push_outbox o set claimed_at = now(), attempts = attempts + 1
+  where o.id in (select id from public.push_outbox where sent_at is null and attempts < 5 and created_at > now() - interval '2 days'
+                   and (claimed_at is null or claimed_at < now() - interval '2 minutes') order by id limit least(greatest(n, 1), 500) for update skip locked)
+  returning o.*
+$$;
+
+revoke all on function public.push_internal_config(), public.push_store_vapid(jsonb), public.push_kick(), public.push_queue_daily(), public.push_claim(int),
+  public.push_on_assignment(), public.push_on_session(), public.push_on_outbox() from public, anon, authenticated;
+grant execute on function public.push_internal_config(), public.push_store_vapid(jsonb), public.push_queue_daily(), public.push_claim(int) to service_role;
+revoke all on function public.push_subscribe(text, text, text, text), public.push_unsubscribe(text), public.notify_prefs(), public.notify_prefs_set(boolean, boolean, text, boolean), public.push_test(), public.push_public_key() from public, anon;
+grant execute on function public.push_subscribe(text, text, text, text), public.push_unsubscribe(text), public.notify_prefs(), public.notify_prefs_set(boolean, boolean, text, boolean), public.push_test(), public.push_public_key() to authenticated;
+
+-- расписание: каждую минуту — отправка очереди (на случай, если мгновенный вызов не прошёл);
+-- каждые 5 минут — ежедневные напоминания
+select cron.unschedule(jobid) from cron.job where jobname in ('lexi-push-worker', 'lexi-push-daily');
+select cron.schedule('lexi-push-daily', '*/5 * * * *', $cron$select public.push_queue_daily()$cron$);
+select cron.schedule('lexi-push-worker', '* * * * *', $cron$select public.push_kick() where exists (select 1 from public.push_outbox where sent_at is null and attempts < 5 and created_at > now() - interval '2 days')$cron$);
+
+-- учитель управляет только своими уроками — проверка роли и в функции ссылки
+create or replace function public.lesson_share(l uuid, enable boolean) returns text
+language plpgsql security definer set search_path = public as $$
+declare tok text;
+begin
+  if auth.uid() is null or public.my_role() <> 'teacher' then raise exception 'only teachers share lessons' using errcode = '42501'; end if;
+  if not exists (select 1 from public.custom_lessons c where c.id = l and c.owner_id = auth.uid()) then raise exception 'not your lesson'; end if;
+  if enable then
+    update public.custom_lessons set share_token = coalesce(share_token, replace(gen_random_uuid()::text, '-', '') )
+      where id = l and owner_id = auth.uid() returning share_token into tok;
+    return tok;
+  end if;
+  update public.custom_lessons set share_token = null where id = l and owner_id = auth.uid();
+  return null;
+end $$;

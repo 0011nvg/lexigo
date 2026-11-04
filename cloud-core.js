@@ -291,5 +291,27 @@
     return box;
   }
 
-  window.LexigoCloud = Object.freeze({ PLAY_EXTRA, assignmentWords, lessonState, knownLocal, knownRow, loadStudentLessons, sortLessons, lessonCard, lessonHref, ruN, configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, shareUrl, copyText, sharePanel, SHARE_RE, fmtDate, localDay, clientId, authMessage });
+  /* ---------- значок уровня (2026-11-04): одна линейная система для шапки и кабинета ----------
+   * Уровни и названия — те же, что в игре (lexi-world.js / levelOf): 🌱 🧭 🔎 🗺️ 📚 ⭐ 🚀 👑 — здесь в виде векторных значков. */
+  const LEVEL_ICONS = [
+    '<path d="M12 20v-7"/><path d="M12 13c0-4.2 3-6.5 7-6.5 0 4.2-3 6.5-7 6.5Z"/><path d="M12 15.5c0-3.2-2.5-5.4-6-5.4 0 3.2 2.5 5.4 6 5.4Z"/>',
+    '<circle cx="12" cy="12" r="8"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1 5.1-2.1Z"/>',
+    '<circle cx="10.5" cy="10.5" r="5.5"/><path d="m14.8 14.8 4.7 4.7"/>',
+    '<path d="M4 6.5 9 4.5l6 2 5-2v13l-5 2-6-2-5 2Z"/><path d="M9 4.5v13M15 6.5v13"/>',
+    '<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5Z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19"/><path d="M9 7.5h6"/>',
+    '<path d="m12 3.6 2.6 5.3 5.8.9-4.2 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.2-4.1 5.8-.9Z"/>',
+    '<path d="M12 3c3.4 2 5 5.4 5 9.4L14.5 15h-5L7 12.4C7 8.4 8.6 5 12 3Z"/><circle cx="12" cy="9.6" r="1.6"/><path d="M9.5 15 8.2 19.5l3-1.6M14.5 15l1.3 4.5-3-1.6"/>',
+    '<path d="m4 8 4.2 4L12 5.5 15.8 12 20 8l-1.6 10.5H5.6Z"/><path d="M5.6 21h12.8"/>'
+  ];
+  const TEACHER_ICON = '<path d="m2.5 9.5 9.5-5 9.5 5-9.5 5Z"/><path d="M6.5 11.6v4.4c3.1 2.3 7.9 2.3 11 0v-4.4M21.5 9.5v5"/>';
+  function levelBadge(xp, role) {
+    const lv = levelOf(xp), i = Math.min(lv.level, LEVEL_ICONS.length) - 1, teacher = role === 'teacher';
+    const span = document.createElement('span');
+    span.className = 'lvl-badge ' + (teacher ? 'lvl-teacher' : 'lvl-' + (i + 1));
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (teacher ? TEACHER_ICON : LEVEL_ICONS[i]) + '</svg>';
+    return { node: span, title: teacher ? 'Учитель' : lv.title, level: lv.level };
+  }
+
+  window.LexigoCloud = Object.freeze({ PLAY_EXTRA, assignmentWords, lessonState, knownLocal, knownRow, loadStudentLessons, sortLessons, lessonCard, lessonHref, ruN, configured, client, levelOf, MODES, MODE_HINTS, ASSIGNABLE, modeFit, lessonModes, isSingleWord: isSingle, BADGES, AVATARS, words, isLexical, customWords, customWordId, parseWordList, h, shareUrl, copyText, sharePanel, SHARE_RE, levelBadge, fmtDate, localDay, clientId, authMessage });
 })();

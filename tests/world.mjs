@@ -2,6 +2,7 @@
 // missions, boss, stars, calm/board modes, explanations, corrupted storage, mobile.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 
 // 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
 async function nextQ(page) { await page.waitForFunction(() => !game || !game.answered || document.querySelector('#play .lesson-result') || [...document.querySelectorAll('#play button:not([disabled])')].some(b => /Следующее|Результат/.test(b.textContent))); const b = page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first(); if (await b.count()) await b.click(); }
@@ -192,16 +193,19 @@ try {
   await page.goto(BASE + '#/lesson/8/0'); await page.reload(); await page.locator('#launcher').waitFor();
   assert.ok(!(await page.evaluate(() => document.body.classList.contains('calm') || document.body.classList.contains('board'))));
   assert.equal(await page.locator('#calmToggle, #boardToggle').count(), 0);
-  assert.match(await page.locator('#lexiChip .chip-lvl').innerText(), /Новичок|Путешественник|Исследователь/);
-  assert.doesNotMatch(await page.locator('#lexiChip').innerText(), /XP|Ур\./);
+  // 2026-11-04: отдельного чипа «котёнок + звание» в шапке нет; звание — значком в элементе профиля (после входа)
+  assert.equal(await page.locator('#lexiChip').count(), 0);
+  assert.doesNotMatch(await page.locator('.site-header').innerText(), /XP|Ур\./);
   ok('game mode always on: no calm/board switches; header shows a rank, not "Ур. · XP"');
 
   /* 13. Teacher: print sheet without game elements */
-  await page.goto(BASE + '#/lesson/2/0/teacher');
-  await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
-  await page.locator('#printTest').click();
-  assert.ok(await page.evaluate(() => window.__printed && document.querySelectorAll('#lexigoPrint .print-question').length > 0));
-  assert.equal(await page.evaluate(() => [...document.querySelectorAll('#lexigoPrint *')].some(n => /lexi-/.test(n.className))), false);
+  { const tp = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' }); await useFakeCloud(tp, { role: 'teacher' });
+    await tp.goto(BASE + '#/lesson/2/0/teacher'); await tp.locator('#printTest').waitFor({ state: 'visible', timeout: 15000 });
+    await tp.evaluate(() => { window.print = () => { window.__printed = true; }; });
+    await tp.locator('#printTest').click();
+    assert.ok(await tp.evaluate(() => window.__printed && document.querySelectorAll('#lexigoPrint .print-question').length > 0));
+    assert.equal(await tp.evaluate(() => [...document.querySelectorAll('#lexigoPrint *')].some(n => /lexi-/.test(n.className))), false);
+    await tp.close(); }
   ok('teacher: print sheet without game elements');
   await page.close();
 

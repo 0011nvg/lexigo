@@ -17,7 +17,12 @@
   const QUEUE = 'lexigo_cloud_queue';
   let sb = null, user = null, profile = null, nextMeta = null;
   const toast = (t, mood) => { try { window.LexiQuest?.toast(t, mood || 'hello'); } catch { /* cosmetic */ } };
-  const emit = () => window.dispatchEvent(new CustomEvent('lexigo:account', { detail: { signedIn: !!user, profile } }));
+  /* роль для интерфейса: подтверждённая сервером (profiles.role) после входа; до загрузки — подсказка с устройства.
+     Права на сервере проверяет база (RLS), здесь — только то, что показывать. */
+  const setRole = r => { document.body.classList.toggle('role-teacher', r === 'teacher'); document.body.classList.toggle('role-student', r === 'student'); document.body.dataset.role = r || 'guest'; };
+  setRole(Hint.uid() ? Hint.role() : 'guest');
+  const emit = () => { setRole(user && profile ? profile.role : 'guest'); window.dispatchEvent(new CustomEvent('lexigo:account', { detail: { signedIn: !!user, profile } })); };
+  window.addEventListener('lexigo:level', () => { if (Hint.uid()) headerButton(); });
 
   /* ---------- header button ---------- */
   function headerButton() {
@@ -26,10 +31,14 @@
     if (!a) { a = h('a', { id: 'accountButton' }); nav.append(a); }
     a.replaceChildren();
     if (Hint.uid()) {
+      /* 2026-11-04: один элемент профиля — значок текущего уровня (или «учитель») и имя; ведёт в личный кабинет */
       a.className = 'acct-btn'; a.href = 'me.html';
-      const name = (profile && profile.display_name) || Hint.name() || 'Кабинет';
-      a.setAttribute('aria-label', 'Личный кабинет: ' + name);
-      a.append(h('span', { class: 'acct-ava', 'aria-hidden': 'true' }, window.LexiProfileAvatars.content(profile && profile.avatar, C.AVATARS[(profile && profile.avatar) || 'cat'] || '🐱')), name.length > 14 ? name.slice(0, 13) + '…' : name);
+      const name = (profile && profile.display_name) || Hint.name() || 'Кабинет', role = (profile && profile.role) || Hint.role();
+      let xp = 0; try { xp = window.LexiQuest ? window.LexiQuest.state().xp || 0 : 0; } catch { xp = 0; }
+      const badge = C.levelBadge(xp, role);
+      a.setAttribute('aria-label', 'Личный кабинет: ' + name + ' · ' + badge.title + (role === 'teacher' ? '' : ', уровень ' + badge.level));
+      a.title = name + ' · ' + badge.title + (role === 'teacher' ? '' : ' · уровень ' + badge.level);
+      a.append(badge.node, h('span', { class: 'acct-name', text: name.length > 14 ? name.slice(0, 13) + '…' : name }));
     } else {
       a.className = 'acct-btn guest'; a.href = 'auth.html'; a.setAttribute('aria-label', 'Войти или создать аккаунт');
       a.append(h('span', { class: 'acct-ico', 'aria-hidden': 'true' }, h('svg', null)), h('span', { class: 'acct-txt', text: 'Войти' }));
@@ -288,7 +297,7 @@
   }
   /* готовность облака: { sb, user, profile } или null (гость, нет сети, облако не настроено) */
   let done; const ready = new Promise(r => { done = v => { r(v); done = () => {}; }; });
-  window.LexigoCloudSession = Object.freeze({ flush, ready, signedIn: () => !!user, setMeta: m => { nextMeta = m; }, toast,
+  window.LexigoCloudSession = Object.freeze({ flush, ready, signedIn: () => !!user, role: () => (user && profile ? profile.role : null), setMeta: m => { nextMeta = m; }, toast,
     /* новая тренировка в той же игре (следующий уровень экспедиции): новая сессия с той же «меткой» */
     restartRound: g => { if (g && g.cloud) g.cloud = { id: C.clientId(), events: [], meta: g.cloud.meta, sent: false, t0: performance.now(), poolHash: g.cloud.poolHash }; } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

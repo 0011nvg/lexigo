@@ -2,12 +2,13 @@
 // Run: node tests/lesson-words.mjs (static server on 127.0.0.1:4173)
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 const BASE = process.env.LEXIGO_URL || 'http://127.0.0.1:4173/index.html';
 const browser = await chromium.launch({ headless: true });
 const errors = [];
 const ok = m => console.log('  ✓ ' + m);
 async function fresh(viewport = { width: 1280, height: 900 }) {
-  const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
+  const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });await useFakeCloud(page, { role: 'teacher' });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.addInitScript(() => {

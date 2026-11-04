@@ -1,0 +1,85 @@
+/* LEXI · шапка, роли, раздел «Уроки», уведомления (2026-11-04). Палитра — world.css (--w-*). */
+
+/* ---------- роли: учительские элементы — только у учителя ---------- */
+body:not(.role-teacher) #roleSwitch,body:not(.role-teacher) #lessonPrint{display:none!important}
+body.role-teacher:not([data-page=lesson]):not([data-page=teacher]) #roleSwitch{display:none!important}
+.lexi-chip{display:none!important}
+
+a#homeNav.header-home{text-decoration:none;display:inline-flex;align-items:center}
+a#homeNav.header-home:hover{text-decoration:none}
+body[data-page=lessons] #homeNav{color:var(--w-blue,#2c56f5)}
+
+/* ---------- элемент профиля: значок уровня + имя ---------- */
+.acct-btn .lvl-badge{width:30px;height:30px;flex:none}
+.lvl-badge{display:inline-grid;place-items:center;border-radius:50%;background:#e9fbd0;color:#3f7a00;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(27,42,107,.2)}
+.lvl-badge svg{width:62%;height:62%}
+.lvl-badge.lvl-1{background:#e9fbd0;color:#3f7a00}
+.lvl-badge.lvl-2{background:#dcf7ec;color:#0f8a66}
+.lvl-badge.lvl-3{background:#e1efff;color:#1f6fd1}
+.lvl-badge.lvl-4{background:#e6e9ff;color:#3d4fd6}
+.lvl-badge.lvl-5{background:#eee6ff;color:#6a45d8}
+.lvl-badge.lvl-6{background:#fff2c4;color:#a86f00}
+.lvl-badge.lvl-7{background:#ffe6de;color:#cf4d29}
+.lvl-badge.lvl-8{background:linear-gradient(145deg,#fff0b8,#ffcf5a);color:#7d5000}
+.lvl-badge.lvl-teacher{background:var(--w-blue,#2c56f5);color:#fff}
+.acct-btn .acct-name{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:640px){.acct-btn .acct-name{display:none}.acct-btn .lvl-badge{width:32px;height:32px}}
+
+/* ---------- раздел «Уроки» ---------- */
+.lessons-hub{max-width:1040px;margin:0 auto}
+.hub-head{margin-bottom:18px}
+.hub-head h1:focus{outline:none}
+.hub-loading{color:var(--w-mute,#6c7593);font-weight:700}
+.hub-sec{margin:0 0 22px;padding:18px 20px;border:1px solid var(--w-line,#e2e6f4);border-radius:22px;background:#fff}
+.hub-sec-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin-bottom:12px}
+.hub-sec-head h2{margin:0;font-size:20px;color:var(--w-ink,#141b3d)}
+.hub-count{font-size:13.5px;font-weight:800;color:#2a45c4;background:#eef2ff;border-radius:999px;padding:5px 12px}
+.hub-create{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+.hub-empty,.hub-note{margin:0 0 8px;color:#56607c;font-size:14.5px;line-height:1.5}
+.hub-guest{padding:14px 18px;border-radius:18px;background:#f3f6ff;margin-bottom:22px}
+.hub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hub-card{display:flex;flex-direction:column;gap:5px;padding:14px 16px;border:1.5px solid #e5e9f5;border-radius:16px;background:#f8f9fd;color:var(--w-ink,#141b3d);text-decoration:none;min-height:96px}
+.hub-card:hover{border-color:#b9c8f7;background:#fff}
+.hub-kicker{font-size:12px;font-weight:800;color:#2a45c4;text-transform:uppercase;letter-spacing:.06em}
+.hub-card b{font-size:16px;line-height:1.3}
+.hub-card small{font-size:13px;color:#566180}
+.hub-meter{display:block;height:6px;border-radius:999px;background:linear-gradient(90deg,var(--w-mint,#1fc497) var(--p,0%),#e3e8f3 var(--p,0%))}
+.hub-books{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+.hub-book{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:72px;border:1.5px solid #e1e7f6;border-radius:16px;background:#f8f9fd;color:var(--w-ink,#141b3d);text-decoration:none}
+.hub-book b{font-family:var(--w-display,inherit);font-size:24px;line-height:1}
+.hub-book span{font-size:12px;color:#6c7593;font-weight:700}
+.hub-book.mine{background:#f2fbd8;border-color:#c9ec72}
+.hub-book.mine span{color:#3a5600}
+.hub-book:hover{border-color:#b9c8f7}
+.hub-list{display:flex;flex-direction:column;gap:10px}
+.hub-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 14px;border:1.5px solid #e5e9f5;border-radius:16px;background:#f8f9fd}
+.hub-row-main{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.hub-row-main b{font-size:16px;color:var(--w-ink,#141b3d);overflow-wrap:break-word}
+.hub-row-main small{font-size:13px;color:#566180}
+.hub-row-actions{display:flex;flex-wrap:wrap;gap:6px}
+.hub-row-actions .btn{min-height:40px;padding:8px 13px;font-size:14px;text-decoration:none;display:inline-flex;align-items:center}
+.hub-share{flex:1 1 100%}
+.hub-done{margin-top:12px}
+.hub-done summary{cursor:pointer;font-weight:800;color:#2a45c4;padding:6px 0}
+@media (max-width:900px){.hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hub-books{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){
+  .hub-sec{padding:16px 14px;border-radius:18px}
+  .hub-grid{grid-template-columns:1fr}
+  .hub-row-actions{width:100%}
+  .hub-row-actions .btn{flex:1 1 auto;justify-content:center}
+}
+
+/* ---------- уведомления (кабинет) ---------- */
+.notif-card .notif-state{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-weight:800;font-size:14.5px}
+.notif-card .notif-state.on{color:#11795a}.notif-card .notif-state.off{color:#6c7593}.notif-card .notif-state.warn{color:#9a540f}
+.notif-help{margin:8px 0 0;padding:12px 14px;border-radius:14px;background:#f3f6ff;color:#2c3758;font-size:14px;line-height:1.5}
+.notif-help ol{margin:6px 0 0;padding-left:20px}
+.notif-help li{margin:3px 0}
+.notif-opts{display:flex;flex-direction:column;gap:6px;margin:12px 0 4px}
+.notif-opt{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;color:var(--w-ink,#141b3d)}
+.notif-opt input[type=checkbox]{width:22px;height:22px;accent-color:var(--w-blue,#2c56f5);flex:none}
+.notif-time{padding-left:32px;flex-wrap:wrap;gap:8px!important;font-size:14px!important;color:#4b5677!important}
+.notif-opt select{min-height:40px;border-radius:10px;padding:4px 8px;font:inherit}
+.notif-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.notif-msg{margin:8px 0 0;font-size:13.5px;font-weight:700;min-height:1.2em}
+.notif-msg.ok{color:#11795a}.notif-msg.err{color:#b3402f}

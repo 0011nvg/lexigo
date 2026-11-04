@@ -337,13 +337,12 @@
   function lessonHash() { const wb = window.LexigoWholeBook && window.LexigoWholeBook.current; if (wb) return '/book/' + wb.grade; return '/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + [...new Set(book.sections.map(s => s.module))].indexOf(mod) : unit); }
 
   /* ---------- header chrome: level chip, streak, calm toggle ---------- */
-  function chrome() {
-    const nav = document.querySelector('.header-actions'); if (!nav || $('lexiChip')) return;
-    const chip = el('a', 'lexi-chip'); chip.id = 'lexiChip'; chip.href = '#/awards'; chip.setAttribute('aria-label', 'Мой уровень и награды');
-    chip.append(avatar('hello', 's'), el('span', 'chip-lvl'), el('span', 'chip-streak'));
-    nav.prepend(chip);
-  }
+  /* 2026-11-04: отдельного чипа «котёнок + звание → награды» в шапке больше нет — он дублировал «Награды» внизу
+     и аватар. Уровень показывает значок в элементе профиля (cloud.js); здесь только сообщаем, что XP изменился. */
+  function chrome() { /* no header chip */ }
+  let lastLevelXp = null;
   function refreshChrome() {
+    if (lastLevelXp !== quest.xp) { lastLevelXp = quest.xp; window.dispatchEvent(new CustomEvent('lexigo:level', { detail: { xp: quest.xp } })); }
     const lv = levelOf(quest.xp), chip = $('lexiChip'); if (!chip) return;
     chip.querySelector('.chip-lvl').textContent = lv.title; chip.querySelector('.chip-lvl').dataset.short = lv.title; chip.dataset.level = lv.level; chip.dataset.rank = RANK_ICONS[Math.min(lv.level - 1, RANK_ICONS.length - 1)]; chip.querySelector('.chip-lvl').dataset.rank = chip.dataset.rank;
     chip.title = lv.title + ' · уровень ' + lv.level + ' · ' + quest.xp + ' XP · до следующего звания ' + (lv.to - lv.xp) + ' XP';

@@ -1,12 +1,13 @@
 // A4 teacher test layout: 20 tasks fit one page, margins 20 mm top/bottom and 15 mm left/right, nothing clipped — also with very long words.
 // The teacher sheet «Критерии оценивания для учителя» (scale + keys) is a separate page and never on the student page.
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 import { PDFDocument } from 'pdf-lib';
 import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const browser = await chromium.launch({ headless: true });
-const page = await browser.newPage();
+const page = await browser.newPage();await useFakeCloud(page, { role: 'teacher' });
 const errors = []; page.on('pageerror', e => errors.push(e.message));
 const hasPdftotext = (() => { try { execSync('pdftotext -v', { stdio: 'ignore' }); return true; } catch { return false; } })();
 try {

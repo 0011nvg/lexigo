@@ -1,4 +1,5 @@
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
@@ -6,7 +7,7 @@ const browser=await chromium.launch({headless:true});
 await fs.mkdir('test-results',{recursive:true});
 const issues=[];
 async function run(name,viewport){
- const page=await browser.newPage({viewport,reducedMotion:'reduce',acceptDownloads:true});
+ const page=await browser.newPage({viewport,reducedMotion:'reduce',acceptDownloads:true});await useFakeCloud(page, { role: 'teacher' });
  const faults=[];page.on('pageerror',e=>faults.push(e.message));
  page.on('console',m=>{if(m.type()==='error')faults.push('console: '+m.text())});
  const capture=async suffix=>page.screenshot({path:'test-results/'+name+'-'+suffix+'.png',fullPage:true});

@@ -2,6 +2,7 @@
 // lean teacher materials (no «train» block, no time limit, words chosen inside), «Верно / неверно» reactions, Lexi speaks English.
 import assert from 'node:assert/strict';
 import { chromium } from './browser-runtime.mjs';
+import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 
 // 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
 async function nextQ(page) { await page.waitForFunction(() => !game || !game.answered || document.querySelector('#play .lesson-result') || [...document.querySelectorAll('#play button:not([disabled])')].some(b => /Следующее|Результат/.test(b.textContent))); const b = page.locator('#play button:not([disabled])', { hasText: /Следующее|Результат/ }).first(); if (await b.count()) await b.click(); }
@@ -12,7 +13,7 @@ const errors = [];
 const ok = m => console.log('  ✓ ' + m);
 async function fresh(opts = { viewport: { width: 1280, height: 900 } }) {
   const ctx = await browser.newContext({ reducedMotion: 'reduce', ...opts });
-  const page = await ctx.newPage();
+  const page = await ctx.newPage();await useFakeCloud(page, { role: 'teacher' });
   page.on('pageerror', e => errors.push(e.message));
   await page.route(/supabase\.co/, r => r.abort());
   return page;

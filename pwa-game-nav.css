@@ -1,0 +1,7 @@
+/* Scoped to installed mobile apps: desktop and browser practice stay unchanged. */
+body.pwa-mobile-game-nav[data-page="play"]{padding-bottom:calc(100px + env(safe-area-inset-bottom, 0px))!important}
+body.pwa-mobile-game-nav[data-page="play"] .bottom-nav:not([hidden]){display:grid!important;z-index:90;bottom:calc(max(10px, env(safe-area-inset-bottom, 0px)) + var(--pwa-keyboard-offset, 0px))!important}
+body.pwa-mobile-game-nav[data-page="play"] #game{padding-bottom:20px}
+body.pwa-mobile-game-nav[data-page="play"] .cq-word{bottom:calc(88px + env(safe-area-inset-bottom, 0px) + var(--pwa-keyboard-offset, 0px));overflow:auto}
+body.pwa-mobile-game-nav[data-page="play"] .cq-word-card{max-height:100%}
+@media print{body.pwa-mobile-game-nav[data-page="play"] .bottom-nav{display:none!important}}

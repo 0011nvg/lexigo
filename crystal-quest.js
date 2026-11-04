@@ -507,7 +507,7 @@
       g.wordCount++; g.asked.add(item.w.id);
       game.answered = false; game.hinted = false; game.activeQuestionMode = item.type; game.retryActive = !!item.retry;
       const stage = document.getElementById('play'); if (!stage || !document.querySelector('.cq-stage')) return resolve();
-      const box = el('div', 'cq-word'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'cqWordTitle');
+      const box = el('div', 'cq-word'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', window.LexiPwaGameNav?.enabled() ? 'false' : 'true'); box.setAttribute('aria-labelledby', 'cqWordTitle');
       const card = el('div', 'cq-word-card');
       const head = el('div', 'cq-word-head'); const img = el('img'); img.src = 'assets/lexi-head.webp'; img.alt = '';
       const ht = el('div'); const title = el('b', null, 'Задание ' + (k + 1) + ' из ' + total + (item.retry ? ' · повторим' : '')); title.id = 'cqWordTitle';
@@ -567,7 +567,7 @@
   function pause() {
     const g = G; if (!g || !g.st || g.pending || document.querySelector('.cq-pause')) return;
     const stage = document.getElementById('play'); if (!stage || !document.querySelector('.cq-stage')) return;
-    const box = el('div', 'cq-word cq-pause'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Пауза');
+    const box = el('div', 'cq-word cq-pause'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', window.LexiPwaGameNav?.enabled() ? 'false' : 'true'); box.setAttribute('aria-label', 'Пауза');
     const card = el('div', 'cq-word-card');
     card.append(el('h3', null, '⏸ Пауза'), el('p', 'muted', 'Отвеченные слова уже сохранены. Если выйти, этот уровень можно будет начать заново.'));
     const row = el('div', 'cq-pause-actions');

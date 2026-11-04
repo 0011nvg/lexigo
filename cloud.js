@@ -15,6 +15,14 @@
   if (!C || !Hint) return;
   const { h } = C;
   const QUEUE = 'lexigo_cloud_queue';
+  const ATTEMPT_PREFIX = 'lexigo_answer_event_';
+  const ERRORS = 'lexigo_cloud_queue_errors';
+  let storageWarningShown = false;
+  function storageWarning() {
+    if (!storageWarningShown) { storageWarningShown = true; toast('Не удалось сохранить ответ на устройстве. Освободите место и проверьте настройки браузера.', 'sad'); }
+    window.dispatchEvent(new CustomEvent('lexigo:sync-status', { detail: { status: 'storage_error' } }));
+  }
+  function syncStatus(status) { window.dispatchEvent(new CustomEvent('lexigo:sync-status', { detail: { status } })); }
   let sb = null, user = null, profile = null, nextMeta = null;
   const toast = (t, mood) => { try { window.LexiQuest?.toast(t, mood || 'hello'); } catch { /* cosmetic */ } };
   const emit = () => window.dispatchEvent(new CustomEvent('lexigo:account', { detail: { signedIn: !!user, profile } }));
@@ -96,6 +104,7 @@
       if (game.retryActive) ev.r = true;
       if (game.activeQuestionMode) ev.m = game.activeQuestionMode;
       game.cloud.events.push(ev);
+      if (!isPreview(game) && Hint.uid()) queueAttempt(game, ev);
     } catch { /* never break practice */ }
   };
   const origSave = saveLearningAttempt;
@@ -103,12 +112,12 @@
     origSave(g, finished);
     try { if (finished) window.LexigoMyLessons?.markDone(g); } catch { /* optimistic only */ }
     if (isPreview(g)) return;   // тренировка учителя: в облако ничего не отправляем
-    try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length) { g.cloud.sent = true; const snapshot = { ...g, cloud: g.cloud }; setTimeout(() => submit(snapshot, !!finished), finished ? 400 : 0); } } catch { /* never break practice */ }
+    try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length && submit(g, !!finished)) g.cloud.sent = true; } catch (e) { console.warn('LEXI: session not saved', e); storageWarning(); }
   };
 
   // rounds left in the middle (back button, another game, closing the tab) are kept as unfinished
   const isPreview = g => !!(g && g.cloud && g.cloud.meta && g.cloud.meta.preview);
-  function keepUnfinished() { if (isPreview(game)) return; try { if (game && game.cloud && !game.cloud.sent && game.cloud.events.length) { game.cloud.sent = true; if (Hint.uid()) { writeQueue([...readQueue(), payload(game, false)]); } } } catch { /* never break practice */ } }
+  function keepUnfinished() { if (isPreview(game)) return; try { if (game && game.cloud && !game.cloud.sent && game.cloud.events.length && Hint.uid()) { if (writeQueue([...readQueue(), payload(game, false)])) game.cloud.sent = true; } } catch (e) { console.warn('LEXI: session not saved', e); storageWarning(); } }
   const origStop = stop;
   stop = function (...args) { keepUnfinished(); flush(); return origStop.apply(this, args); };
   window.addEventListener('pagehide', keepUnfinished);
@@ -126,35 +135,97 @@
       mistakes: g.mode === 'pairs' ? (g.pairMistakes || 0) : g.cloud.events.filter(e => !e.ok && e.k !== 'self').length };
   }
   function readQueue() { try { const x = JSON.parse(localStorage.getItem(QUEUE) || '[]'); return Array.isArray(x) ? x : []; } catch { return []; } }
-  function writeQueue(x) { try { localStorage.setItem(QUEUE, JSON.stringify(x.slice(-50))); } catch { /* full */ } }
+  function writeQueue(x) { try { localStorage.setItem(QUEUE, JSON.stringify(x)); return true; } catch { storageWarning(); return false; } }
+  function queueErrors() { try { return JSON.parse(localStorage.getItem(ERRORS) || '{}') || {}; } catch { return {}; } }
+  function queueAttempt(g, ev) {
+    try {
+      const eventId = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+      const meta = g.cloud.meta || {};
+      const event = { event_id: eventId, client_session_id: g.cloud.id, word_id: ev.w,
+        mode: String(ev.m || g.mode), correct: ev.ok, skill: ev.k,
+        hinted: !!ev.h, retry: !!ev.r, answered_at: new Date().toISOString() };
+      if (meta.assignment_id) event.assignment_id = meta.assignment_id;
+      if (meta.lesson_id) event.lesson_id = meta.lesson_id;
+      localStorage.setItem(ATTEMPT_PREFIX + eventId, JSON.stringify(event));
+      syncStatus('pending');
+      if (navigator.onLine) flushAttempts();
+    } catch (e) { console.warn('LEXI: answer could not be queued', e); storageWarning(); }
+  }
+  function pendingAttemptKeys() {
+    const uid = Hint.uid(); if (!uid) return [];
+    const suffix = '@' + uid, keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(ATTEMPT_PREFIX) && key.endsWith(suffix)) keys.push(key.slice(0, -suffix.length));
+    }
+    return keys;
+  }
+  async function sameAuthenticatedUser() {
+    try { const { data, error } = await sb.auth.getSession(); return !error && !!data?.session?.user && data.session.user.id === user?.id && user.id === Hint.uid(); } catch { return false; }
+  }
+  let attemptsFlushing = false;
+  async function flushAttempts() {
+    if (attemptsFlushing || !sb || !user || user.id !== Hint.uid()) return;
+    attemptsFlushing = true;
+    try {
+      const keys = pendingAttemptKeys();
+      for (let i = 0; i < keys.length; i += 100) {
+        const batch = [];
+        for (const key of keys.slice(i, i + 100)) {
+          try { const value = JSON.parse(localStorage.getItem(key)); if (value) batch.push(value); } catch { /* retain malformed record for diagnosis */ }
+        }
+        if (!batch.length) continue;
+        syncStatus('syncing');
+        if (!await sameAuthenticatedUser()) { syncStatus('retry'); break; }
+        const { data, error } = await sb.rpc('submit_answer_attempts', { p_events: batch, p_expected_user: user.id });
+        if (!await sameAuthenticatedUser()) { syncStatus('retry'); break; }
+        if (error) { console.warn('LEXI: answer sync pending', error.message); syncStatus('retry'); break; }
+        const accepted = new Set(Array.isArray(data?.accepted) ? data.accepted : []);
+        for (const item of batch) if (accepted.has(item.event_id)) localStorage.removeItem(ATTEMPT_PREFIX + item.event_id);
+        if (accepted.size < batch.length) { syncStatus('retry'); break; }
+      }
+      if (!pendingAttemptKeys().length && !readQueue().length) syncStatus('saved');
+      else syncStatus('pending');
+    } catch (e) { console.warn('LEXI: answer sync pending', e); syncStatus('retry'); }
+    finally { attemptsFlushing = false; }
+  }
 
   function submit(g, finished) {
-    if (isPreview(g)) return;
-    if (!Hint.uid()) { if (finished) nudge(); return; }
+    if (isPreview(g)) return false;
+    if (!Hint.uid()) { if (finished) nudge(); return false; }
     const p = payload(g, finished);
-    writeQueue([...readQueue(), p]);
-    flush();
+    if (!writeQueue([...readQueue(), p])) return false;
+    flush(); return true;
   }
   let flushing = false;
   async function flush() {
-    if (flushing || !sb || !user) return; flushing = true;
+    if (flushing || !sb || !user || user.id !== Hint.uid()) return; flushing = true;
     try {
       let queue = readQueue(), last = null;
-      while (queue.length) {
-        const item = queue[0];
-        const { data, error } = await sb.rpc('submit_session', { p: item });
+      for (const item of queue) {
+        if (!await sameAuthenticatedUser()) { syncStatus('retry'); break; }
+        const { data, error } = await sb.rpc('submit_session_for_user', { p: item, p_expected_user: user.id });
+        if (!await sameAuthenticatedUser()) { syncStatus('retry'); break; }
         if (error) {
-          if (/fetch|network|timeout/i.test(error.message || '') || error.code === '54000') break;   // keep for later
-          console.warn('LEXI cloud: result rejected', error.message);
-        } else { last = data; if (item.board_key && item.finished && data && data.session_id && !data.duplicate) boards.saved(item.client_id, data.session_id, item.board_key); }
-        queue = queue.slice(1); writeQueue(queue);
+          if (/fetch|network|timeout/i.test(error.message || '') || error.code === '54000') { syncStatus('retry'); break; }
+          // Keep rejected payload and its diagnostic; a later application version may repair it.
+          const errors = queueErrors(); errors[item.client_id] = String(error.message || error.code || 'error').slice(0, 300);
+          try { localStorage.setItem(ERRORS, JSON.stringify(errors)); } catch { storageWarning(); }
+          console.warn('LEXI cloud: result retained after rejection', error.message);
+          syncStatus('retry'); continue;
+        }
+        if (!data || (!data.session_id && !data.duplicate)) { syncStatus('retry'); break; }
+        last = data;
+        if (item.board_key && item.finished && data.session_id && !data.duplicate) boards.saved(item.client_id, data.session_id, item.board_key);
+        // Re-read after await: a newly queued session must not be overwritten.
+        if (!writeQueue(readQueue().filter(x => x.client_id !== item.client_id))) break;
       }
       if (last && window.LexiQuest) window.LexiQuest.syncCloud({ xp: last.xp, streak: last.streak, streakLast: C.localDay() });
       if (last) window.LexigoMyLessons?.dirty();
     } catch (e) { console.warn('LEXI cloud: offline, results kept on this device', e); }
     finally { flushing = false; }
   }
-  window.addEventListener('online', flush);
+  window.addEventListener('online', () => { flush(); flushAttempts(); });
 
   /* ---------- pull cloud progress into this device ---------- */
   async function pullProgress() {
@@ -281,7 +352,7 @@
       headerButton(); emit();
       if (st && window.LexiQuest) window.LexiQuest.syncCloud({ xp: st.xp, streak: st.streak_last && (C.localDay() === st.streak_last || C.localDay(new Date(Date.now() - 864e5)) === st.streak_last) ? st.streak_count : 0, best: st.streak_best, streakLast: st.streak_last || '', lastLesson: last && last[0] ? last[0].route : '' });
       await pullProgress().catch(e => console.warn('LEXI cloud: progress not loaded', e));
-      flush();
+      flush(); flushAttempts();
       done({ sb, user, profile });
     } catch (e) { console.warn('LEXI cloud unavailable, guest mode continues', e); done(null); }
   }

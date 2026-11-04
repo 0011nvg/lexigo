@@ -137,8 +137,8 @@
       cls.append(classPicker(null, sug, ng => { setMyClass(ng); location.hash = '#/course/' + ng + '/0'; }), el('p', 'desk-note', 'Выбери один раз — Лекси запомнит. Поменять можно в любой момент.'));
     }
     desk.append(cls);
-    // 2. continue
-    if (last) {
+    // 2. Show next-step choices only when a finished lesson offers them.
+    if (last && last.finished && last.mode && !pathInfo(last.path).whole) {
       const info = pathInfo(last.path); const c = sectionCard('desk-continue', 'Продолжить обучение');
       c.append(el('p', 'desk-where', info.grade + ' класс' + ' · ' + info.module), el('p', 'desk-lesson', info.title));
       const sel = selectionLabel(last.path);
@@ -191,7 +191,7 @@
       const info = pathInfo(last.path); const go = actions?.querySelector('.hero-go');
       if (go && info) {
         go.href = '#' + last.path + (last.mode ? '/play/' + last.mode : '');
-        go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = info.grade + ' класс' + ' · ' + info.title;
+        go.innerHTML = '<span>Продолжить</span><small></small>'; go.querySelector('small').textContent = info.grade + ' класс' + ' · ' + info.title + (last.mode && !last.finished ? ' · раунд заново' : '');
         actions.querySelector('.btn.secondary')?.remove();
       }
     } else if (!g) {

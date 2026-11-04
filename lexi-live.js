@@ -79,7 +79,18 @@
     hit.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') play('wave'); });
     body.addEventListener('animationend', e => { if (['lx-hop', 'lx-wave', 'lx-tilt'].includes(e.animationName)) body.classList.remove('hop', 'wave', 'tilt'); });
     // first hello: a wave and a time-of-day line, once per page view
-    setTimeout(() => { if (!wrap.isConnected) return; let back = false; try { back = !!(window.LexiPersonal && window.LexiPersonal.lastActivity()); } catch { back = false; } if (!calm()) say(pick(back ? PHRASES.back : PHRASES[partOfDay()]), 4600); else play('wave'); }, 900);
+    setTimeout(() => { if (!wrap.isConnected) return; let back = false; try { back = !!(window.LexiPersonal && window.LexiPersonal.lastActivity()); } catch { back = false; } if (!calm()) {
+      const last = window.LexiQuest?.state?.().streak?.last;
+      let line = null;
+      if (last && /^\d{4}-\d{2}-\d{2}$/.test(last)) {
+        const d = new Date(), today = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+        const parts = last.split('-').map(Number), gap = Math.floor((today - Date.UTC(parts[0], parts[1] - 1, parts[2])) / 86400000);
+        if (gap === 0) line = ['You did it!', 'Сегодня ты уже занимался! Хочешь ещё немного?', 'hop'];
+        else if (gap === 1) line = ['Ready for today?', 'Вчера мы занимались вместе. Продолжим?', 'wave'];
+        else if (gap > 1) line = ['Welcome back!', 'Рад снова тебя видеть! Начнём с пары слов?', 'wave'];
+      }
+      say(line || pick(back ? PHRASES.back : PHRASES[partOfDay()]), 4600);
+    } else play('wave'); }, 900);
     blinkTimer = setTimeout(blink, 1800);
     return wrap;
   }

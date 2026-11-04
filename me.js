@@ -37,16 +37,36 @@
   function settings(onSaved) {
     let avatar = profile.avatar;
     const name = h('input', { class: 'acc-input', value: profile.display_name, maxlength: 40, id: 'setName' });
-    const pick = h('div', { class: 'ava-pick', role: 'group', 'aria-label': 'Аватар' }, Object.entries(C.AVATARS).map(([k, e]) => h('button', { type: 'button', 'aria-pressed': String(k === avatar), 'aria-label': 'Аватар ' + e, text: e, onclick: ev => { avatar = k; pick.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === ev.currentTarget))); } })));
+    let pendingPhoto = '';
+    const A = window.LexiProfileAvatars;
+    const pick = h('div', { class: 'ava-pick', role: 'group', 'aria-label': 'Выбери аватар' });
+    function refreshPick() {
+      pick.replaceChildren();
+      for (const [id, [label]] of Object.entries(A.presets)) {
+        pick.append(h('button', { type: 'button', 'aria-pressed': String(id === avatar), 'aria-label': label, title: label,
+          onclick: () => { avatar = id; refreshPick(); } }, A.content(id)));
+      }
+      if (avatar === 'custom') pick.append(h('button', { type: 'button', 'aria-pressed': 'true', 'aria-label': 'Моё фото' }, A.content('custom', '🐱', pendingPhoto)));
+    }
+    refreshPick();
+    const upload = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', id: 'avatarUpload', class: 'avatar-upload' });
+    upload.addEventListener('change', async () => {
+      try { if (!upload.files[0]) return; pendingPhoto = await A.thumbnail(upload.files[0]); avatar = 'custom'; refreshPick(); }
+      catch (e) { toast(e.message || 'Не удалось загрузить фото.'); }
+      finally { upload.value = ''; }
+    });
     dialog('Настройки профиля', h('div', null,
       h('label', { class: 'acc-field', for: 'setName' }, h('span', { text: profile.role === 'teacher' ? 'Как вас видят ученики' : 'Как тебя называть' }), name),
-      profile.role === 'student' ? h('div', { class: 'acc-field' }, h('span', { text: 'Аватар' }), pick) : null,
+      h('div', { class: 'acc-field' }, h('span', { text: 'Выбери своего Лекси' }), pick,
+        h('label', { class: 'btn-acc ghost avatar-upload-label', for: 'avatarUpload', text: 'Загрузить своё фото' }), upload,
+        h('p', { class: 'acc-small acc-muted', text: 'Образы Лекси сохраняются в аккаунте. Своё фото хранится только в этом браузере и на других устройствах не появится.' })),
       h('p', { class: 'acc-small acc-muted', text: 'Почта: ' + (me.email || '—') }),
       h('p', null, h('button', { type: 'button', class: 'btn-link', text: 'Сменить пароль', onclick: async () => { try { const { error } = await sb.auth.resetPasswordForEmail(me.email, { redirectTo: base + 'auth.html?recovery=1' }); if (error) throw error; toast('Письмо со ссылкой для смены пароля отправлено.'); } catch (e) { fail(e); } } })),
       h('p', null, h('button', { type: 'button', class: 'btn-link', style: { color: 'var(--w-miss)' }, text: 'Удалить аккаунт и все данные', onclick: deleteAccount }))),
       close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc', type: 'button', text: 'Сохранить', onclick: async () => {
         const n = name.value.trim().replace(/\s+/g, ' ');
         if (!n) return toast('Имя не может быть пустым.');
+        if (avatar === 'custom' && pendingPhoto && !A.savePhoto(pendingPhoto)) return toast('Не удалось сохранить фото на устройстве. Попробуй другой образ.');
         const { error } = await sb.from('profiles').update({ display_name: n, avatar }).eq('id', me.id);
         if (error) return fail(error);
         profile.display_name = n; profile.avatar = avatar; Hint.set({ uid: me.id, name: n, role: profile.role }); close(); toast('Сохранено!'); onSaved();
@@ -68,7 +88,7 @@
   }
   function head(sub, extra) {
     return h('div', { class: 'cab-head' },
-      h('button', { class: 'cab-ava', type: 'button', 'aria-label': 'Настройки профиля', text: profile.role === 'teacher' ? '🧑‍🏫' : (C.AVATARS[profile.avatar] || '🐱'), onclick: () => settings(boot) }),
+      h('button', { class: 'cab-ava', type: 'button', 'aria-label': 'Настройки профиля', onclick: () => settings(boot) }, window.LexiProfileAvatars.content(profile.avatar, C.AVATARS[profile.avatar] || (profile.role === 'teacher' ? '🧑‍🏫' : '🐱'))),
       h('div', null, h('h1', { text: profile.display_name }), h('p', { class: 'acc-muted', text: sub })),
       h('div', { class: 'cab-head-actions' }, extra, h('button', { class: 'btn-acc ghost small', type: 'button', text: '⚙ Настройки', onclick: () => settings(boot) })));
   }

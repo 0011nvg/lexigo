@@ -29,7 +29,7 @@
       a.className = 'acct-btn'; a.href = 'me.html';
       const name = (profile && profile.display_name) || Hint.name() || 'Кабинет';
       a.setAttribute('aria-label', 'Личный кабинет: ' + name);
-      a.append(h('span', { class: 'acct-ava', 'aria-hidden': 'true', text: C.AVATARS[(profile && profile.avatar) || 'cat'] || '🐱' }), name.length > 14 ? name.slice(0, 13) + '…' : name);
+      a.append(h('span', { class: 'acct-ava', 'aria-hidden': 'true' }, window.LexiProfileAvatars.content(profile && profile.avatar, C.AVATARS[(profile && profile.avatar) || 'cat'] || '🐱')), name.length > 14 ? name.slice(0, 13) + '…' : name);
     } else {
       a.className = 'acct-btn guest'; a.href = 'auth.html'; a.setAttribute('aria-label', 'Войти или создать аккаунт');
       a.append(h('span', { class: 'acct-ico', 'aria-hidden': 'true' }, h('svg', null)), h('span', { class: 'acct-txt', text: 'Войти' }));

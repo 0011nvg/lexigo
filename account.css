@@ -198,3 +198,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
 .resend-box{display:flex;flex-direction:column;gap:8px;width:100%;max-width:380px;margin:12px auto 4px;text-align:left}
 .resend-box .btn-acc{width:100%;justify-content:center}
 .resend-box .acc-msg:empty{display:none}
+
+/* Profile avatars */
+.ava-pick{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.ava-pick button{padding:4px;aspect-ratio:1;overflow:hidden}.profile-avatar-image{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}.cab-ava{overflow:hidden;padding:3px}.avatar-upload{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.avatar-upload-label{display:inline-flex;margin-top:10px;cursor:pointer}.avatar-upload:focus-visible + *{outline:3px solid #315ff6}

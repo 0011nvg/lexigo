@@ -10,3 +10,56 @@
 #lessonHeading #changeLesson{flex:1 1 100%;width:100%;max-width:100%;min-width:0;white-space:normal}
 #lessonHeading::before,#lessonHeading::after{background-image:none!important}
 @media(max-width:480px){#lessonHeading.current-lesson{padding:22px 20px!important;gap:16px}#lessonHeading #currentLesson{font-size:clamp(27px,7.5vw,38px)!important}#lessonHeading #changeLesson{min-height:48px}}
+
+/* Floating mobile navigation and class-card arrows. */
+@media (max-width: 760px) {
+  .bottom-nav {
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(calc(100% - 20px), 700px) !important;
+    padding: 5px !important;
+    border: 1px solid #dbe7fb !important;
+    border-radius: 22px !important;
+    background: rgba(255,255,255,.97) !important;
+    box-shadow: 0 5px 16px rgba(40,91,175,.18) !important;
+  }
+  .bottom-nav a {
+    min-width: 0;
+    min-height: 56px;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 2px;
+    border-radius: 16px;
+    color: #101d55 !important;
+    font-size: clamp(10px, 3vw, 12px);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .bottom-nav a.active,.bottom-nav a[aria-current="page"] {
+    color: #112e82 !important;
+    background: linear-gradient(145deg,#dceeff,#badbff) !important;
+  }
+  .bottom-nav a svg { width: 25px !important; height: 25px !important; stroke-width: 2.5 !important; }
+  body { padding-bottom: calc(95px + env(safe-area-inset-bottom)); }
+}
+#courseCards .course-card:not(.course-coming) .course-caption > span {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 76px !important;
+  height: 32px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #fff !important;
+  font-size: 0 !important;
+  background: linear-gradient(180deg,#2997fb 0%,#0863e6 100%) !important;
+  box-shadow: 0 4px 9px rgba(12,97,218,.25) !important;
+}
+#courseCards .course-card:not(.course-coming) .course-caption > span::after {
+  content: "" !important;
+  display: block;
+  width: 27px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' fill='none'%3E%3Cpath d='M3 10h20M16 3l7 7-7 7' stroke='white' stroke-width='3.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}

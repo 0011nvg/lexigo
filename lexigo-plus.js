@@ -66,6 +66,8 @@
     const hard = hardIds(), same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     if (currentSet === 'hard' && hard.length && same(ids, hard)) { writeEntry({ m: 'hard', ids: prev.ids }); return; }
     if (ids.length === scope.length) { currentSet = 'all'; writeEntry({ m: 'all', ids: prev.ids }); return; }
+    // 2026-11-04: «Снять выбор» does not erase the student's own choice («Мой выбор» brings it back); after reload — all words
+    if (!ids.length) { currentSet = 'chosen'; writeEntry({ m: 'all', ids: prev.ids }); return; }
     currentSet = 'chosen'; writeEntry({ m: 'chosen', ids });
   }
   function restoreSelection() {
@@ -104,7 +106,7 @@
     if (sc) sc.textContent = 'Выбрано ' + n + ' из ' + m;
     if (tc) tc.textContent = n === m ? 'в играх — все слова' : n ? 'в играх — только отмеченные' : 'отметь слова для игр';
     const ow = $('openWords'); if (ow) { ow.textContent = n === m ? 'Слова урока: ' + m + ' · выбрать' : 'Слова: ' + n + ' из ' + m + ' · изменить'; ow.classList.toggle('has-subset', n !== m); }
-    const done = $('wordsDone'); if (done && document.body.dataset.page === 'teacher') { done.textContent = n ? 'Готово: ' + n + ' ' + plural(n, 'слово', 'слова', 'слов') + ' для работы ↓' : 'Отметь хотя бы одно слово'; done.disabled = !n; } else if (done) { done.textContent = !n ? 'Отметь хотя бы одно слово' : n === m ? 'Тренировать все слова (' + n + ') →' : 'Тренировать выбранные (' + n + ') →'; done.disabled = !n; }
+    const done = $('wordsDone'); if (done && document.body.dataset.page === 'teacher') { done.textContent = n ? 'Готово: ' + n + ' ' + plural(n, 'слово', 'слова', 'слов') + ' для работы ↓' : 'Отметь хотя бы одно слово'; done.disabled = !n; } else if (done) { done.textContent = !n ? 'Отметь хотя бы одно слово' : n === m ? 'Тренировать все слова (' + n + ') ↓' : 'Тренировать выбранные (' + n + ') ↓'; done.disabled = !n; }
     const twc = $('teacherWordCount'); if (twc) twc.textContent = n === m ? 'все слова урока: ' + m : 'выбрано ' + n + ' из ' + m;
     let chip = $('selectionChip');
     const launcher = $('launcher');

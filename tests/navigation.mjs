@@ -10,16 +10,16 @@ try{
   await page.screenshot({path:'test-results/navigation-'+width+'-home.png',fullPage:true});
   for(const grade of [2,3,4,5,6,7,8,9]){
    await page.locator('#courseCards a[href="#/course/'+grade+'/0"]').click();
-   assert.equal(await page.locator('#courseTitle').innerText(),'Spotlight '+grade);
-   assert.equal(await page.locator('#courseTabs [aria-current]').innerText(),'Spotlight '+grade);
+   assert.equal(await page.locator('#courseTitle').innerText(),grade+' класс');
+   assert.equal(await page.locator('#courseTabs [aria-current]').innerText(),grade+' класс');
    assert.ok(await page.locator('#lessonCards a').count()>1);
    if(grade===2)await page.screenshot({path:'test-results/navigation-'+width+'-course.png',fullPage:true});
    await page.locator('#lessonCards a').nth(1).click();assert.equal(await page.locator('#launcher').isVisible(),true);
-   assert.equal(await page.locator('#game').isVisible(),false);assert.equal(await page.locator('#words').isVisible(),false);
-   assert.match(await page.locator('#currentLessonDetail').innerText(),new RegExp('Spotlight '+grade));
-   await page.locator('#openWords').click();await page.locator('#words input').first().uncheck();
+   assert.equal(await page.locator('#game').isVisible(),false);assert.equal(await page.locator('#lessonWords #words').isVisible(),true,'the lesson shows its words right away');
+   assert.match(await page.locator('#currentLessonDetail').innerText(),new RegExp(grade+' класс'));
+   await page.locator('#lessonWords #words input').first().uncheck();
    const selected=await page.evaluate(()=>selectedWords().map(w=>w.id));await page.locator('#wordsDone').click();assert.deepEqual(await page.evaluate(()=>selectedWords().map(w=>w.id)),selected);
-   await page.reload();assert.equal(await page.locator('#launcher').isVisible(),true);assert.match(await page.locator('#currentLessonDetail').innerText(),new RegExp('Spotlight '+grade));
+   await page.reload();assert.equal(await page.locator('#launcher').isVisible(),true);assert.match(await page.locator('#currentLessonDetail').innerText(),new RegExp(grade+' класс'));
    await page.locator('#homeNav').click();
   }
   await page.goto('http://127.0.0.1:4173/#/lesson/2/m0');

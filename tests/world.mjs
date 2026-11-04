@@ -38,7 +38,7 @@ try {
   await page.locator('.lexi-hero').waitFor();
   assert.equal(await page.locator('.lexi-missions li').count(), 3);
   assert.match(await page.locator('.lexi-level').innerText(), /XP/);
-  assert.equal(await page.locator('#courseCards .course-card').count(), 8);
+  assert.equal(await page.locator('#courseCards .course-card').count(), 10);
   assert.ok(await page.locator('#homeTitle').isVisible());
   ok('home: Lexi hero, 3 missions, level, 8 books');
 

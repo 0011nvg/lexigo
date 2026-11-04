@@ -1,0 +1,93 @@
+/* LEXI · «Слова урока» на странице урока (2026-11-04).
+ * Компактные строки: отметка · слово и перевод · «Послушать» · ☆. Отмеченные слова — белые с синей галочкой,
+ * снятые — приглушённые: сразу видно, что пойдёт в игры. Палитра и шрифты — из world.css (--w-*). */
+#lessonWords{margin:6px 0 26px;padding:0 0 26px;background:none;border:0;border-bottom:1px solid var(--w-line,#e2e6f4);border-radius:0;box-shadow:none;scroll-margin-top:96px}
+body:not([data-page=lesson]) #lessonWords{display:none}
+body[data-page=lesson] #openWords,body[data-page=lesson] #wordSetBar,body[data-page=lesson] #launcher>.stats{display:none!important}
+body[data-page=lesson] #launcher .lesson-tools{justify-content:flex-end}
+
+.lw-head{max-width:none;padding:0;border:0;background:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin:0 0 14px}
+.lw-head h2{margin:0;font-family:var(--w-display,inherit);font-size:22px;line-height:1.2;letter-spacing:-.02em;color:var(--w-ink,#141b3d)}
+.lw-head h2:focus{outline:none}.lw-head h2:focus-visible{outline:3px solid #5278c8;outline-offset:4px;border-radius:6px}
+.lw-count{font-family:var(--w-text,inherit);font-size:15px;font-weight:800;letter-spacing:0;color:var(--w-mute,#6c7593);white-space:nowrap}
+.lw-status{margin:0;padding:6px 13px;border-radius:999px;background:#eef2ff;color:#2a45c4;font-size:14px;font-weight:800;line-height:1.3}
+#lessonWords.is-subset .lw-status{background:#f2fbd8;color:#3a5600;box-shadow:inset 0 0 0 1px #d6ef8f}
+#lessonWords.is-empty .lw-status{background:#fff2e1;color:#9a540f}
+.lw-note{margin:-6px 0 12px;font-size:13px;color:#8a5a14;line-height:1.45}
+
+/* внутренние заголовок и счётчики старого списка здесь не нужны — их заменяет шапка словаря */
+#lessonWords #wordSelection{display:block!important;margin:0}
+#lessonWords #wordSelection>.page-heading,#lessonWords #wordSelection>.toprow{display:none!important}
+#lessonWords #search{display:none;width:100%;min-height:46px;margin:0 0 10px;padding:10px 14px 10px 40px;border:1.5px solid #dfe5f4;border-radius:14px;background:#f8f9fe url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237a84a3' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m16 16 4.5 4.5'/%3E%3C/svg%3E") 13px 50%/18px no-repeat;font-size:15px;color:var(--w-ink,#141b3d)}
+#lessonWords.has-search #search{display:block}
+#lessonWords #search:focus{background-color:#fff;border-color:#7d93e6;outline:none;box-shadow:0 0 0 3px #e3e9ff}
+
+.lw-tools{display:flex!important;flex-wrap:wrap;gap:8px!important;margin:0 0 10px!important}
+#lessonWords .lw-tools .btn{min-height:40px!important;padding:8px 15px;border:1px solid #e1e7f7;border-radius:999px;background:#f5f7fe;color:#283f7e;font-size:14px;font-weight:800;line-height:1.2;box-shadow:none;transition:background .15s,border-color .15s}
+#lessonWords .lw-tools .btn:hover:not(:disabled){background:#eaf0ff;border-color:#c7d3fa}
+#lessonWords .lw-tools .btn:disabled{opacity:.42;cursor:default}
+#lessonWords .lw-tools .btn[aria-pressed=true]{background:#fff7d6;border-color:#f3cf55;color:#6b4d00}
+#lessonWords .lw-tools .btn[hidden]{display:none!important}
+#lessonWords #starHint{margin:0 0 10px;font-size:12.5px;color:var(--w-mute,#6c7593)}
+
+#lessonWords .wordlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0!important;max-height:none}
+#lessonWords .wordrow{display:flex!important;align-items:center;gap:12px!important;min-height:62px;padding:8px 8px 8px 12px!important;border:1.5px solid #e5e9f5!important;border-radius:16px!important;background:#f8f9fd!important;box-shadow:none!important;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+#lessonWords .wordrow.is-selected{background:#fff!important;border-color:#d5def9!important;box-shadow:0 2px 8px rgba(44,86,245,.05)!important}
+#lessonWords .wordrow:hover{border-color:#b9c8f7!important}
+#lessonWords .wordrow:focus-within{border-color:#7d93e6!important}
+#lessonWords .wordrow.is-hard{box-shadow:inset 4px 0 0 var(--w-sun,#ffc83a)!important}
+#lessonWords .wordrow.lw-extra{display:none!important}
+
+.word-check{appearance:none;-webkit-appearance:none;flex:none;display:grid;place-items:center;width:26px!important;height:26px!important;margin:0!important;border:2px solid #c3cbe3;border-radius:9px;background:#fff;cursor:pointer;transition:background .15s,border-color .15s}
+.word-check:checked{border-color:var(--w-blue,#2c56f5);background:var(--w-blue,#2c56f5) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/17px no-repeat}
+.word-check:focus-visible{outline:3px solid #5278c8;outline-offset:2px}
+
+#lessonWords .word-text{flex:1;min-width:0;display:block;font-size:inherit!important;font-weight:inherit!important}
+#lessonWords .word-en{display:block;font-size:16.5px;font-weight:800;line-height:1.25;color:var(--w-ink,#141b3d);overflow-wrap:break-word}
+#lessonWords .word-ru{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;margin-top:2px;font-size:14px!important;font-weight:600!important;line-height:1.35;color:#566180}
+#lessonWords .wordrow:not(.is-selected) .word-en{color:#68718e}
+#lessonWords .wordrow:not(.is-selected) .word-ru{color:#8a92ab}
+#lessonWords .word-meta{font-weight:800;color:var(--w-ok,#119b72)}
+#lessonWords .wordrow[data-level=new] .word-meta{display:none}
+#lessonWords .wordrow[data-level=due] .word-meta{color:#b06a00}
+
+.say-btn{flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:14px;background:#edf2ff;color:var(--w-blue,#2c56f5);cursor:pointer;transition:background .15s,transform .15s}
+.say-btn svg{width:22px;height:22px}
+.say-btn svg path:first-child{fill:currentColor}
+.say-btn .say-wave{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.say-btn:hover{background:#dfe8ff}.say-btn:active{transform:scale(.94)}
+.say-btn:focus-visible{outline:3px solid #5278c8;outline-offset:2px}
+.say-btn.is-playing{background:var(--w-blue,#2c56f5);color:#fff}
+.say-btn.is-playing .say-wave{animation:lwWave .55s ease-in-out 2 alternate}
+@keyframes lwWave{from{opacity:.25}to{opacity:1}}
+#lessonWords .star-btn{flex:none;width:40px;height:44px;margin:0 0 0 -6px}
+#wordSelection .say-btn{margin-left:auto}
+
+.lw-more{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;margin:10px 0 0;padding:10px 14px;border:1.5px dashed #cbd5f2;border-radius:14px;background:#f8f9fe;color:#2a45c4;font-size:15px;font-weight:800;cursor:pointer}
+.lw-more:hover{background:#eef2ff}.lw-more[hidden]{display:none}
+body:not([data-page=lesson]) .lw-more{display:none}
+.lw-empty{grid-column:1/-1;margin:6px 0;color:var(--w-mute,#6c7593);font-size:14px}
+
+#lessonWords #wordsDone{position:static!important;display:flex!important;align-items:center;justify-content:center;width:100%;min-height:54px;margin:14px 0 0!important;border-radius:16px;font-size:16px;font-weight:800}
+#lessonWords #wordsDone:disabled{opacity:.55;cursor:default}
+
+#launcher .modes.lw-pulse{animation:lwPulse 1.5s ease-out}
+@keyframes lwPulse{0%{box-shadow:0 0 0 0 rgba(180,239,58,.0)}25%{box-shadow:0 0 0 6px rgba(180,239,58,.55)}100%{box-shadow:0 0 0 14px rgba(180,239,58,0)}}
+#launcher .mode-heading h2:focus{outline:none}
+#launcher .mode-heading,#selectionChip{scroll-margin-top:96px}
+
+@media (max-width:760px){
+  #lessonWords{margin:4px 0 20px;padding:0 0 20px}
+  .lw-head{gap:8px;margin-bottom:12px}
+  .lw-head h2{font-size:19px}
+  .lw-status{font-size:13px;padding:5px 11px}
+  #lessonWords .wordlist{grid-template-columns:1fr;gap:7px}
+  #lessonWords .wordrow{min-height:60px;gap:10px!important;padding:7px 6px 7px 10px!important}
+  #lessonWords .lw-tools .btn{padding:8px 12px;font-size:13.5px}
+}
+@media (max-width:360px){
+  #lessonWords .lw-tools .btn{padding:7px 10px;font-size:13px}
+  #lessonWords .word-en{font-size:16px}
+  .say-btn{width:42px;height:42px}
+}
+@media (prefers-reduced-motion:reduce){.say-btn.is-playing .say-wave,#launcher .modes.lw-pulse{animation:none}}

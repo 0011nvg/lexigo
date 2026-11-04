@@ -3,7 +3,7 @@
 (()=>{'use strict';
  const byId=id=>document.getElementById(id),make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
  const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',crystals:'Кристальная экспедиция',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
- const originalStart=start,originalStop=stop;let applying=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
+ const originalStart=start,originalStop=stop;let applying=false,revealWords=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
  /* 2026-11-02 v2: уроки от учителя и свои уроки учителя — полноценные страницы #/my/a-<задание> и #/my/t-<урок>
     (my-lessons.js). Старые ссылки index.html?task=<id> и ?lesson=<id> переводятся на них. */
  let custom=null;const MY_KEY=/^[at]-[0-9a-f-]{36}$/i;
@@ -21,6 +21,10 @@
    const node=byId(id);node.hidden=!on;if(id==='launcher'||id==='game')node.classList.toggle('hidden',!on);node.toggleAttribute('data-route-active',on&&['myLessonPage','homePage','coursePage','lessonHeading','game'].includes(id));
   }
 
+  /* 2026-11-04: один список слов. На странице урока он стоит в «Словах урока» (#lessonWords),
+     в «Материалах для учителя» — в каталоге, как раньше. Узел один: те же обработчики и данные. */
+  const ws=byId('wordSelection'),done=byId('wordsDone'),host=byId('lessonWordsBody');
+  if(ws&&host){if(page==='lesson'){if(ws.parentNode!==host)host.append(ws,done)}else if(ws.parentNode===host)byId('sectionHint').after(ws,done)}
   document.body.classList.toggle('teacher-mode',page==='teacher');
   byId('roleSwitch').setAttribute('aria-pressed',String(page==='teacher'));byId('roleSwitch').textContent=page==='teacher'?'К тренировкам':'Для учителя';
  }
@@ -68,8 +72,10 @@
     lastURL='';history.replaceState({},'','#'+(known?'/course/'+g+'/0':'/home'));render();return;
    }
    if(parts[0]==='lesson'&&context(parts[1],parts[2])){
-    const mode=parts[3]==='play'?parts[4]:null;const page=mode&&Object.hasOwn(modeNames,mode)?'play':['words','teacher'].includes(parts[3])?parts[3]:'lesson';
-    show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='words'?'Слова':page==='teacher'?'Материалы':modeNames[mode]);
+    /* 2026-11-04: отдельной страницы «Слова» больше нет — старые ссылки …/words открывают урок на словаре */
+    if(parts[3]==='words'){revealWords=true;history.replaceState({},'','#'+lessonPath());lastURL=lessonPath();parts.length=3}
+    const mode=parts[3]==='play'?parts[4]:null;const page=mode&&Object.hasOwn(modeNames,mode)?'play':parts[3]==='teacher'?'teacher':'lesson';
+    show(page);lessonCopy();lessonCrumbs(page==='lesson'?null:page==='teacher'?'Материалы':modeNames[mode]);
     if(page==='play'){if(mode==='mixed')quickStart();else originalStart(mode,null,mode==='boss'&&window.LexigoPlus?window.LexigoPlus.bossTypes():undefined);if(!game){lastURL='';history.replaceState({},'','#'+lessonPath());render();return}byId('game').hidden=false;byId('gameTitle').textContent=modeNames[mode]}
     document.title=(page==='play'?modeNames[mode]:byId('currentLesson').textContent)+' — LEXI';
    }else if(['games','awards','profile'].includes(parts[0])){const page=parts[0];show(page);crumbs([]);LexigoDashboard.render(page,lessonPath(),book.grade+' класс'+' · '+(unit==='__all'?mod:book.sections[Number(unit)].title),modeNames);document.title=({games:'Игры',awards:'Награды',profile:'Профиль'}[page])+' — LEXI';}
@@ -77,6 +83,7 @@
 
    else{show('home');crumbs([]);document.title='LEXI — английский по шагам';if(route!=='/home'){history.replaceState({},'','#/home');lastURL='/home'}}
   }finally{applying=false}focusPage();
+  if(revealWords){revealWords=false;if(document.body.dataset.page==='lesson'){if(window.LexigoLessonWords)window.LexigoLessonWords.reveal();else window.LEXI_REVEAL_WORDS=true}}
  }
  start=function(...args){originalStart(...args);if(!applying&&game){const wb=wholeBook();const path=wb?'/book/'+wb.grade+'/play/'+game.mode:(custom?'/my/'+custom.key:lessonPath())+'/play/'+game.mode;history[location.hash==='#'+path?'replaceState':'pushState']({},'','#'+path);lastURL=path;show('play');if(wb)bookCrumbs(wb.grade,game.mode);else if(custom)crumbs([...custom.crumbs,[modeNames[game.mode],null]]);else lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage()}};
  stop=function(){const wb=wholeBook();originalStop();if(!applying&&document.body.dataset.page==='play')navigate(wb?'/course/'+wb.grade+'/0':custom?'/my/'+custom.key:lessonPath())};
@@ -88,10 +95,10 @@
  goHome=()=>navigate('/home');goToLibrary=()=>navigate('/course/'+book.grade+'/'+modules(book).indexOf(mod));
  for(const id of ['homeLogo','homeNav','gameHome'])byId(id).onclick=goHome;
  byId('heroStart').onclick=goToLibrary;byId('changeLesson').onclick=goToLibrary;byId('back').onclick=()=>stop();
- byId('openWords').onclick=()=>navigate(lessonPath()+'/words');byId('wordsDone').onclick=()=>navigate(lessonPath());
+ byId('openWords').onclick=()=>window.LexigoLessonWords?window.LexigoLessonWords.reveal():navigate(lessonPath());byId('wordsDone').onclick=()=>window.LexigoLessonWords&&document.body.dataset.page==='lesson'?window.LexigoLessonWords.toGames():navigate(lessonPath());
  byId('lessonPrint').onclick=()=>navigate(lessonPath()+'/teacher');byId('roleSwitch').onclick=()=>navigate(lessonPath()+(document.body.dataset.page==='teacher'?'':'/teacher'));
 
- for(const [id,handler] of [['book',changeBook],['module',changeModule],['unit',changeUnit]])byId(id).onchange=()=>{applying=true;try{handler()}finally{applying=false}navigate(lessonPath()+'/'+(document.body.dataset.page==='teacher'?'teacher':'words'),{replace:true})};
+ for(const [id,handler] of [['book',changeBook],['module',changeModule],['unit',changeUnit]])byId(id).onchange=()=>{applying=true;try{handler()}finally{applying=false}navigate(lessonPath()+(document.body.dataset.page==='teacher'?'/teacher':''),{replace:true})};
  const courseCards=byId('courseCards');for(const b of DB.books){const a=link('','/course/'+b.grade+'/0','course-card grade-'+b.grade);const cover=make('div');cover.className='course-cover';cover.append(make('span',String(b.grade)+' КЛАСС'),make('b',String(b.grade)),make('small','ENGLISH PRACTICE'));const scene=make('div');scene.className='travel-scene';scene.setAttribute('aria-hidden','true');const place=make('span');place.className='travel-landmark landmark-'+b.grade;const mascot=make('span');mascot.className='travel-cat mascot-'+b.grade;const badge=make('span',({2:'LONDON',3:'NEW YORK',4:'SYDNEY'}[b.grade]||'WORDS & GAMES'));badge.className='travel-city';scene.append(place,mascot,badge);cover.append(scene);const caption=make('div');caption.className='course-caption';caption.append(make('h3',b.grade+' класс'),make('p',b.sections.reduce((n,s)=>n+s.words.length,0)+' слов'),make('span','Открыть учебник →'));a.append(cover,caption);courseCards.append(a)}
  // Будущие классы видны в каталоге, но не открывают несуществующий учебник.
  for(const grade of [10,11]){if(DB.books.some(b=>Number(b.grade)===grade))continue;const card=make('div');card.className='course-card teen grade-'+grade+' course-coming';const caption=make('div');caption.className='course-caption';caption.append(make('h3',grade+' класс'),make('p','Слова появятся позже'),make('span','Скоро'));card.append(caption);courseCards.append(card)}

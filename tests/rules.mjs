@@ -69,7 +69,7 @@ try {
   /* 4. games right after the word set: no route step */
   await page.goto(BASE + '#/lesson/2/0'); await page.locator('#launcher').waitFor();
   assert.equal(await page.locator('.route-tools, .route-pickbar, .route-banner').count(), 0);
-  assert.ok(await page.locator('#wordSetBar').isVisible() && await page.locator('.mode[data-mode=spell]').isVisible());
+  assert.ok(await page.locator('#lessonWords').isVisible() && await page.locator('.mode[data-mode=spell]').isVisible());
   ok('lesson: word set, then all the games — no «Пройти по порядку / Выбрать игры»');
 
   /* 5. teacher: no «train» block, no time limit, words chosen inside the materials; mixed test has no timer */

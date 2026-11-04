@@ -28,7 +28,7 @@ function expectBook(st, g, mode, what) {
   assert.equal(st.wb, g, what + ': whole-book context');
   assert.deepEqual(st.grades, [g], what + ': every word is from Spotlight ' + g);
   assert.equal(st.key, `B${g}|${mode}`, what + ': progress is kept for Spotlight ' + g);
-  assert.match(st.crumbs, new RegExp('Spotlight ' + g + '.*Весь учебник'), what + ': breadcrumbs');
+  assert.match(st.crumbs, new RegExp(g + ' класс.*Весь учебник'), what + ': breadcrumbs');
 }
 async function finishRound(page) {
   for (let i = 0; i < 60 && !(await page.locator('#play .lesson-result').count()); i++) {
@@ -58,7 +58,7 @@ try {
     expectBook(await state(page), g, 'quiz', 'Spotlight ' + g + ' after reload');
     await page.locator('#back').click();
     assert.equal(await page.evaluate(() => location.hash), `#/course/${g}/0`, 'back → the same book');
-    assert.equal(await page.locator('#courseTitle').innerText(), 'Spotlight ' + g);
+    assert.equal(await page.locator('#courseTitle').innerText(), g + ' класс');
   }
   ok('Spotlight 2–9: words, title, progress, next round, reload and «назад» stay in the chosen book');
 
@@ -70,7 +70,7 @@ try {
     await page.goto(BASE + `#/course/${to}/0`); await page.locator('#wholeBookOpen').click();
     await page.locator(`.wb-mode[data-wb-mode=${mode}]`).click();
     if (mode === 'mixed') { await page.getByRole('button', { name: 'Выбрать все' }).click(); await page.getByRole('button', { name: 'Начать раунд →' }).click(); }
-    if (mode === 'boss') { await page.locator('.boss-setup h2', { hasText: 'Spotlight ' + to }).waitFor(); await page.getByRole('button', { name: 'Начать тест →' }).click(); }
+    if (mode === 'boss') { await page.locator('.boss-setup h2', { hasText: to + ' класс' }).waitFor(); await page.getByRole('button', { name: 'Начать тест →' }).click(); }
     expectBook(await state(page), to, mode, `switch ${from} → ${to} (${mode})`);
   }
   ok('switching 2 → 5, 5 → 9, 9 → 3 (several games, final test, one game): always the newly chosen book');

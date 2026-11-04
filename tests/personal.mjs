@@ -68,7 +68,7 @@ try {
   assert.match(await page.locator('#wordsDone').innerText(), /Тренировать выбранные \(10\)/);
   const chosen = await page.evaluate(() => selectedWords().map(w => w.id).sort());
   await page.locator('#wordsDone').click();
-  assert.match(await page.locator('#wordSetBar .wordset-btn.on').innerText(), /Выбранные/);
+  assert.match(await page.locator('#lwStatus').innerText(), /Выбрано: 10 из/);
   for (const mode of ['quiz', 'spell', 'truefalse', 'builder']) {
     await page.goto(BASE + '#/lesson/6/m1'); await page.locator('#launcher').waitFor();
     await page.locator('#launcher .mode[data-mode=' + mode + ']').click();
@@ -76,17 +76,17 @@ try {
     assert.ok(used.length && used.every(id => chosen.includes(id)), mode + ' uses only the 10 chosen words');
   }
   // switch to all words and back to my chosen 10 — the choice is not lost
-  await page.goto(BASE + '#/lesson/6/m1'); await page.locator('#wordSetBar').waitFor();
-  await page.locator('#wordSetBar [data-set=all]').click();
+  await page.goto(BASE + '#/lesson/6/m1'); await page.locator('#lessonWords').waitFor();
+  await page.locator('#all').click();
   assert.equal(await page.evaluate(() => selectedWords().length), total);
-  await page.locator('#wordSetBar [data-set=chosen]').click();
+  await page.locator('#lwMine').click();
   assert.deepEqual(await page.evaluate(() => selectedWords().map(w => w.id).sort()), chosen);
   ok('word choice: «Выбрано 10 из ' + total + '», «Тренировать выбранные (10)», 4 games use only them; all ↔ chosen keeps the choice');
 
   /* 3. Too few words: the lesson explains it in plain words */
   await page.goto(BASE + '#/lesson/6/m1/words'); await page.locator('#none').click(); await page.locator('#words input').first().check();
   await page.goto(BASE + '#/lesson/6/m1');
-  assert.match(await page.locator('.wordset-msg').innerText(), /минимум 2 слова/);
+  assert.match(await page.locator('#lwNote').innerText(), /минимум 2 слова/);
   await page.locator('#launcher .mode[data-mode=quiz]').click();
   await page.locator('.lx-notice').waitFor(); assert.match(await page.locator('.lx-notice').innerText(), /минимум два слова/i);
   await page.locator('.lx-notice button', { hasText: 'Закрыть' }).click();
@@ -102,7 +102,7 @@ try {
   await page.reload(); await page.locator('#words .wordrow').first().waitFor();
   assert.equal(await page.locator('#words .wordrow.is-hard').count(), 3, 'hard words survive reload');
   await page.goto(BASE + '#/lesson/6/m1');
-  await page.locator('#wordSetBar [data-set=hard]').click();
+  await page.locator('#lwHard').click();
   assert.deepEqual(await page.evaluate(() => selectedWords().map(w => w.id).sort()), [...hardIds].sort());
   await page.locator('#launcher .mode[data-mode=spell]').click();
   assert.ok((await page.evaluate(() => game.words.map(w => w.id))).every(id => hardIds.includes(id)), 'game uses only hard words');
@@ -135,8 +135,8 @@ try {
   assert.match(await page.locator('#classBar').innerText(), /Твой класс — 6, он не изменится/);
   await page.locator('#lessonCards a.lesson-card').nth(1).click(); await page.locator('#launcher').waitFor();
   await page.goto(BASE + '#/home');
-  assert.match(await page.locator('.desk-class').innerText(), /Spotlight 6/);
-  assert.match(await page.locator('.desk-continue').innerText(), /Spotlight 5/, 'continue shows the last opened lesson (5th grade)');
+  assert.match(await page.locator('.desk-class').innerText(), /6 класс/);
+  assert.match(await page.locator('.desk-continue').innerText(), /5 класс/, 'continue shows the last opened lesson (5th grade)');
   await page.locator('.desk-class a.btn').click(); await page.waitForURL(/#\/course\/6\/0$/);
   ok('temporary 5th grade: main class stays 6 on home and «Открыть уроки» leads to Spotlight 6; continue card points to the 5th-grade lesson');
 
@@ -173,7 +173,7 @@ try {
     await m.goto(BASE + '#/home'); await m.locator('.class-picker button', { hasText: /^7$/ }).click(); await m.waitForURL(/#\/course\/7\/0$/);
     await m.goto(BASE + '#/course/7/1'); await m.locator('#favToggle').click();
     await m.goto(BASE + '#/lesson/7/m1/words'); await m.locator('#words .star-btn').first().click();
-    await m.goto(BASE + '#/lesson/7/m1'); await m.locator('#wordSetBar').waitFor();
+    await m.goto(BASE + '#/lesson/7/m1'); await m.locator('#lessonWords').waitFor();
     for (const path of ['#/home', '#/lesson/7/m1/words', '#/lesson/7/m1', '#/course/7/1']) {
       await m.goto(BASE + path); await m.waitForTimeout(150);
       const over = await m.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

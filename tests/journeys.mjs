@@ -52,13 +52,13 @@ async function scenario(viewport){
  assert.ok(await page.locator('#lexigoPrint .print-key li').count()>0,'Separate answer key generated');
  await page.locator('#showReport').click();
  assert.ok(await page.locator('#reportContent table tbody tr').count()>0);
- const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexi_spotlight.*csv/);
+ const downloadPromise=page.waitForEvent('download');await page.locator('#exportReport').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/lexi_class.*csv/);
  await page.locator('#roleSwitch').click();
  assert.equal(await page.locator('#roleSwitch').getAttribute('aria-pressed'),'false');
- await page.locator('#openWords').click();
- await page.locator('#book').waitFor({state:'visible'});
- await page.locator('#book').selectOption('3');
- assert.ok((await page.locator('#currentLessonDetail').innerText()).includes('Spotlight 3'));
+ await page.locator('#changeLesson').click();await page.locator('#courseTabs a',{hasText:'3 класс'}).click();await page.locator('#lessonCards .lesson-card').nth(1).click();
+ await page.locator('#lessonWords .wordrow').first().waitFor();
+ assert.ok((await page.locator('#currentLessonDetail').innerText()).includes('3 класс'));
+ assert.equal(await page.locator('#lessonWords .wordrow').count(),await page.evaluate(()=>scope.length));
  await page.close();
 }
 try{

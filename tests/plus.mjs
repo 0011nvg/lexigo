@@ -62,7 +62,8 @@ try {
   await page.evaluate(() => { selected = new Set([scope.find(w => /^[a-z]+$/i.test(w.en)).id]); renderWords(); });
   await page.locator('.mode[data-mode=quiz]').click();
   await page.locator('.lx-notice').waitFor(); assert.match(await page.locator('.lx-notice').innerText(), /минимум два слова/);
-  await page.locator('.lx-notice .btn', { hasText: 'Выбрать слова' }).click(); await page.waitForURL(/\/words$/);
+  await page.locator('.lx-notice .btn', { hasText: 'Выбрать слова' }).click(); await page.waitForURL(/#\/lesson\/4\/3$/); await page.waitForTimeout(300);
+  assert.ok(Math.abs(await page.evaluate(() => document.getElementById('lessonWords').getBoundingClientRect().top)) < 120, '«Выбрать слова» scrolls to the lesson dictionary');
   await page.locator('#all').click();
   ok('edge cases: empty choice blocked, one word → Lexi explains the minimum and offers to pick more');
 

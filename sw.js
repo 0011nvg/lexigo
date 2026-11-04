@@ -1,6 +1,6 @@
 /* LEXI: static assets only. Account, API and HTML responses are never cached. */
 'use strict';
-const CACHE = 'lexi-static-v1';
+const CACHE = 'lexi-static-v2';
 const PREFIX = 'lexi-static-';
 const BASE = new URL(self.registration.scope);
 const OFFLINE = new URL('offline.html', BASE).href;
@@ -22,7 +22,10 @@ function isStatic(request, url) {
   if (Array.from(url.searchParams.keys()).some(key => key !== 'v')) return false;
   const rel = url.pathname.slice(BASE.pathname.length);
   if (/^(?:config\.js|sw\.js|pwa-register\.js)$/i.test(rel)) return false;
-  return /^(?:[a-z0-9_-]+\.(?:js|css)|vocabulary\/[a-z0-9_-]+\.js|assets\/[a-z0-9_./-]+\.(?:woff2?|png|jpe?g|svg|webp|ico))$/i.test(rel);
+  // HTML is always fresh; pairing it with an older JS/CSS fallback can corrupt
+  // behavior or lose answers. Keep executable code, styles and vocabulary on
+  // the network until there is an atomic, content-versioned release strategy.
+  return /^assets\/[a-z0-9_./-]+\.(?:woff2?|png|jpe?g|svg|webp|ico)$/i.test(rel);
 }
 async function trim(cache) {
   const keys = await cache.keys();

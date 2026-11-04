@@ -19,14 +19,21 @@ const wait=[]; listeners.install({waitUntil:p=>wait.push(p)}); await Promise.all
 listeners.activate({waitUntil:p=>wait.push(p)}); await Promise.all(wait); assert.equal(claimed,0, 'activation must not take over open pages');
 function request(url, mode='no-cors', headers={}) { return {url,method:'GET',mode,headers:new Headers(headers)}; }
 async function run(req) { let response; const jobs=[]; listeners.fetch({request:req,respondWith:p=>response=p,waitUntil:p=>jobs.push(p)}); if(response) await response; await Promise.all(jobs); return response; }
-await run(request('https://example.test/lexigo/world.css?v=1')); assert(stored.has('https://example.test/lexigo/world.css?v=1')); assert.equal(clones,1,'body cloned before page receives it');
-await run(request('https://example.test/lexigo/vocabulary/spotlight-5.js?v=1')); assert(stored.has('https://example.test/lexigo/vocabulary/spotlight-5.js?v=1')); 
-for (const url of ['https://example.test/lexigo/config.js','https://example.test/lexigo/world.css?token=secret','https://example.test/lexigo/api/data.js','https://remote.test/a.js','https://example.test/other/a.js']) {
+await run(request('https://example.test/lexigo/assets/lexi-icon-192.png?v=1')); assert(stored.has('https://example.test/lexigo/assets/lexi-icon-192.png?v=1')); assert.equal(clones,1,'body cloned before page receives it');
+for (const url of ['https://example.test/lexigo/config.js','https://example.test/lexigo/world.css?v=1','https://example.test/lexigo/cloud.js?v=1','https://example.test/lexigo/vocabulary/spotlight-5.js?v=1','https://example.test/lexigo/assets/icon.svg?token=secret','https://example.test/lexigo/api/data.js','https://remote.test/a.js','https://example.test/other/a.js']) {
   assert.equal(await run(request(url)),undefined,'not intercepted: '+url); assert(!stored.has(url));
 }
-assert.equal(await run(request('https://example.test/lexigo/world.css?v=2','no-cors',{authorization:'Bearer test'})),undefined);
+assert.equal(await run(request('https://example.test/lexigo/assets/icon.svg?v=2','no-cors',{authorization:'Bearer test'})),undefined);
 await run(request('https://example.test/lexigo/auth.html?token=private','navigate')); assert(![...stored.keys()].some(k=>k.includes('token=private')));
 fail=true; const fallback=await run(request('https://example.test/lexigo/auth.html?token=private','navigate')); assert.equal((await fallback).body,'offline');
-assert(await run(request('https://example.test/lexigo/world.css?v=1')));
+assert(await run(request('https://example.test/lexigo/assets/lexi-icon-192.png?v=1')));
+// Even if a previous release left code under the same URL in Cache Storage,
+// an HTML update must never receive that stale executable code as a fallback.
+stored.set('https://example.test/lexigo/cloud.js?v=1', {body:'old-code'});
+assert.equal(await run(request('https://example.test/lexigo/cloud.js?v=1')), undefined, 'old code is not served during a partial outage');
+const shell = readFileSync(new URL('../offline.html',import.meta.url),'utf8');
+assert.match(shell, /Нет подключения|интернет отключился/i);
+assert.match(shell, /location\.reload\(\)/, 'retry reloads the original navigation, including auth callbacks');
+assert.doesNotMatch(shell, /<script\s+src=|<img\s+src=/i, 'offline shell needs no uncached external resources');
 assert.equal(listeners.message, undefined, 'no forced activation while other tabs may be playing');
 console.log('PASS PWA worker: scoped static cache, private/API bypass, offline fallback and safe update waiting');

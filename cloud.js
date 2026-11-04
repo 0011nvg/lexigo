@@ -41,13 +41,13 @@
   function metaFromContext() {
     try {
       const wb = window.LexigoWholeBook && window.LexigoWholeBook.current;
-      if (wb) return { scope: 'book', grade: Number(wb.grade), title: 'Spotlight ' + wb.grade + ' · весь учебник' };
+      if (wb) return { scope: 'book', grade: Number(wb.grade), title: wb.grade + ' класс' + ' · весь учебник' };
       if (typeof book === 'undefined' || !book) return { scope: 'other' };
       const all = unit === '__all';
       const modules = [...new Set(book.sections.map(s => s.module))];
       const key = all ? 'm' + modules.indexOf(mod) : String(unit);
       return { scope: all ? 'module' : 'lesson', grade: Number(book.grade), section_index: all ? null : Number(unit), route: '/lesson/' + book.grade + '/' + key,
-        title: 'Spotlight ' + book.grade + ' · ' + (all ? mod : (book.sections[Number(unit)] || {}).title || mod) };
+        title: book.grade + ' класс' + ' · ' + (all ? mod : (book.sections[Number(unit)] || {}).title || mod) };
     } catch { return { scope: 'other' }; }
   }
   const origStart = start;

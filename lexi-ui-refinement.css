@@ -63,3 +63,20 @@
   height: 20px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' fill='none'%3E%3Cpath d='M3 10h20M16 3l7 7-7 7' stroke='white' stroke-width='3.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+
+/* Distinct, consistent symbols for practice modes. */
+.dashboard-games .mode-symbol{width:48px;height:48px;border-radius:16px;flex:none;background:var(--mode-bg,#eaf1ff);color:var(--mode-fg,#2c56df)}
+.dashboard-games .mode-symbol svg{width:28px;height:28px}
+.mode-symbol-cards{--mode-bg:#e9efff;--mode-fg:#365ee7}
+.mode-symbol-quiz{--mode-bg:#e6f8ed;--mode-fg:#238b5c}
+.mode-symbol-spell{--mode-bg:#fff3d8;--mode-fg:#a46a0a}
+.mode-symbol-pairs{--mode-bg:#f2eaff;--mode-fg:#8151bf}
+.mode-symbol-truefalse{--mode-bg:#e5f7f7;--mode-fg:#118388}
+.mode-symbol-fix{--mode-bg:#ffedf0;--mode-fg:#c25170}
+.mode-symbol-audio{--mode-bg:#e9edff;--mode-fg:#4e5fd0}
+.mode-symbol-crystals{--mode-bg:#e1f7ff;--mode-fg:#078bb9}
+.mode-symbol-boss{--mode-bg:#fff2d5;--mode-fg:#ac740b}
+.mode-symbol-mixed{--mode-bg:#edf7df;--mode-fg:#5e8e23}
+.mode-symbol-builder{--mode-bg:#fff0e5;--mode-fg:#c66b25}
+.mode-symbol-listen{--mode-bg:#e9f5ff;--mode-fg:#1e75bc}
+.mode-symbol-review{--mode-bg:#f1edff;--mode-fg:#7055bb}

@@ -13,7 +13,7 @@ const MIX=[['quiz','Выбери перевод'],['truefalse','Верно / н�
 const MIX_KEY='lexigo_wb_mix_types';
 const SINGLE=/^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/;
 const panel=document.createElement('section');panel.className='wb-panel';panel.id='wholeBookPanel';panel.setAttribute('aria-labelledby','wholeBookTitle');
-panel.innerHTML='<div class="wb-head"><span class="wb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20"/><path d="M9 8h7M9 12h5"/></svg></span><div class="wb-copy"><strong id="wholeBookTitle">Хочешь повторить весь учебник?</strong><p>Слова из всех модулей <span id="wholeBookLabel">Spotlight</span> — в любимых играх, по 15 слов за раунд.</p></div><button id="wholeBookOpen" class="wb-toggle" type="button" aria-expanded="false" aria-controls="wholeBookBody">Выбрать игру <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div><div class="wb-body" id="wholeBookBody"><div><div class="wb-inner"><p>Слова идут по порядку: раунд 1 — первые 15 слов, раунд 2 — следующие, пока не пройдёшь весь учебник. Прогресс сохраняется для каждой игры.</p><div id="wholeBookModes" class="wb-grid"></div></div></div></div>';
+panel.innerHTML='<div class="wb-head"><span class="wb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20"/><path d="M9 8h7M9 12h5"/></svg></span><div class="wb-copy"><strong id="wholeBookTitle">Хочешь повторить весь учебник?</strong><p>Слова из всех модулей <span id="wholeBookLabel">учебника</span> — в любимых играх, по 15 слов за раунд.</p></div><button id="wholeBookOpen" class="wb-toggle" type="button" aria-expanded="false" aria-controls="wholeBookBody">Выбрать игру <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div><div class="wb-body" id="wholeBookBody"><div><div class="wb-inner"><p>Слова идут по порядку: раунд 1 — первые 15 слов, раунд 2 — следующие, пока не пройдёшь весь учебник. Прогресс сохраняется для каждой игры.</p><div id="wholeBookModes" class="wb-grid"></div></div></div></div>';
 host.append(panel);
 const toggle=panel.querySelector('#wholeBookOpen'),body=panel.querySelector('#wholeBookBody'),modes=panel.querySelector('#wholeBookModes');
 body.inert=true;
@@ -30,7 +30,7 @@ const sizeOf=mode=>window.LexiRounds?LexiRounds.sizeFor(mode):15;
 function adoptOld(grade,mode){try{const k='lexigo_whole_book_v1_'+grade+'_'+mode,x=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(x)&&x.length)LexiRounds.adopt(roundKey(grade,mode),x)}catch{}}
 function tile(title,sub,pct,onClick,extra){const btn=document.createElement('button');btn.type='button';btn.className='wb-mode'+(extra?' '+extra:'');const label=document.createElement('b');label.textContent=title;const s=document.createElement('small');s.textContent=sub;btn.append(label,s);if(pct!=null){const meter=document.createElement('span');meter.className='wb-meter';const fill=document.createElement('i');fill.style.width=pct+'%';meter.append(fill);btn.append(meter)}btn.addEventListener('click',onClick);return btn}
 function progressText(i,sep=' · '){return i.complete?'Все '+i.total+' пройдены'+sep+'начать заново':i.done+' из '+i.total+' '+LexiRounds.ofWords(i.total)+sep+'раунд '+i.round+' из '+i.rounds}
-function render(){const b=selectedBook();if(!b||!window.LexiRounds)return;const words=lexical(b);document.getElementById('wholeBookLabel').textContent='Spotlight '+b.grade;modes.replaceChildren();
+function render(){const b=selectedBook();if(!b||!window.LexiRounds)return;const words=lexical(b);document.getElementById('wholeBookLabel').textContent=b.grade+' класс';modes.replaceChildren();
  for(const [mode,title] of configs){if(mode==='audio'&&typeof audioAvailable==='function'&&!audioAvailable())continue;if(mode==='listen'&&typeof audioAvailable==='function'&&!audioAvailable())continue;
   const eligible=eligibleFor(words,mode);if(!eligible.length)continue;adoptOld(b.grade,mode);
   const btn=tile(title,'',null,()=>play(b,mode));
@@ -49,11 +49,11 @@ function render(){const b=selectedBook();if(!b||!window.LexiRounds)return;const 
 function setOpen(on){panel.classList.toggle('open',on);toggle.setAttribute('aria-expanded',String(on));body.inert=!on;toggle.firstChild.textContent=on?'Свернуть ':'Выбрать игру '}
 function useBook(b){try{if(typeof book!=='undefined'&&book&&String(book.grade)!==String(b.grade)){document.getElementById('book').value=String(b.grade);changeBook()}}catch{}}
 function begin(b,mode,pool,types){if(!window.LexiRounds||!pool.length)return;setOpen(false);useBook(b);window.LexigoWholeBook.current={grade:b.grade,mode};
- const ok=LexiRounds.launch({key:roundKey(b.grade,mode),pool,mode,types,size:sizeOf(mode),pick:mode==='pairs'&&typeof uniquePairs==='function'?uniquePairs:null,label:'Spotlight '+b.grade+' · весь учебник'});
+ const ok=LexiRounds.launch({key:roundKey(b.grade,mode),pool,mode,types,size:sizeOf(mode),pick:mode==='pairs'&&typeof uniquePairs==='function'?uniquePairs:null,label:b.grade+' класс'+' · весь учебник'});
  if(!ok||!game)window.LexigoWholeBook.current=null}
 function play(b,mode){const pool=eligibleFor(lexical(b),mode);begin(b,mode,pool,mode==='crystals'?['quiz','truefalse','fix']:undefined)}
 function review(b){const hard=lexical(b).filter(w=>typeof isReviewWord==='function'&&isReviewWord(w));if(!hard.length){window.LexiQuest?.toast('Ошибок и слов для повторения пока нет. Отличная работа!','happy');return}setOpen(false);useBook(b);window.LexigoWholeBook.current={grade:b.grade,mode:'review'};start('review',typeof lexiRound==='function'?lexiRound(hard,12):hard.slice(0,12));if(!game)window.LexigoWholeBook.current=null}
-function boss(b){const pool=eligibleFor(lexical(b),'boss');if(window.LexigoPlus&&window.LexigoPlus.bossDialog)window.LexigoPlus.bossDialog(t=>begin(b,'boss',pool,t),{pool,key:roundKey(b.grade,'boss'),title:'весь Spotlight '+b.grade});else begin(b,'boss',pool)}
+function boss(b){const pool=eligibleFor(lexical(b),'boss');if(window.LexigoPlus&&window.LexigoPlus.bossDialog)window.LexigoPlus.bossDialog(t=>begin(b,'boss',pool,t),{pool,key:roundKey(b.grade,'boss'),title:'весь учебник · '+b.grade+' класс'});else begin(b,'boss',pool)}
 /* «Несколько игр»: выбор одной, нескольких или всех игр; выбор живёт до конца сессии браузера */
 function savedMix(){try{const x=JSON.parse(sessionStorage.getItem(MIX_KEY)||'null');if(Array.isArray(x)){const t=x.filter(v=>MIX.some(m=>m[0]===v));if(t.length)return t}}catch{}return ['quiz','builder','spell']}
 function mixDialog(b){
@@ -62,7 +62,7 @@ function mixDialog(b){
  document.querySelector('.lx-notice')?.remove();
  const box=document.createElement('div');box.className='lx-notice boss-setup wb-mix-setup';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-labelledby','wbMixTitle');
  const card=document.createElement('div');card.className='lx-notice-card';
- const h=document.createElement('h2');h.id='wbMixTitle';h.textContent='Несколько игр · Spotlight '+b.grade;
+ const h=document.createElement('h2');h.id='wbMixTitle';h.textContent='Несколько игр · '+b.grade+' класс';
  const words=lexical(b),i=LexiRounds.info(roundKey(b.grade,'mixed'),words,15);
  const info=document.createElement('p');info.className='boss-words';info.textContent='Слова учебника по порядку, по 15 за раунд · '+progressText(i)+'. Задания чередуются.';
  const h3=document.createElement('h3');h3.textContent='Какие игры включить?';

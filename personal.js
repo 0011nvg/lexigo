@@ -221,7 +221,7 @@
     bar.replaceChildren();
     if (g === b.grade) bar.append(el('span', 'class-badge', '★ Мой класс'));
     else {
-      bar.append(el('span', 'class-other', g ? 'Ты смотришь Spotlight ' + b.grade + '. Твой класс — ' + g + ', он не изменится.' : 'Это твой класс?'));
+      bar.append(el('span', 'class-other', g ? 'Ты смотришь ' + b.grade + ' класс. Твой класс — ' + g + ', он не изменится.' : 'Это твой класс?'));
       bar.append(btn(g ? 'Сделать моим классом' : 'Да, я в ' + b.grade + ' классе', () => { setMyClass(b.grade); toast('Готово! Теперь твой класс — ' + b.grade + '.', 'happy'); }, 'btn small secondary'));
     }
     document.querySelectorAll('#courseTabs a').forEach(a => a.classList.toggle('my-class-tab', g != null && /\/course\/(\d+)/.exec(a.getAttribute('href'))?.[1] === String(g)));

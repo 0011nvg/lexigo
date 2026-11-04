@@ -23,6 +23,7 @@
   }
   async function copy(text, ok) { try { await navigator.clipboard.writeText(text); toast(ok); } catch { dialog('Скопируйте вручную', h('input', { class: 'acc-input', value: text, readonly: true, onfocus: e => e.target.select() })); } }
   const plural = (n, a, b, c) => { n = Math.abs(n) % 100; const n1 = n % 10; return n > 10 && n < 20 ? c : n1 > 1 && n1 < 5 ? b : n1 === 1 ? a : c; };
+  const displaySessionTitle = value => String(value).replace(/Spotlight\s+(\d+)/gi, '$1 класс');
   const daysAgo = d => Math.floor((Date.now() - Date.parse(d)) / 864e5);
   const relDay = d => { const n = daysAgo(d); return n <= 0 ? 'сегодня' : n === 1 ? 'вчера' : n + ' ' + plural(n, 'день', 'дня', 'дней') + ' назад'; };
   const isLearned = r => r.recall_count >= 2 && r.streak >= 2;
@@ -114,7 +115,7 @@
     const hero = h('section', { class: 'st-hero span-12', 'aria-label': 'Мой уровень' },
       h('div', null,
         h('h2', { text: greeting + ', ' + profile.display_name + '!' }),
-        h('p', { text: last ? 'В прошлый раз: ' + (last.title || C.MODES[last.mode] || 'тренировка') + ' · ' + relDay(last.created_at) : 'Выбери учебник — и начнём собирать слова!' }),
+        h('p', { text: last ? 'В прошлый раз: ' + displaySessionTitle(last.title || C.MODES[last.mode] || 'тренировка') + ' · ' + relDay(last.created_at) : 'Выбери учебник — и начнём собирать слова!' }),
         h('div', { class: 'lvl' }, h('b', { text: lv.level }), h('div', { style: { flex: '1' } },
           h('div', { class: 'bar' }, h('i', { style: { width: Math.round((lv.xp - lv.from) / (lv.to - lv.from) * 100) + '%' } })),
           h('small', { text: lv.title + ' · ' + stats.xp + ' XP · до уровня ' + (lv.level + 1) + ': ' + (lv.to - lv.xp) + ' XP' }))),
@@ -146,7 +147,7 @@
     for (const g of gradesShown) {
       const b = DB.books.find(x => x.grade === g), total = lexicalCount(b), st = byGrade.get(g);
       books.append(h('div', { class: 'book-row' }, h('span', { class: 'book-badge', text: g }),
-        h('div', null, h('b', { text: 'Spotlight ' + g }), h('small', { text: 'встречено ' + st.touched + ' из ' + total + ' · изучено ' + st.learned }), h('div', { class: 'bar' }, h('i', { style: { width: Math.min(100, Math.round(st.touched / total * 100)) + '%' } }))),
+        h('div', null, h('b', { text: g + ' класс' }), h('small', { text: 'встречено ' + st.touched + ' из ' + total + ' · изучено ' + st.learned }), h('div', { class: 'bar' }, h('i', { style: { width: Math.min(100, Math.round(st.touched / total * 100)) + '%' } }))),
         h('a', { class: 'btn-acc ghost small', href: 'index.html#/course/' + g + '/0', text: 'Открыть' })));
     }
 
@@ -158,7 +159,7 @@
     if (!sessions.length) hist.append(h('div', { class: 'empty', text: 'История появится после первой тренировки.' }));
     for (const s of sessions.slice(0, 15)) {
       const assessed = s.correct + s.wrong;
-      hist.append(h('div', { class: 'row' }, h('div', { class: 'row-main' }, h('b', { text: (s.title || 'Тренировка') }), h('small', { text: (C.MODES[s.mode] || s.mode) + ' · ' + C.fmtDate(s.created_at, true) + (s.finished ? '' : ' · не завершена') })),
+      hist.append(h('div', { class: 'row' }, h('div', { class: 'row-main' }, h('b', { text: displaySessionTitle(s.title || 'Тренировка') }), h('small', { text: (C.MODES[s.mode] || s.mode) + ' · ' + C.fmtDate(s.created_at, true) + (s.finished ? '' : ' · не завершена') })),
         assessed ? h('span', { class: 'score', title: 'Верно с первой попытки', text: s.accuracy != null ? s.accuracy + '%' : s.correct + '/' + assessed }) : null,
         s.xp ? h('span', { class: 'chip blue', text: '+' + s.xp + ' XP' }) : null));
     }
@@ -366,7 +367,7 @@
       if (state.source === 'lesson') { const l = T.lessons.find(x => x.id === state.lesson); return l ? l.title : 'Мой урок'; }
       const b = DB.books.find(x => x.grade === state.grade), list = [...state.sections].sort((x, y) => x - y);
       const m = modules(b)[state.module];
-      return 'Spotlight ' + state.grade + ' · ' + m + (list.length === 1 ? ' · ' + b.sections[list[0]].title : '');
+      return state.grade + ' класс' + ' · ' + m + (list.length === 1 ? ' · ' + b.sections[list[0]].title : '');
     }
     function draw() {
       const g = T.groups.find(x => x.id === state.group), ms = T.members.filter(m => m.group_id === state.group);
@@ -375,12 +376,12 @@
         h('label', { class: 'acc-field', style: { marginTop: '10px', marginBottom: 0 } }, h('span', { text: 'Ученики' }),
           h('select', { onchange: e => { state.student = e.target.value; } }, h('option', { value: '', text: 'Вся группа «' + (g ? g.name : '') + '» (' + ms.length + ')' }), ms.map(m => h('option', { value: m.student_id, selected: state.student === m.student_id, text: studentName(m.student_id) })))));
       const step2 = h('div', { class: 'wiz-step' }, h('h3', null, h('i', { text: '2' }), 'Что повторяем'),
-        h('div', { class: 'seg' }, h('button', { type: 'button', 'aria-pressed': String(state.source === 'book'), text: '📘 Учебник Spotlight', onclick: () => { state.source = 'book'; draw(); } }), h('button', { type: 'button', 'aria-pressed': String(state.source === 'lesson'), text: '✏️ Мой урок', onclick: () => { if (state.source !== 'lesson') { state.source = 'lesson'; useLessonModes(); } draw(); } })));
+        h('div', { class: 'seg' }, h('button', { type: 'button', 'aria-pressed': String(state.source === 'book'), text: '📘 Учебник по классу', onclick: () => { state.source = 'book'; draw(); } }), h('button', { type: 'button', 'aria-pressed': String(state.source === 'lesson'), text: '✏️ Мой урок', onclick: () => { if (state.source !== 'lesson') { state.source = 'lesson'; useLessonModes(); } draw(); } })));
       if (state.source === 'book') {
         const b = DB.books.find(x => x.grade === state.grade), mods = modules(b), secs = sectionsOf();
         const grid = h('div', { class: 'lessons-pick' }, secs.map(({ s, i }) => h('label', null, h('input', { type: 'checkbox', checked: state.sections.has(i), onchange: e => { e.target.checked ? state.sections.add(i) : state.sections.delete(i); state.wordIds = null; draw(); } }), h('span', null, s.title, h('small', { class: 'acc-muted', text: ' · ' + s.words.filter(C.isLexical).length + ' сл.' })))));
         step2.append(h('div', { class: 'cab-grid', style: { gap: '10px', marginTop: '10px' } },
-          h('label', { class: 'acc-field span-4', style: { margin: 0 } }, h('span', { text: 'Учебник' }), h('select', { onchange: e => { state.grade = Number(e.target.value); state.module = 0; state.sections.clear(); state.wordIds = null; draw(); } }, DB.books.map(x => h('option', { value: x.grade, selected: x.grade === state.grade, text: 'Spotlight ' + x.grade })))),
+          h('label', { class: 'acc-field span-4', style: { margin: 0 } }, h('span', { text: 'Учебник' }), h('select', { onchange: e => { state.grade = Number(e.target.value); state.module = 0; state.sections.clear(); state.wordIds = null; draw(); } }, DB.books.map(x => h('option', { value: x.grade, selected: x.grade === state.grade, text: x.grade + ' класс' })))),
           h('label', { class: 'acc-field span-8', style: { margin: 0 } }, h('span', { text: 'Модуль' }), h('select', { onchange: e => { state.module = Number(e.target.value); state.sections.clear(); state.wordIds = null; draw(); } }, mods.map((m, i) => h('option', { value: i, selected: i === state.module, text: m }))))),
           h('div', { class: 'sec-title', style: { margin: '12px 0 6px' } }, h('b', { text: 'Уроки модуля' }), h('button', { type: 'button', class: 'btn-link', text: state.sections.size === secs.length ? 'Снять все' : 'Выбрать все', onclick: () => { if (state.sections.size === secs.length) state.sections.clear(); else secs.forEach(x => state.sections.add(x.i)); state.wordIds = null; draw(); } })), grid);
         if (state.sections.size) {

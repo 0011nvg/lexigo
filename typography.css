@@ -1,0 +1,46 @@
+/* LEXI · единая типографика (2026-11-05). Подключается последним на index.html и me.html.
+ *
+ * Аудит показал:
+ *  1. Английские слова в заданиях (заголовок вопроса, карточка) набирались дисплейным Unbounded: в нём
+ *     заглавная I и строчная l — одинаковые палочки, O и 0 почти не различаются, у J широкий крюк без верхней
+ *     перекладины — «некрасивая J». В Nunito (текст, варианты ответов) J опускается ниже строки и при плотном
+ *     межстрочном интервале обрезается снизу.
+ *  2. Начертания Medium (500) и Semibold (600) не были подключены — браузер подменял их на Regular и Bold.
+ *  3. Лигатуры (fi, fl) в упражнениях на написание склеивали буквы.
+ *
+ * Решение — без смены фирменного стиля:
+ *  - Unbounded остаётся для заголовков интерфейса и логотипа, Nunito — для текста интерфейса.
+ *  - Английский учебный текст (слова, варианты, поля ответа, конструктор, списки слов) — Atkinson Hyperlegible Next
+ *    (SIL OFL, шрифт создан для различимости букв: у I засечки, у l хвостик, 0 перечёркнут, 1 с основанием,
+ *    J стоит на строке). Файлы только с латиницей (unicode-range), поэтому кириллица в тех же блоках
+ *    автоматически набирается Nunito — русские подсказки выглядят как раньше.
+ *  - Добавлены Nunito 500/600; синтез «жирного» браузером отключён (font-synthesis-weight). */
+
+@font-face{font-family:'LEXI Latin';font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'LEXI Latin';font-style:normal;font-weight:600;font-display:swap;src:url(assets/fonts/atkinson-hyperlegible-next-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'LEXI Latin';font-style:normal;font-weight:700;font-display:swap;src:url(assets/fonts/atkinson-hyperlegible-next-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'LEXI Latin';font-style:normal;font-weight:800 950;font-display:swap;src:url(assets/fonts/atkinson-hyperlegible-next-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:Nunito;font-weight:500;font-display:swap;src:url(assets/fonts/nunito-cyrillic-500-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:Nunito;font-weight:500;font-display:swap;src:url(assets/fonts/nunito-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:Nunito;font-weight:600;font-display:swap;src:url(assets/fonts/nunito-cyrillic-600-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:Nunito;font-weight:600;font-display:swap;src:url(assets/fonts/nunito-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+:root{--w-learn:'LEXI Latin',Nunito,'Segoe UI',system-ui,-apple-system,Arial,sans-serif}
+html{font-synthesis-weight:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+/* ---------- английский учебный текст ---------- */
+#play .question h2,#play .flash h2,#play .question>p:not(.muted):not(.tiny),
+#play .option,#play .pair,#play .answerbox input,#play .builder-token,#play .builder-line,#play .letter-word .btn,
+#play .feedback,#play .why-box,#play .cq-res-words b,
+.word-en,[lang="en"],.my-word-list b,.ml-words,.words-pick label,.lw-word,.diff{
+ font-family:var(--w-learn)!important;font-variant-ligatures:none;font-kerning:normal}
+#play .question h2,#play .flash h2{font-weight:800!important;letter-spacing:0!important} /* межстрочный интервал не трогаем: его учитывает автоподбор размера (game-engine.js → fitHeading) */
+#play .option,#play .pair{font-weight:700}
+#play .answerbox input{font-weight:600;font-size:max(16px,1em)} /* ≥16px — iPhone не увеличивает страницу при вводе */
+#play .builder-token{letter-spacing:.02em}
+.word-en{letter-spacing:.005em}
+/* без обрезки нижних выносных (g, j, p, y) в плитках и кнопках с плотной строкой */
+#play .pair,#play .option,#play .builder-token{line-height:1.25}
+
+/* ---------- цифры в счётчиках не прыгают ---------- */
+.result-metric strong,.lx-celebrate .lxc-score,#counter,#timer,.pair-hud strong{font-variant-numeric:tabular-nums}

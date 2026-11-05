@@ -124,12 +124,10 @@
       body.append(el('b', 'desk-big', g + ' класс'), linkBtn('Открыть уроки →', '#/course/' + g + '/0', 'btn small'));
       const change = btn('Сменить класс', () => { change.hidden = true; cls.append(classPicker(g, null, ng => { setMyClass(ng); toast('Готово! Твой класс — ' + ng + '.', 'happy'); })); }, 'text-button');
       cls.append(body, el('p', 'desk-note', b.sections.reduce((n, s) => n + s.words.length, 0) + ' слов · ' + modulesOf(b).length + ' модулей'), change);
-    } else {
-      const sug = last ? pathInfo(last.path)?.grade : null;
-      cls.classList.add('desk-new'); cls.querySelector('h3').textContent = 'В каком ты классе?';
-      cls.append(classPicker(null, sug, ng => { setMyClass(ng); location.hash = '#/course/' + ng + '/0'; }), el('p', 'desk-note', 'Выбери один раз — Лекси запомнит. Поменять можно в любой момент.'));
+      desk.append(cls);
     }
-    desk.append(cls);
+    /* 2026-11-05: отдельная плашка «В каком ты классе?» убрана — она дублировала сетку «Выбери учебник» ниже.
+       Класс запоминается, когда ученик открывает учебник («Да, я в 7 классе» на странице учебника) или урок. */
     // 2. «Продолжить обучение» (2026-11-04): одно действие — лимонная кнопка в синем блоке (tuneHero).
     //    Отдельная карточка его дублировала; «Дальше: следующая игра» теперь на самой кнопке, «Повторить» — на странице урока.
     // 3. favourite modules
@@ -157,6 +155,7 @@
       } else c.append(el('p', 'desk-note', 'Отмечай ☆ трудные слова в списке слов урока — потом их можно повторить отдельно.'));
       desk.append(c);
     }
+    if (!desk.children.length) return; // новый ученик: на главной только приветствие и учебники — без пустых карточек
     desk.append(el('p', 'desk-device', '🔒 ' + DEVICE_NOTE + ' На другом устройстве класс, модули и сложные слова нужно будет отметить заново.'));
     (host.querySelector('.lexi-panel') || host.querySelector('.lexi-hero'))?.after(desk);
   }
@@ -193,9 +192,10 @@
         actions.querySelector('.btn.secondary')?.remove();
       }
     } else if (!g) {
-      if (sub) sub.textContent = 'Я помогу выучить английские слова. Выбери свой класс — и начнём!';
+      if (sub) sub.textContent = 'Я помогу выучить английские слова. Выбери свой учебник — и начнём!';
       const go = actions?.querySelector('.hero-go');
-      if (go) { go.href = '#/home'; go.innerHTML = '<span>Выбрать класс</span><small>2–10 классы</small>'; go.onclick = e => { e.preventDefault(); e.stopPropagation(); const p = host.querySelector('.class-picker button'); p?.scrollIntoView({ block: 'center', behavior: 'smooth' }); p?.focus({ preventScroll: true }); }; }
+      /* первое действие нового ученика — к учебникам на этой же странице (без отдельного выбора класса) */
+      if (go) { go.href = '#/home'; go.innerHTML = '<span>Начать учиться</span><small>Выбери свой учебник · 2–10 классы</small>'; go.setAttribute('aria-label', 'Начать учиться: выбери свой учебник'); go.onclick = e => { e.preventDefault(); e.stopPropagation(); const t = $('homeTitle'), first = document.querySelector('#courseCards .course-card'); const smooth = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); (t || first)?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'instant' }); first?.focus({ preventScroll: true }); }; }
     } else {
       const go = actions?.querySelector('.hero-go'); if (go) { go.href = '#/course/' + g + '/0'; go.innerHTML = '<span>Начать</span><small></small>'; go.querySelector('small').textContent = g + ' класс' + ' · выбери урок'; }
     }

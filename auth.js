@@ -9,7 +9,12 @@
   const joinParam = (params.get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   if (joinParam.length === 8) try { sessionStorage.setItem('lexigo_join', joinParam); } catch { /* private mode */ }
   const pendingJoin = () => { try { return sessionStorage.getItem('lexigo_join') || ''; } catch { return ''; } };
-  const safeNext = () => { const n = params.get('next') || ''; return /^(index\.html|me\.html)(\?[A-Za-z0-9=&_-]{0,120})?(#\/[A-Za-z0-9\/_-]{1,120})?$/.test(n) ? n : 'me.html'; };
+  /* 2026-11-05: адрес, куда вернуться после входа (например, урок по ссылке #/l/7/s7_302), запоминается и на время
+     подтверждения почты — письмо открывает auth.html без ?next, а ученик всё равно попадает в свой урок. */
+  const NEXT_RE = /^(index\.html|me\.html)(\?[A-Za-z0-9=&_-]{0,120})?(#\/[A-Za-z0-9\/_-]{1,120})?$/, NEXT_KEY = 'lexigo_auth_next';
+  if (NEXT_RE.test(params.get('next') || '')) try { localStorage.setItem(NEXT_KEY, JSON.stringify({ n: params.get('next'), at: Date.now() })); } catch { /* private mode */ }
+  const storedNext = () => { try { const v = JSON.parse(localStorage.getItem(NEXT_KEY) || 'null'); return v && NEXT_RE.test(v.n) && Date.now() - v.at < 864e5 ? v.n : ''; } catch { return ''; } };
+  const safeNext = () => { const n = params.get('next') || ''; return NEXT_RE.test(n) ? n : storedNext() || 'me.html'; };
   let sb = null, mode = location.hash === '#signup' || pendingJoin() ? 'signup' : 'login';
 
   function msgBox() { return h('p', { class: 'acc-msg', role: 'status' }); }
@@ -198,7 +203,8 @@
     if (code && profile && profile.role === 'student') {
       try { const { data } = await sb.rpc('join_group', { p_code: code }); sessionStorage.removeItem('lexigo_join'); if (data && data.ok) sessionStorage.setItem('lexigo_joined', data.name); } catch { /* shown in the cabinet */ }
     }
-    location.replace(safeNext());
+    const next = safeNext(); try { localStorage.removeItem(NEXT_KEY); } catch { /* ignore */ }
+    location.replace(next);
   }
 
   async function init() {

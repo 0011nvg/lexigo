@@ -42,11 +42,19 @@ try {
   /* 1. New student: chooses 6th grade on the home page → module → training */
   let page = await fresh();
   await page.goto(BASE + '#/home');
-  await page.locator('.desk-new .class-picker').waitFor();
-  assert.match(await page.locator('.lexi-hero-sub').innerText(), /Выбери свой класс/);
+  await page.locator('.lexi-hero .hero-go').waitFor();
+  // 2026-11-05: отдельной плашки «В каком ты классе?» нет — первое действие ведёт к сетке учебников на этой же странице
+  assert.match(await page.locator('.lexi-hero-sub').innerText(), /Выбери свой учебник/);
+  assert.equal(await page.locator('.class-picker').count(), 0, 'no duplicate class picker on the home page');
+  assert.equal(await page.locator('.lexi-desk').count(), 0, 'no empty desk cards for a brand-new student');
   assert.equal(await page.locator('.desk-continue').count(), 0, 'no continue card for a brand-new student');
-  await page.locator('.class-picker button', { hasText: /^6$/ }).click();
+  assert.match(await page.locator('.lexi-hero .hero-go').innerText(), /Начать учиться/);
+  await page.locator('.lexi-hero .hero-go').click();
+  await page.waitForFunction(() => { const r = document.getElementById('homeTitle').getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; });
+  assert.match(page.url(), /#\/home$/, 'the first action stays on the home page and scrolls to the textbooks');
+  await page.locator('#courseCards .course-card.grade-6').click();
   await page.waitForURL(/#\/course\/6\/0$/);
+  await page.locator('#classBar button', { hasText: 'Да, я в 6 классе' }).click();
   assert.equal((await storage(page, 'lexigo_my_class_v1')).grade, 6);
   assert.match(await page.locator('#classBar').innerText(), /Мой класс/);
   await page.locator('#moduleTabs a').nth(1).click();
@@ -56,7 +64,7 @@ try {
   await finishRound(page);
   const last = await storage(page, 'lexigo_last_activity_v1');
   assert.match(last.path, /^\/lesson\/6\/\d+$/); assert.equal(last.mode, 'quiz'); assert.equal(last.finished, true);
-  ok('new student: picks 6th grade once → Spotlight 6 → module 2 → lesson → game; class and finished game remembered');
+  ok('new student: «Начать учиться» → textbooks → Spotlight 6 «Да, я в 6 классе» → module 2 → lesson → game; class and finished game remembered');
 
   /* 2. Choose 10 of 30 words and play several games with exactly these words */
   await page.goto(BASE + '#/lesson/6/m1/words');
@@ -172,7 +180,7 @@ try {
   for (const [name, b] of engines) {
     const { defaultBrowserType, ...iphone } = devices['iPhone 13'];
     const m = await fresh(b, iphone);
-    await m.goto(BASE + '#/home'); await m.locator('.class-picker button', { hasText: /^7$/ }).click(); await m.waitForURL(/#\/course\/7\/0$/);
+    await m.goto(BASE + '#/course/7/0'); await m.locator('#classBar button', { hasText: 'Да, я в 7 классе' }).click();
     await m.goto(BASE + '#/course/7/1'); await m.locator('#favToggle').click();
     await m.goto(BASE + '#/lesson/7/m1/words'); await m.locator('#words .star-btn').first().click();
     await m.goto(BASE + '#/lesson/7/m1'); await m.locator('#lessonWords').waitFor();

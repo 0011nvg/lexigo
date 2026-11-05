@@ -39,7 +39,7 @@
   }
   const canSpeak = () => typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance === 'function';
   function speakEn(text) { // only after a tap — never automatic
-    if (!canSpeak()) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/[⭐😺…]/g, '')); u.lang = 'en-GB'; u.rate = .9; const v = typeof englishVoice === 'function' ? englishVoice() : null; if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* no voice */ }
+    if (!canSpeak()) return; if (window.LexiSpeech) { LexiSpeech.speak(text.replace(/[⭐😺…]/g, ''), { silent: true }); return; } try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/[⭐😺…]/g, '')); u.lang = 'en-GB'; u.rate = .9; const v = typeof englishVoice === 'function' ? englishVoice() : null; if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* no voice */ }
   }
 
   /* Builds the animated Lexi block. Eyelids are positioned over the eyes of assets/lexi-wave.webp (520×520). */

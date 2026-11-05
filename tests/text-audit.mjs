@@ -1,5 +1,5 @@
 // LEXI (2026-11-03): typography audit. Opens the main screens, every game, dialogs and results at 360 / 768 / 1280 px
-// and checks: one brand font family (Nunito / Unbounded) everywhere, no text spilling out of its box or clipped,
+// and checks: brand font families only (Nunito / Unbounded; English learning text — LEXI Latin = Atkinson Hyperlegible Next, 2026-11-05), no text spilling out of its box or clipped,
 // no word broken in the middle across lines, no horizontal page scroll, dropdowns/dialogs inside the screen.
 // LEXIGO_AUDIT_REPORT=1 prints every finding; LEXIGO_AUDIT_SHOTS=dir saves screenshots; LEXIGO_WEBKIT=1 adds WebKit.
 import assert from 'node:assert/strict';
@@ -31,7 +31,7 @@ function auditPage() {
     const s = getComputedStyle(el);
     /* 1. font family */
     const fam = s.fontFamily.split(',')[0].replace(/["']/g, '').trim();
-    if (!/^(Nunito|Unbounded)$/i.test(fam) && /[A-Za-zА-Яа-яЁё]/.test(text) && !seen.has('f' + name(el))) { seen.add('f' + name(el)); out.push('font «' + fam + '» in ' + name(el) + ': ' + text.slice(0, 40)); }
+    if (!/^(Nunito|Unbounded|LEXI Latin)$/i.test(fam) && /[A-Za-zА-Яа-яЁё]/.test(text) && !seen.has('f' + name(el))) { seen.add('f' + name(el)); out.push('font «' + fam + '» in ' + name(el) + ': ' + text.slice(0, 40)); }
     /* 2. text outside its box / outside its scroll-clipping ancestor / outside the screen */
     const range = document.createRange(); range.selectNodeContents(n);
     const rects = [...range.getClientRects()].filter(r => r.width > 0.5);
@@ -60,7 +60,7 @@ function auditPage() {
   for (const el of document.querySelectorAll('input, select, textarea, button')) {
     if (ignored(el) || !visible(el)) continue;
     const fam = getComputedStyle(el).fontFamily.split(',')[0].replace(/["']/g, '').trim();
-    if (!/^(Nunito|Unbounded)$/i.test(fam) && !seen.has('c' + name(el))) { seen.add('c' + name(el)); out.push('control font «' + fam + '» in ' + name(el)); }
+    if (!/^(Nunito|Unbounded|LEXI Latin)$/i.test(fam) && !seen.has('c' + name(el))) { seen.add('c' + name(el)); out.push('control font «' + fam + '» in ' + name(el)); }
   }
   for (const el of document.querySelectorAll('[role=dialog], .lx-notice-card, .cq-word, .toast, [role=listbox], [role=menu]')) {
     if (!visible(el)) continue;

@@ -119,6 +119,8 @@ try {
   const speechPage = await fresh(undefined, () => { window.__spoken = []; if (window.speechSynthesis) speechSynthesis.speak = u => window.__spoken.push(u.text); });
   await speechPage.goto(BASE + '#/lesson/2/5/play/listen');
   await speechPage.locator('#play .options').waitFor();
+  // 2026-11-05: speech.js один раз ждёт асинхронно загружаемые голоса (до 0,6 с) — иначе первое слово мог прочитать русский голос
+  await speechPage.waitForFunction(() => window.__spoken.length >= 1, null, { timeout: 3000 }).catch(() => {});
   assert.ok((await speechPage.evaluate(() => window.__spoken.length)) >= 1, 'autoplay spoke the word');
   assert.equal(await speechPage.evaluate(() => game.activeQuestionMode), 'listen');
   const spoken = await speechPage.evaluate(() => game.words[game.index].en);

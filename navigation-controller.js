@@ -53,6 +53,12 @@
   let number=0;currentCourse.sections.forEach((s,i)=>{if(s.module===ms[moduleIndex]&&s.words.length)add(s.title,s.words.length+' слов',String(i),String(++number).padStart(2,'0'))});
   crumbs([[currentCourse.grade+' класс',null]]);document.title=currentCourse.grade+' класс'+' — LEXI';
  }
+ function stableTarget(grade,key){const b=DB.books.find(x=>String(x.grade)===String(grade));key=String(key||'');if(!b||!key)return null;
+  const isModule=key.startsWith('m-'),id=isModule?key.slice(2):key;
+  let i=b.sections.findIndex(s=>s.words.length&&s.words[0].id===id);if(i<0)i=b.sections.findIndex(s=>s.words.some(w=>w.id===id));if(i<0)return null;
+  if(isModule)return '/lesson/'+b.grade+'/m'+modules(b).indexOf(b.sections[i].module);return '/lesson/'+b.grade+'/'+i}
+ /* постоянный адрес текущего урока или модуля (для «Поделиться») */
+ function stablePath(){if(!book)return null;if(unit==='__all'){const s=book.sections.find(x=>x.module===mod&&x.words.length);return s?'/l/'+book.grade+'/m-'+s.words[0].id:null}const s=book.sections[Number(unit)];return s&&s.words.length?'/l/'+book.grade+'/'+s.words[0].id:null}
  function navigate(path,{replace=false}={}){history[replace?'replaceState':'pushState']({},'','#'+path);render()}
  function render(){
   const route=location.hash.slice(1)||'/home';if(lastURL===route)return;lastURL=route;applying=true;
@@ -60,6 +66,13 @@
    if(game)originalStop();const parts=route.split('/').filter(Boolean);
    /* 2026-11-04: урок учителя по ссылке — #/s/<токен> (короткий адрес для учеников) → страница урока #/my/s-<токен> */
    if(parts[0]==='s'){const tok=String(parts[1]||'').toLowerCase();lastURL='';history.replaceState({},'','#'+(/^[0-9a-f]{32}$/.test(tok)?'/my/s-'+tok:'/my/s-invalid'));render();return}
+   /* 2026-11-05: постоянная ссылка на урок или модуль учебника — #/l/<класс>/<id первого слова урока> и #/l/<класс>/m-<id первого слова модуля>.
+      Id слов не меняются при обновлениях словаря (новые слова добавляются в конец), поэтому ссылка не «съезжает» на другой урок,
+      даже если порядок разделов когда-нибудь изменится. Хвост адреса (/play/quiz) сохраняется. */
+   if(parts[0]==='l'){const target=stableTarget(parts[1],parts[2]);lastURL='';
+    if(target){try{sessionStorage.setItem('lexigo_via_link',location.hash.slice(1))}catch{}history.replaceState({},'','#'+target+(parts.length>3?'/'+parts.slice(3).join('/'):''))}
+    else{const known=DB.books.some(b=>String(b.grade)===parts[1]);history.replaceState({},'','#'+(known?'/course/'+parts[1]+'/0':'/lessons'));setTimeout(()=>window.LexiQuest?.toast('Урок по этой ссылке не найден. Выбери урок в списке.','think'),400)}
+    render();return}
    if(parts[0]!=='my')custom=null;
    if(parts[0]==='my'&&MY_KEY.test(parts[1]||'')){
     const ML=window.LexigoMyLessons,mode=parts[2]==='play'&&Object.hasOwn(modeNames,parts[3])?parts[3]:null;
@@ -98,7 +111,7 @@
  function wholeBook(){const w=window.LexigoWholeBook&&window.LexigoWholeBook.current;return w&&DB.books.some(b=>String(b.grade)===String(w.grade))?w:null}
  function bookCrumbs(g,mode){crumbs([[g+' класс','/course/'+g+'/0'],['Весь учебник · '+modeNames[mode],null]])}
  /* для страниц уроков учителя (my-lessons.js) */
- window.LexigoNav=Object.freeze({navigate,crumbs,show,focusPage,setCustom(ctx){custom=ctx||null},custom:()=>custom,refresh(){lastURL='';render()}});
+ window.LexigoNav=Object.freeze({navigate,crumbs,show,focusPage,setCustom(ctx){custom=ctx||null},custom:()=>custom,refresh(){lastURL='';render()},stablePath,stableTarget,lessonLabel:()=>book?book.grade+" класс · "+(unit==="__all"?mod:book.sections[Number(unit)].title):""});
  goHome=()=>navigate('/home');goToLibrary=()=>navigate('/course/'+book.grade+'/'+modules(book).indexOf(mod));
  for(const id of ['homeLogo','gameHome'])byId(id).onclick=goHome;byId('homeNav').onclick=null;   /* «Уроки» — ссылка #/lessons (раздел уроков) */
  byId('heroStart').onclick=goToLibrary;byId('changeLesson').onclick=goToLibrary;byId('back').onclick=()=>stop();

@@ -1,0 +1,33 @@
+/* LEXI · «Поделиться уроком» для уроков учебника (2026-11-05, lesson-link.js). Палитра — world.css (--w-*). */
+.lesson-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative}
+.module-title-row{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;position:relative;margin-bottom:12px}
+.module-title-row #moduleTitle{margin:0;flex:0 1 auto;min-width:0}
+.lx-share-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:44px;padding:9px 14px;border:1.5px solid #d6def3;border-radius:14px;background:#fff;color:var(--w-blue-d,#1b2a6b);font:800 14px/1.1 var(--w-text,inherit);cursor:pointer;transition:background .15s,border-color .15s}
+.lx-share-btn:hover{background:#eef3ff;border-color:#9fb3ee}
+.lx-share-btn[aria-expanded="true"]{background:#e9efff;border-color:var(--w-blue,#2c56f5)}
+.lx-share-btn svg{flex:none}
+.lx-share-pop{position:absolute;z-index:90;width:min(360px,calc(100vw - 32px));padding:14px;border:1px solid #dfe6f7;border-radius:18px;background:#fff;box-shadow:0 18px 40px -12px rgba(27,42,107,.35);text-align:left;animation:lxSharePop .16s ease-out}
+.lx-share-status{margin:0 0 9px;font:800 14px/1.35 var(--w-text,inherit);color:#56607c}
+.lx-share-status.ok{color:#11795a}
+.lx-share-url{width:100%;min-height:44px;padding:9px 11px;border:1.5px solid #d6def3;border-radius:12px;background:#f7f9ff;color:#22305a;font:600 14px/1.3 var(--w-text,inherit);text-overflow:ellipsis}
+.lx-share-send{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lx-share-native,.lx-share-app{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 12px;border-radius:12px;border:1.5px solid #d6def3;background:#fff;color:#22305a;font:800 13.5px/1 var(--w-text,inherit);text-decoration:none;cursor:pointer}
+.lx-share-native{background:var(--w-blue,#2c56f5);border-color:var(--w-blue,#2c56f5);color:#fff;flex-basis:100%}
+.lx-share-app:hover{background:#f1f5ff}
+.lx-share-note{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:#6c7593}
+.link-guest-note{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;margin:-4px 0 14px;padding:12px 14px;border:1px solid #cfe9dc;border-radius:16px;background:#effaf4;color:#1e5a44;font-size:14.5px;line-height:1.45}
+.link-guest-note span{flex:1 1 240px}
+.link-guest-note .btn{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+.link-guest-x{min-width:44px;min-height:44px;border-radius:12px;background:transparent;color:#4b7a66;font-size:22px;line-height:1}
+@keyframes lxSharePop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (max-width:600px){
+ .lesson-head-actions{width:100%}
+
+ .lx-share-pop{position:fixed;left:16px!important;right:16px!important;top:auto!important;bottom:calc(88px + env(safe-area-inset-bottom));width:auto}
+}
+@media (prefers-reduced-motion:reduce){.lx-share-pop{animation:none}}
+/* шапка урока: «Сменить урок» и «Поделиться» в одну строку */
+#lessonHeading.current-lesson>.lesson-head-actions{flex:1 1 100%;display:flex;flex-wrap:nowrap;gap:10px}
+#lessonHeading .lesson-head-actions #changeLesson{flex:1 1 auto;width:auto}
+#lessonHeading .lx-share-btn{flex:0 0 auto;min-height:48px;padding-inline:18px}
+@media (max-width:600px){#lessonHeading .lx-share-btn{flex:0 0 52px!important;width:52px!important;max-width:52px;padding:0!important}#lessonHeading .lx-share-txt{display:none}#lessonHeading .lesson-head-actions #changeLesson{min-width:0}}

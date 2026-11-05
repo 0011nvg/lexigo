@@ -30,6 +30,8 @@ function question(mode,w){
   if(possible.length){const idx=possible[Math.floor(Math.random()*possible.length)],alphabet='abcdefghijklmnopqrstuvwxyz',replacement=alphabet[(alphabet.indexOf(letters[idx].toLowerCase())+7)%26];letters[idx]=letters[idx]===letters[idx].toUpperCase()?replacement.toUpperCase():replacement;Object.assign(model,{instruction:'Исправь ошибку и напиши слово правильно',prompt:letters.join(''),proposed:w.ru})}
  }else if(mode==='audio'){
   if(!window.isSingleWordEntry?.(w)){model.kind='spell';model.instruction='Напиши английское слово или выражение'}
+  /* 2026-11-05: на слух не проверяем то, что звучит иначе, чем пишется (пометки n, v, pl…), и однобуквенные слова (I = eye): пишем по переводу */
+  else if(window.LexiSpeech&&(LexiSpeech.soundsDifferent(w.en)||window.wordForm(w.en).length<2)){model.kind='spell';model.instruction='Напиши английское слово по переводу'}
   else if(audioAvailable()){Object.assign(model,{instruction:'Послушай и напиши английское слово',prompt:null,autoplay:true});actions.speak=()=>speak(window.wordForm(w.en))}
   else{model.kind='spell';model.instruction='Озвучивание недоступно. Напиши слово по переводу.'}
  }

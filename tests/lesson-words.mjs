@@ -39,6 +39,7 @@ const rows = page => page.locator('#lessonWords #words .wordrow');
   assert.equal(await page.locator('#openWords').isVisible(), false);
   assert.equal(await page.locator('#wordSetBar').isVisible(), false);
   await rows(page).nth(1).locator('.say-btn').click();
+  await page.waitForFunction(() => window.__spoken.length > 0, null, { timeout: 3000 }).catch(() => {}); // speech.js один раз ждёт загрузку голосов
   assert.deepEqual(await page.evaluate(() => window.__spoken), [expected[1][1]], '«Послушать» speaks the English word');
   assert.equal(await rows(page).nth(1).locator('input').isChecked(), true, '«Послушать» does not toggle the word');
   ok('lesson page: all words of the lesson with translation, audio and checkbox, above the games');

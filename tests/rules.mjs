@@ -129,7 +129,7 @@ try {
   assert.equal(overlap(bubble, go), false, 'the bubble does not cover the main button');
   const textRects = await phone.evaluate(() => [...document.querySelectorAll('.lexi-hero-title, .lexi-hero-sub')].flatMap(n => { const out = [], tw = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); while (tw.nextNode()) { const r = document.createRange(); r.selectNodeContents(tw.currentNode); out.push(...[...r.getClientRects()].map(x => ({ x: x.x, y: x.y, width: x.width, height: x.height }))); } return out; }));
   assert.ok(textRects.length && textRects.every(r => !overlap(bubble, r)), 'nor the greeting text');
-  if (await phone.locator('.lexi-say').count()) { await phone.locator('.lexi-say').tap(); assert.equal(await phone.evaluate(() => window.__spoken), 1, '🔊 speaks only after a tap'); }
+  if (await phone.locator('.lexi-say').count()) { assert.equal(await phone.evaluate(() => window.__spoken), 0, 'nothing spoken before a tap'); await phone.locator('.lexi-say').tap(); await phone.waitForFunction(() => window.__spoken >= 1, null, { timeout: 3000 }).catch(() => {}); assert.equal(await phone.evaluate(() => window.__spoken), 1, '🔊 speaks only after a tap'); }
   ok('Lexi on the phone: English lines with a Russian hint, tap to talk, no repeats, no autoplay, bubble clear of buttons: ' + lines.join(' / '));
 
   assert.deepEqual(errors, [], 'no page errors');

@@ -22,7 +22,7 @@ const visible = (page, sel) => page.locator(sel).isVisible();
   await page.waitForFunction(() => document.body.dataset.page === 'lessons');
   assert.equal(await page.evaluate(() => location.hash), '#/lessons');
   await page.locator('.hub-books .hub-book').first().waitFor();
-  assert.equal(await page.locator('.hub-book').count(), 8);
+  assert.equal(await page.locator('.hub-book').count(), 9);
   assert.match(await page.locator('.hub-guest').innerText(), /после входа/);
   assert.equal(await page.locator('#breadcrumbs').isVisible(), false);
   await page.goto(BASE + 'index.html#/lesson/5/3'); await page.locator('#breadcrumbs a').first().click();

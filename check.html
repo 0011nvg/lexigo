@@ -54,6 +54,7 @@
     ['Главная страница', () => load('index.html'), r => r.ok && r.bytes > 30000],
     ['Большой файл со словами (≈150 КБ)', () => load('data.js'), r => r.ok && r.bytes > 100000],
     ['Словарь Spotlight 9', () => load('vocabulary/spotlight-9.js'), r => r.ok && r.bytes > 50000],
+    ['Словарь Spotlight 10', () => load('vocabulary/spotlight-10.js'), r => r.ok && r.bytes > 50000],
     ['Шрифт LEXI (хранится на сайте)', () => load('assets/fonts/nunito-cyrillic-800-normal.woff2'), r => r.ok && r.bytes > 5000],
     ['Картинки', () => load('assets/soft-premium-worlds.webp'), r => r.ok && r.bytes > 20000],
     ['Модуль аккаунтов (≈200 КБ)', () => load('vendor/supabase-2.118.0.min.js'), r => r.ok && r.bytes > 100000],

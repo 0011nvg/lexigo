@@ -195,7 +195,7 @@
     } else if (!g) {
       if (sub) sub.textContent = 'Я помогу выучить английские слова. Выбери свой класс — и начнём!';
       const go = actions?.querySelector('.hero-go');
-      if (go) { go.href = '#/home'; go.innerHTML = '<span>Выбрать класс</span><small>2–9 классы</small>'; go.onclick = e => { e.preventDefault(); e.stopPropagation(); const p = host.querySelector('.class-picker button'); p?.scrollIntoView({ block: 'center', behavior: 'smooth' }); p?.focus({ preventScroll: true }); }; }
+      if (go) { go.href = '#/home'; go.innerHTML = '<span>Выбрать класс</span><small>2–10 классы</small>'; go.onclick = e => { e.preventDefault(); e.stopPropagation(); const p = host.querySelector('.class-picker button'); p?.scrollIntoView({ block: 'center', behavior: 'smooth' }); p?.focus({ preventScroll: true }); }; }
     } else {
       const go = actions?.querySelector('.hero-go'); if (go) { go.href = '#/course/' + g + '/0'; go.innerHTML = '<span>Начать</span><small></small>'; go.querySelector('small').textContent = g + ' класс' + ' · выбери урок'; }
     }

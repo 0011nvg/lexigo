@@ -39,9 +39,9 @@ async function finishRound(page) {
   await page.locator('#play .lesson-result').waitFor();
 }
 try {
-  /* 1. every book 2–9, opened after a lesson of Spotlight 2 (the old default) */
+  /* 1. every book 2–10, opened after a lesson of Spotlight 2 (the old default) */
   const page = await fresh();
-  for (const g of [2, 3, 4, 5, 6, 7, 8, 9]) {
+  for (const g of [2, 3, 4, 5, 6, 7, 8, 9, 10]) {
     await page.goto(BASE + '#/lesson/2/0'); await page.locator('#launcher').waitFor();
     await page.goto(BASE + `#/course/${g}/0`);
     await page.locator('#wholeBookOpen').click();
@@ -60,7 +60,7 @@ try {
     assert.equal(await page.evaluate(() => location.hash), `#/course/${g}/0`, 'back → the same book');
     assert.equal(await page.locator('#courseTitle').innerText(), g + ' класс');
   }
-  ok('Spotlight 2–9: words, title, progress, next round, reload and «назад» stay in the chosen book');
+  ok('Spotlight 2–10: words, title, progress, next round, reload and «назад» stay in the chosen book');
 
   /* 2. switches 2 → 5, 5 → 9, 9 → 3 with every kind of start (one game, several games, final test) */
   for (const [from, to, mode] of [[2, 5, 'mixed'], [5, 9, 'boss'], [9, 3, 'spell']]) {

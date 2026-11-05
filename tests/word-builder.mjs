@@ -63,9 +63,9 @@ for (let i = 0; i < 2000; i++) {
 }
 ok('2000 shuffles keep the exact set of letters; the order always differs when it can');
 
-// --- 5. every dictionary: Spotlight 2–9 (9417 entries) ---
+// --- 5. every dictionary: Spotlight 2–10 (11698 entries) ---
 const ctx = { window: {} }; ctx.window.window = ctx.window; vm.createContext(ctx);
-for (const f of ['data.js', 'vocabulary/spotlight-2-4-additions.js', ...[5, 6, 7, 8, 9].map(g => `vocabulary/spotlight-${g}.js`)])
+for (const f of ['data.js', 'vocabulary/spotlight-2-4-additions.js', ...[5, 6, 7, 8, 9, 10].map(g => `vocabulary/spotlight-${g}.js`), 'vocabulary/lesson-titles.js'])
   vm.runInContext(readFileSync(new URL(f, ROOT), 'utf8'), ctx, { filename: f });
 const books = ctx.window.LEXIGO_DATA.books;
 let total = 0, playable = 0, withRepeats = 0, withCaps = 0;
@@ -83,7 +83,7 @@ for (const b of books) for (const s of b.sections) for (const w of s.words) {
   if (/[A-Z]/.test(p.answer)) withCaps++;
   for (let k = 0; k < 3; k++) { const q = B.prepare(w, rnd); assert.ok(B.validate(q.tiles, q.answer), w.id); }
 }
-assert.ok(total >= 9417, 'all entries scanned: ' + total);
+assert.ok(total >= 11698, 'all entries scanned: ' + total);
 assert.ok(playable > 6000, 'most single words are playable: ' + playable);
 ok(`all ${total} dictionary entries: ${playable} playable words (${withRepeats} with repeated letters, ${withCaps} with capitals) — tiles always match; phrases skipped (` + Object.entries(byGrade).map(([g, n]) => g + ': ' + n).join(', ') + ')');
 

@@ -75,7 +75,7 @@
     if (my !== stamp) return;
     const role = session && session.profile ? session.profile.role : null;
     const head = h('div', { class: 'page-heading hub-head' }, h('p', { class: 'eyebrow', text: role === 'teacher' ? 'ДЛЯ УЧИТЕЛЯ' : 'ВСЕ УРОКИ' }), h('h1', { id: 'lessonsTitle', tabindex: '-1', text: 'Уроки' }),
-      h('p', { text: role === 'teacher' ? 'Ваши уроки, ссылки для учеников и учебники 2–9 классов.' : role === 'student' ? 'Уроки от учителя, начатые уроки и учебники.' : 'Начатые уроки и учебники 2–9 классов.' }));
+      h('p', { text: role === 'teacher' ? 'Ваши уроки, ссылки для учеников и учебники 2–10 классов.' : role === 'student' ? 'Уроки от учителя, начатые уроки и учебники.' : 'Начатые уроки и учебники 2–9 классов.' }));
     const loading = h('p', { class: 'hub-loading', role: 'status', text: 'Лекси собирает уроки…' });
     host.replaceChildren(head, loading);
     const blocks = [];

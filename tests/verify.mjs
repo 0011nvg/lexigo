@@ -52,11 +52,24 @@ for(const [grade,count] of Object.entries(extendedCounts)){
  assert.equal(book.sections.flatMap(s=>s.words).length,count,'Spotlight '+grade+' vocabulary count mismatch');
  assert.ok(book.sections.every(s=>s.module&&s.title&&s.words.length),'Unlabeled vocabulary section');
 }
+// Spotlight 10 and the lesson-title overlay (labels only; order, words and IDs stay as they were).
+for(const path of ['vocabulary/spotlight-10.js','vocabulary/lesson-titles.js']){
+ assert.ok(html.includes('<script src="'+path+'"></script>'),path+' missing from HTML');
+ assert.ok(html.indexOf('<script src="'+path+'"></script>')<html.indexOf('<script src="game-components.js"></script>'),path+' must load before the game controllers');
+ vm.runInNewContext(fs.readFileSync(path,'utf8'),context,{timeout:5000,filename:path});
+}
 const expanded=context.window.LEXIGO_DATA.books;
-assert.deepEqual(Array.from(expanded,b=>b.grade),[2,3,4,5,6,7,8,9]);
+assert.deepEqual(Array.from(expanded,b=>b.grade),[2,3,4,5,6,7,8,9,10]);
+assert.equal(expanded.find(b=>b.grade===10).sections.flatMap(s=>s.words).length,2281,'Spotlight 10 vocabulary count mismatch');
+for(const b of expanded.filter(b=>b.grade>=5)){
+ for(const s of b.sections){ if(/^Урок /.test(s.title)) assert.match(s.title,/^Урок \d+[a-f](–\d+[a-f])? · \S/,'Lesson label format: '+b.grade+' '+s.title); }
+ const lessons=b.sections.filter(s=>/^Урок /.test(s.title)).length; assert.ok(lessons>=20,'Too few lettered lessons in grade '+b.grade);
+}
+assert.ok(expanded.filter(b=>b.grade<=4).every(b=>b.sections.every(s=>!/^Module /.test(s.module))),'Grades 2–4 modules are shown in Russian');
+assert.ok(expanded.every(b=>b.sections.every(s=>!/^(\d+[a-f]|Unit \d)/.test(s.title))),'Every lesson has a «Урок …» label and a short name');
 const expandedWords=expanded.flatMap(b=>b.sections.flatMap(s=>s.words));
-assert.equal(expandedWords.length,9417,'Extended vocabulary total changed');
-assert.equal(new Set(expandedWords.map(w=>w.id)).size,9417,'Duplicate IDs across books');
+assert.equal(expandedWords.length,11698,'Extended vocabulary total changed');
+assert.equal(new Set(expandedWords.map(w=>w.id)).size,11698,'Duplicate IDs across books');
 assert.ok(expandedWords.every(w=>typeof w.en==='string'&&w.en.trim()&&typeof w.ru==='string'&&w.ru.trim()));
-assert.ok(html.includes('2–9 классы'),'Landing class range not updated');
-console.log('PASS: 1035 original IDs intact + 38 added + 8344 imported = 9417 words, Spotlight 2–9, unique IDs, mirrored legacy data and JS syntax');
+assert.ok(html.includes('2–10 классы'),'Landing class range not updated');
+console.log('PASS: 1035 original IDs intact + 38 added + 8344 imported (5–9) + 2281 Spotlight 10 = 11698 words, Spotlight 2–10, lesson labels «Урок 1a · …», unique IDs, mirrored legacy data and JS syntax');

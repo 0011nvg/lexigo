@@ -17,7 +17,7 @@ panel.innerHTML='<div class="wb-head"><span class="wb-icon" aria-hidden="true"><
 host.append(panel);
 const toggle=panel.querySelector('#wholeBookOpen'),body=panel.querySelector('#wholeBookBody'),modes=panel.querySelector('#wholeBookModes');
 body.inert=true;
-function selectedBook(){const grade=((location.hash.match(/^#\/(?:course|book)\/(\d)/)||[])[1])||(document.getElementById('courseTitle').textContent.match(/\d+/)||[])[0];return window.LEXIGO_DATA.books.find(b=>String(b.grade)===String(grade))}
+function selectedBook(){const grade=((location.hash.match(/^#\/(?:course|book)\/(\d+)/)||[])[1])||(document.getElementById('courseTitle').textContent.match(/\d+/)||[])[0];return window.LEXIGO_DATA.books.find(b=>String(b.grade)===String(grade))}
 const roundKey=(grade,mode)=>'B'+grade+'|'+mode;
 function lexical(b){const seen=new Set();return b.sections.flatMap(s=>s.words).filter(w=>(typeof isLexicalEntry!=='function'||isLexicalEntry(w))&&!seen.has(w.id)&&seen.add(w.id))}
 function eligibleFor(words,mode){

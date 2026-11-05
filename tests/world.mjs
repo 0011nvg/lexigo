@@ -58,7 +58,7 @@ try {
     const s5 = DB.books.find(b => b.grade === 5); const sec = s5.sections.find(s => s.words.some(w => !isLexicalEntry(w)));
     const idx = s5.sections.indexOf(sec); return { idx, total: words.length, headers: headers.length };
   });
-  assert.equal(leak.total, 9417, 'source data must stay complete');
+  assert.equal(leak.total, 11698, 'source data must stay complete');
   await page.goto(BASE + '#/lesson/5/' + leak.idx + '/play/spell');
   await page.locator('#play .question').waitFor();
   assert.ok(await page.evaluate(() => game.words.every(isLexicalEntry)));

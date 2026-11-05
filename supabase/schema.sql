@@ -75,7 +75,7 @@ create table if not exists public.assignments (
   teacher_id       uuid not null references public.profiles(id) on delete cascade,
   student_id       uuid references public.profiles(id) on delete cascade,      -- null = вся группа
   title            text not null check (char_length(btrim(title)) between 1 and 120),
-  grade            int check (grade between 2 and 9),
+  grade            int check (grade between 2 and 11),
   section_indexes  int[] check (section_indexes is null or (cardinality(section_indexes) between 1 and 60)),
   word_ids         text[] check (word_ids is null or cardinality(word_ids) between 2 and 300),
   lesson_id        uuid references public.custom_lessons(id) on delete cascade,
@@ -91,6 +91,9 @@ create index if not exists assignments_group_idx on public.assignments(group_id)
 alter table public.assignments drop constraint if exists assignments_modes_check;
 alter table public.assignments add constraint assignments_modes_check check (public.lexi_modes_ok(modes));
 create index if not exists assignments_teacher_idx on public.assignments(teacher_id);
+-- v10 (05.11.2026): учебник 10 класса — классы 2–11 в заданиях и сессиях
+alter table public.assignments drop constraint if exists assignments_grade_check;
+alter table public.assignments add constraint assignments_grade_check check (grade between 2 and 11);
 
 create table if not exists public.sessions (
   id             uuid primary key default gen_random_uuid(),
@@ -98,7 +101,7 @@ create table if not exists public.sessions (
   client_id      text not null check (client_id ~ '^[A-Za-z0-9_-]{8,64}$'),
   assignment_id  uuid references public.assignments(id) on delete set null,
   lesson_id      uuid references public.custom_lessons(id) on delete set null,
-  grade          int check (grade between 2 and 9),
+  grade          int check (grade between 2 and 11),
   section_index  int check (section_index between 0 and 999),
   scope          text not null check (scope in ('lesson','module','book','custom','assignment','other')),
   route          text check (route is null or route ~ '^/lesson/[0-9]{1,2}/m?[0-9]{1,3}$'),
@@ -119,6 +122,8 @@ create table if not exists public.sessions (
 );
 create index if not exists sessions_user_idx on public.sessions(user_id, created_at desc);
 create index if not exists sessions_assignment_idx on public.sessions(assignment_id);
+alter table public.sessions drop constraint if exists sessions_grade_check;
+alter table public.sessions add constraint sessions_grade_check check (grade between 2 and 11);
 -- v2 (рейтинг ТОП-3): ключ таблицы рекордов, время и ошибки раунда
 alter table public.sessions add column if not exists board_key text;
 alter table public.sessions add column if not exists seconds numeric(7,1);
@@ -411,7 +416,7 @@ begin
   if v_scope not in ('lesson','module','book','custom','assignment','other') then v_scope := 'other'; end if;
   if v_route is not null and v_route !~ '^/lesson/[0-9]{1,2}/m?[0-9]{1,3}$' then v_route := null; end if;
   begin v_grade := (p->>'grade')::int; exception when others then v_grade := null; end;
-  if v_grade is not null and (v_grade < 2 or v_grade > 9) then v_grade := null; end if;
+  if v_grade is not null and (v_grade < 2 or v_grade > 11) then v_grade := null; end if;
   begin v_section := (p->>'section_index')::int; exception when others then v_section := null; end;
   if v_section is not null and (v_section < 0 or v_section > 999) then v_section := null; end if;
   begin v_assignment := (p->>'assignment_id')::uuid; exception when others then v_assignment := null; end;

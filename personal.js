@@ -1,7 +1,6 @@
 /* LEXI · личное пространство ученика (2026-11-02).
  *  «Мой класс», «Продолжить обучение», «Мои модули», «Сложные слова» и единый набор слов для игр.
- *  Всё хранится в localStorage этого браузера (у вошедшего ученика — отдельно для его аккаунта,
- *  см. account-hint.js). Между устройствами эти настройки НЕ синхронизируются — так и пишем ученику.
+ *  Локальная копия отделена по аккаунтам; account-sync.js сохраняет настройки в облаке.
  *  Подключается после lexigo-plus.js и до cloud.js; игры, словарь и печать не меняет. */
 (() => {
   'use strict';
@@ -15,7 +14,14 @@
   const bookOf = g => BOOKS.find(b => String(b.grade) === String(g)) || null;
   const modulesOf = b => [...new Set(b.sections.map(s => s.module))];
   const MODE_NAMES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристальная экспедиция', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
-  const DEVICE_NOTE = 'Сохраняется в этом браузере на этом устройстве.';
+  const deviceNote = () => ({
+    guest: 'Войдите в аккаунт, чтобы сохранять настройки между устройствами.',
+    pending: 'Настройки сохранены на устройстве и ожидают отправки в облако.',
+    saved: 'Класс, избранные модули и сложные слова сохранены в вашем аккаунте.',
+    setup: 'Настройки сохранены на устройстве. Облачная синхронизация ожидает настройки сервера.',
+    offline: 'Настройки сохранены на устройстве. Повторим синхронизацию при восстановлении связи.',
+    'storage-error': 'Не удалось сохранить настройки. Проверьте свободное место на устройстве.'
+  }[window.LexigoAccountSync?.status() || 'guest']);
 
   /* ---------- storage ---------- */
   const CLASS_KEY = 'lexigo_my_class_v1', FAV_KEY = 'lexigo_fav_modules_v1', LAST_KEY = 'lexigo_last_activity_v1';
@@ -156,7 +162,7 @@
       desk.append(c);
     }
     if (!desk.children.length) return; // новый ученик: на главной только приветствие и учебники — без пустых карточек
-    desk.append(el('p', 'desk-device', '🔒 ' + DEVICE_NOTE + ' На другом устройстве класс, модули и сложные слова нужно будет отметить заново.'));
+    desk.append(el('p', 'desk-device', '🔒 ' + deviceNote()));
     (host.querySelector('.lexi-panel') || host.querySelector('.lexi-hero'))?.after(desk);
   }
   /* Сколько слов в наборе: большой набор идёт раундами (word-rounds.js) — прерванная игра продолжается со следующих слов,
@@ -322,6 +328,8 @@
   new MutationObserver(() => { if (document.body.dataset.page === 'course') decorateCourse(); }).observe($('lessonCards'), { childList: true });
   new MutationObserver(() => { noteGame(); decorateResult(); }).observe($('play'), { childList: true, subtree: true });
   window.addEventListener('lexigo:wordset', paintWordSet);
+  window.addEventListener('lexigo:preferences', refreshAll);
+  window.addEventListener('lexigo:sync', () => { const note = document.querySelector('.desk-device'); if (note) note.textContent = '🔒 ' + deviceNote(); });
   const origUpdate = updateStats; updateStats = function (...a) { const r = origUpdate.apply(this, a); try { paintWordSet(); } catch { /* cosmetic */ } return r; };
   window.addEventListener('lexigo:account', () => setTimeout(refreshAll, 0)); // another account → its own class, modules and words
   window.addEventListener('storage', e => { if ([CLASS_KEY, FAV_KEY, HARD_KEY, LAST_KEY].some(k => String(e.key || '').startsWith(k))) refreshAll(); });

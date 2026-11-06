@@ -54,11 +54,11 @@
 
 ## Шаг 3. Адреса возврата (уже должны быть настроены)
 
-**Authentication → URL Configuration:** Site URL `https://0011nvg.github.io/lexigo/`; Redirect URLs `https://0011nvg.github.io/lexigo/auth.html` и `https://0011nvg.github.io/lexigo/auth.html?*`. Без них ссылка из письма приведёт не на LEXI.
+**Authentication → URL Configuration:** Site URL `https://mylexi.ru/`; Redirect URLs `https://mylexi.ru/auth.html` и `https://mylexi.ru/auth.html?*`. Без них ссылка из письма приведёт не на LEXI.
 
 ## Шаг 4. Проверка
 
-1. Зарегистрируйтесь на https://0011nvg.github.io/lexigo/auth.html#signup с новым адресом.
+1. Зарегистрируйтесь на https://mylexi.ru/auth.html#signup с новым адресом.
 2. Письмо «Добро пожаловать в LEXI! Подтвердите электронную почту» → кнопка «Подтвердить электронную почту».
 3. На сайте: «Электронная почта успешно подтверждена! Теперь вы можете пользоваться LEXI» → «Продолжить».
 4. Нажмите ту же ссылку ещё раз — «Ссылка больше не действует» и кнопка «Отправить письмо ещё раз» (не чаще раза в минуту).

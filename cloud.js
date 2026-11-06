@@ -112,12 +112,12 @@
     origSave(g, finished);
     try { if (finished) window.LexigoMyLessons?.markDone(g); } catch { /* optimistic only */ }
     if (isPreview(g)) return;   // тренировка учителя: в облако ничего не отправляем
-    try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length) { g.cloud.sent = true; const snapshot = { ...g, cloud: g.cloud }; setTimeout(() => submit(snapshot, !!finished), finished ? 400 : 0); } } catch { /* never break practice */ }
+    try { if (g && g.cloud && !g.cloud.sent && g.cloud.events.length) { const snapshot = { ...g, cloud: g.cloud }; g.cloud.sent = submit(snapshot, !!finished); } } catch { /* never break practice */ }
   };
 
   // rounds left in the middle (back button, another game, closing the tab) are kept as unfinished
   const isPreview = g => !!(g && g.cloud && g.cloud.meta && g.cloud.meta.preview);
-  function keepUnfinished() { if (isPreview(game)) return; try { if (game && game.cloud && !game.cloud.sent && game.cloud.events.length) { game.cloud.sent = true; if (Hint.uid()) { writeQueue([...readQueue(), payload(game, false)]); } } } catch { /* never break practice */ } }
+  function keepUnfinished() { if (isPreview(game)) return; try { if (game && game.cloud && !game.cloud.sent && game.cloud.events.length) { if (Hint.uid()) { game.cloud.sent = writeQueue([...readQueue(), payload(game, false)]); } } } catch { /* never break practice */ } }
   const origStop = stop;
   stop = function (...args) { keepUnfinished(); flush(); return origStop.apply(this, args); };
   window.addEventListener('pagehide', keepUnfinished);
@@ -135,28 +135,34 @@
       mistakes: g.mode === 'pairs' ? (g.pairMistakes || 0) : g.cloud.events.filter(e => !e.ok && e.k !== 'self').length };
   }
   function readQueue() { try { const x = JSON.parse(localStorage.getItem(QUEUE) || '[]'); return Array.isArray(x) ? x : []; } catch { return []; } }
-  function writeQueue(x) { try { localStorage.setItem(QUEUE, JSON.stringify(x.slice(-50))); } catch { /* full */ } }
+  function writeQueue(x) {
+    try { localStorage.setItem(QUEUE, JSON.stringify(x)); return true; }
+    catch { toast('Не удалось сохранить результат на устройстве. Освободите место и не закрывайте страницу.'); return false; }
+  }
 
   function submit(g, finished) {
     if (isPreview(g)) return;
-    if (!Hint.uid()) { if (finished) nudge(); return; }
+    if (!Hint.uid()) { if (finished) nudge(); return false; }
     const p = payload(g, finished);
-    writeQueue([...readQueue(), p]);
+    if (!writeQueue([...readQueue(), p])) return false;
     flush();
+    return true;
   }
   let flushing = false;
   async function flush() {
-    if (flushing || !sb || !user) return; flushing = true;
+    if (flushing || !sb || !user || user.id !== Hint.uid()) return; flushing = true;
     try {
       let queue = readQueue(), last = null;
       while (queue.length) {
         const item = queue[0];
         const { data, error } = await sb.rpc('submit_session', { p: item });
         if (error) {
-          if (/fetch|network|timeout/i.test(error.message || '') || error.code === '54000') break;   // keep for later
-          console.warn('LEXI cloud: result rejected', error.message);
+          console.warn('LEXI cloud: result retained for retry', error.message);
+          break;
         } else { last = data; if (item.board_key && item.finished && data && data.session_id && !data.duplicate) boards.saved(item.client_id, data.session_id, item.board_key); }
-        queue = queue.slice(1); writeQueue(queue);
+        // Re-read after the request: another result may have been added while awaiting it.
+        queue = readQueue().filter(p => p.client_id !== item.client_id);
+        if (!writeQueue(queue)) break;
       }
       if (last && window.LexiQuest) window.LexiQuest.syncCloud({ xp: last.xp, streak: last.streak, streakLast: C.localDay() });
       if (last) window.LexigoMyLessons?.dirty();
@@ -164,6 +170,8 @@
     finally { flushing = false; }
   }
   window.addEventListener('online', flush);
+  window.addEventListener('focus', flush);
+  setInterval(flush, 30000);
 
   /* ---------- pull cloud progress into this device ---------- */
   async function pullProgress() {

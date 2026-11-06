@@ -3,7 +3,7 @@
 // Готовые .html вставляются в Supabase: Authentication → Emails → Templates (см. README.md рядом).
 // Переменные Supabase (Go templates): {{ .ConfirmationURL }}, {{ .Email }}, {{ .NewEmail }}, {{ .Token }}, {{ .Data.display_name }}.
 import { writeFileSync } from 'node:fs';
-const SITE = 'https://0011nvg.github.io/lexigo/';
+const SITE = 'https://mylexi.ru/';
 const LOGO = SITE + 'assets/lexi-icon-192.png';
 const hello = '{{ if .Data.display_name }}Привет, {{ .Data.display_name }}! 👋{{ else }}Привет! 👋{{ end }}';
 
@@ -43,7 +43,7 @@ function layout({ preheader, title, body, button, note }) {
       <tr><td style="padding:22px 32px 6px;font-family:Arial,Helvetica,sans-serif;font-size:13.5px;line-height:1.6;color:#4b5577">${note}</td></tr>
       <tr><td style="padding:10px 32px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#141b3d">До встречи в LEXI! 🐱<br><b>Команда LEXI</b></td></tr>
       <tr><td bgcolor="#f0f3ff" style="background:#f0f3ff;padding:16px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#6c7593">
-        Это автоматическое письмо, отвечать на него не нужно. LEXI — <a href="${SITE}" style="color:#2c56f5">0011nvg.github.io/lexigo</a><br>
+        Это автоматическое письмо, отвечать на него не нужно. LEXI — <a href="${SITE}" style="color:#2c56f5">mylexi.ru</a><br>
         Письмо отправлено на адрес {{ .Email }}.
       </td></tr>
     </table>
@@ -59,7 +59,7 @@ const T = {
     title: 'Добро пожаловать в LEXI!',
     body: `${hello}<br><br>LEXI — платформа, где изучение английских слов превращается в увлекательную игру вместе с котёнком Лекси.<br><br>Чтобы завершить регистрацию, подтвердите свой адрес электронной почты.`,
     button: 'Подтвердить электронную почту',
-    note: 'Ссылка действует 24 часа. Если вы не регистрировались в LEXI, просто проигнорируйте это письмо — аккаунт не будет создан.' }) },
+    note: 'Если вы не регистрировались в LEXI, просто проигнорируйте это письмо.' }) },
   recovery: { subject: 'LEXI: восстановление пароля', html: layout({
     preheader: 'Ссылка, чтобы придумать новый пароль.',
     title: 'Восстановление пароля',

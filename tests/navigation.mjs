@@ -25,7 +25,7 @@ try{
   }
   await page.goto('http://127.0.0.1:4173/#/lesson/2/m0');
   await page.screenshot({path:'test-results/navigation-'+width+'-lesson.png',fullPage:true});
-  for(const mode of ['cards','quiz','spell','pairs','truefalse','fix','audio','crystals','boss','mixed']){
+  for(const mode of ['cards','quiz','spell','pairs','truefalse','audio','crystals','boss','mixed']){
    await page.locator(mode==='mixed'?'#quickStart':'#launcher [data-mode="'+mode+'"]').click();if(mode==='boss')await page.locator('.boss-setup .btn',{hasText:'Начать тест'}).click();await page.locator('#game').waitFor({state:'visible'});
    assert.ok(page.url().endsWith('/play/'+mode));assert.equal(await page.locator('#launcher').isVisible(),false);assert.equal(await page.locator('#catalogAside').isVisible(),false);assert.equal(await page.locator('#homeTitle').isVisible(),false);
    if(mode==='quiz')await page.screenshot({path:'test-results/navigation-'+width+'-game.png',fullPage:true});

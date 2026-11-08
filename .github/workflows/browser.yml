@@ -19,6 +19,11 @@ jobs:
       - run: sudo apt-get install -y poppler-utils
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
+      - run: node tests/balanced-groups.mjs
+      - run: node tests/retry-policy.mjs
+      - run: node tests/attempt-history.mjs
+      - run: node tests/lexi-next.mjs
+      - run: node tests/history-cabinets.mjs
       - run: node tests/inventory.mjs
       - run: node tests/crystal-engine.mjs
       - run: LEXIGO_WEBKIT=1 node tests/crystal-play.mjs
@@ -47,10 +52,7 @@ jobs:
       - name: Prepare isolated static preview package
         if: success()
         run: |
-          mkdir -p static-preview
-          cp index.html check.html speech.js lesson-link.js celebrate.js share-link.css celebrate.css typography.css word-rounds.js result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js word-builder.js my-lessons.js lessons.css crystal-engine.js crystal-quest.js crystal.css game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css print.css lexigo-plus.js personal.js account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html manifest.webmanifest static-preview/
-          cp -r assets vocabulary vendor static-preview/
-          printf '%s\n' 'LEXI Spotlight 2–9 static preview' 'Unzip and open index.html; for best results use a local HTTP server.' 'Cloud accounts stay off until config.js is filled in (see docs/CLOUD-SETUP.md).' > static-preview/README.txt
+          node scripts/package-static.mjs
       - name: Upload isolated static preview (no deployment)
         if: success()
         uses: actions/upload-artifact@v4

@@ -1,7 +1,7 @@
 // LEXI (2026-11-03): the account server is unreachable (blocked, throttled, hanging) — games keep working in guest mode,
 // sign-in shows a clear message instead of hanging forever.
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 const SITE = (process.env.LEXIGO_URL || 'http://127.0.0.1:4173/').replace(/index\.html$/, '');
 const browser = await chromium.launch({ headless: true });
 const errors = [];

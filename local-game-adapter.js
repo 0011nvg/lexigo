@@ -2,11 +2,11 @@
 window.LexigoLocalGameAdapter=Object.freeze({create({getState,shuffle,normalize,audioAvailable,speak,record,renderQuestion,answerUI,textAnswerHints}){
 // Local adapter: chooses public question data and evaluates device-only practice.
 function question(mode,w){
- const game=getState();
+ const game=getState();game.answerDetail=null;
  const pool=game.mode==='crystals'?window.LEXIGO_DATA.books.find(b=>b.sections.some(s=>s.words.some(x=>x.id===w.id)))?.sections.flatMap(s=>s.words)||game.words:game.words;
  const feedback=()=>`${w.en} — ${w.ru}`;
  const model={mode,kind:mode,instruction:'Напиши английское слово или выражение',prompt:w.ru};
- const actions={beforeEntry:root=>textAnswerHints(root,w),submit:(input,button)=>{if(!normalize(input.value)){input.focus();return}answerUI(w,normalize(input.value)===normalize(w.en),feedback(),'recall');input.disabled=true;button.disabled=true}};
+ const actions={beforeEntry:root=>{if(game.mode!=='boss')textAnswerHints(root,w)},submit:(input,button)=>{if(!normalize(input.value)){input.focus();return}answerUI(w,normalize(input.value)===normalize(w.en),feedback(),'recall');input.disabled=true;button.disabled=true}};
  if(mode==='cards'){
   Object.assign(model,{instruction:'Нажми на карточку, чтобы увидеть перевод. «Знаю» — твоя самооценка, а не проверка знания. Чтобы подтвердить результат, попробуй режим «Напиши слово».',prompt:null,card:{front:w.en,back:w.ru}});
   Object.assign(actions,{onFlip:value=>game.flipped=value,speak:()=>speak(w.en),onUnknown:()=>{record(w,false,'self');game.index++;game.flipped=false;renderQuestion()},onKnown:()=>{record(w,true,'self');game.index++;game.flipped=false;renderQuestion()}});
@@ -39,9 +39,14 @@ function question(mode,w){
   набор проверяется перед показом; неподходящее слово (фраза, 1 буква, сбой проверки) превращается в «Напиши слово», а не ломает игру. */
   const prep=window.LexiWordBuilder.prepare(w);
   if(!prep.ok){model.kind='spell';model.instruction='Напиши английское слово или выражение';if(prep.reason==='tiles')console.warn('LEXI builder: tiles do not match',w.id)}
-  else{Object.assign(model,{kind:'builder',instruction:'Собери слово из букв',prompt:w.ru,tiles:prep.tiles,joiner:''});actions.submitBuild=text=>answerUI(w,window.LexiWordBuilder.check(text,prep.answer),prep.answer+' — '+w.ru,'recognition')}}
+  else{Object.assign(model,{kind:'builder',instruction:'Собери слово из букв',prompt:w.ru,tiles:prep.tiles,joiner:''});actions.submitBuild=text=>answerUI(w,window.LexiWordBuilder.check(text,prep.answer),'Правильный порядок: «'+prep.answer+'» — '+w.ru,'recognition')}}
 else if(mode==='listen'){const others=shuffle(pool.filter(x=>x.id!==w.id&&normalize(x.en)!==normalize(w.en))).filter((x,i,a)=>a.findIndex(y=>normalize(y.en)===normalize(x.en))===i).slice(0,3);if(!audioAvailable()||!others.length){if(others.length){model.kind='quiz';model.instruction='Выбери правильный перевод';model.prompt=w.en;model.choices=shuffle([w,...others]).map(x=>({label:x.ru,value:x.id}));actions.answer=id=>answerUI(w,id===w.id,feedback())}else model.kind='spell'}else{Object.assign(model,{kind:'listen',instruction:'Послушай и выбери слово, которое прозвучало',prompt:null,autoplay:true,choices:shuffle([w,...others]).map(x=>({label:x.en,value:x.id}))});actions.speak=()=>speak(w.en);actions.answer=id=>answerUI(w,id===w.id,feedback())}}
-return {model,actions};
+// Capture only submitted answers, never keystrokes or an unfinished input.
+ const capture=(answer,expected)=>{game.answerDetail={wordId:w.id,answer:String(answer).slice(0,200),expected:String(expected).slice(0,200),answered_at:new Date().toISOString()};};
+ const submit=actions.submit;actions.submit=(input,button)=>{if(normalize(input.value))capture(input.value,w.en);return submit(input,button);};
+ if(actions.submitBuild){const build=actions.submitBuild;actions.submitBuild=text=>{capture(text,window.LexiWordBuilder.answer(w.en));return build(text);};}
+ if(actions.answer){const answer=actions.answer;actions.answer=value=>{const label=model.choices?.find(c=>c.value===value)?.label??value;const expected=model.kind==='truefalse'?(model.proposed===w.ru?'✓ Верно':'✕ Неверно'):model.kind==='listen'?w.en:w.ru;capture(label,expected);return answer(value);};}
+ return {model,actions};
 }
 
 return Object.freeze({question,pairCorrect:(a,b)=>a.wordId===b.wordId&&a.side!==b.side});

@@ -14,7 +14,7 @@ const sql = q => execSync(PSQL + ' ' + JSON.stringify(q), { encoding: 'utf8' }).
 const run = Date.now().toString(36);
 const mail = who => `${who}-${run}@lexigo.test`;
 const PASS = 'Lexi-test-2026!';
-const ALL = ['quiz', 'spell', 'pairs', 'truefalse', 'cards', 'fix', 'builder', 'listen', 'audio', 'mixed', 'boss', 'crystals'];
+const ALL = ['quiz', 'spell', 'pairs', 'truefalse', 'cards', 'builder', 'listen', 'audio', 'mixed', 'boss', 'crystals'];
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const browser = await chromium.launch({ headless: true });
@@ -112,7 +112,7 @@ try {
   await newLesson(t, 'Десять игр', WORDS, ALL.slice(0, 10));
   assert.equal(lessonModes('Десять игр').split(',').length, 10);
   await newLesson(t, 'Все игры', WORDS, null);
-  assert.equal(lessonModes('Все игры').split(',').length, 12);
+  assert.equal(lessonModes('Все игры').split(',').length, 11);
   assert.match(await t.locator('.lesson-row', { hasText: 'Все игры' }).innerText(), /игр в уроке: 12/);
   // nothing selected → refused
   await t.getByRole('button', { name: '＋ Новый урок' }).first().click();

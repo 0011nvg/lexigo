@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - '*.js'
+      - '*.css'
+      - 'scripts/package-static.mjs'
       - 'premium.css'
       - 'dashboard.css'
       - 'result.css'
@@ -52,10 +55,7 @@ jobs:
           node tests/verify.mjs
       - name: Package only public local-game files (never deploy)
         run: |
-          mkdir -p static-preview
-          cp index.html result.css result-ui.js dashboard.css progress-model.js progress-ui.js premium.css navigation.css navigation-controller.js practice-controller.js word-builder.js my-lessons.js lessons.css crystal-engine.js crystal-quest.js crystal.css game-components.js game-engine.js local-storage.js local-game-adapter.js data.js whole-book.js lexi-world.js world.css lexi-live.js polish.css print.css lexigo-plus.js personal.js account-hint.js config.js cloud-core.js cloud.js auth.html auth.js me.html me.js account.css privacy.html consent.html manifest.webmanifest static-preview/
-          cp -r assets vocabulary vendor static-preview/
-          printf '%s\n' 'LEXI static preview — Spotlight 2–9' 'Extract and open index.html in a browser. For full routing support, run a local HTTP server in this folder (python3 -m http.server 4173).' 'This package contains no server cabinet or Supabase configuration.' > static-preview/README.txt
+          node scripts/package-static.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: lexi-spotlight-2-9-static-preview

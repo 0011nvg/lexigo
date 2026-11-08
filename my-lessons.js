@@ -193,7 +193,7 @@
   const WS_KEY = 'lexigo_ws_custom_v1';
   function worksheetPanel(x) {
     let saved = {}; try { saved = JSON.parse(localStorage.getItem(WS_KEY) || '{}') || {}; } catch { saved = {}; }
-    const names = { quiz: 'Выбери перевод', spell: 'Напиши слово', fix: 'Исправь ошибку', truefalse: 'Верно / неверно' };
+    const names = { quiz: 'Выбери перевод', spell: 'Напиши слово', truefalse: 'Верно / неверно' };
     const chosen = new Set(Array.isArray(saved.types) && saved.types.length ? saved.types : Object.keys(names));
     const count = h('select', { class: 'ws-count', 'aria-label': 'Количество заданий' }, ['all', '5', '10', '15', '20', '25', '30'].map(v => h('option', { value: v, text: v === 'all' ? 'Все слова урока (' + x.words.length + ')' : v + ' заданий' })));
     count.value = saved.amount && [...count.options].some(o => o.value === saved.amount) ? saved.amount : 'all';
@@ -296,7 +296,7 @@
     }
     const size = { pairs: 10, cards: 20, boss: 15, review: 12 }[mode] || 15;
     const picked = typeof lexiRound === 'function' ? lexiRound(ws, size) : ws.slice(0, size);
-    const types = { mixed: ['quiz', 'spell', 'truefalse', 'spell', 'fix'], boss: ['spell', 'quiz', 'spell', 'truefalse'], crystals: ['quiz', 'truefalse', 'fix'], review: ['spell', 'builder', 'quiz', 'spell', 'audio'] }[mode];
+    const types = { mixed: ['quiz', 'spell', 'truefalse', 'spell', 'builder'], boss: ['spell', 'quiz', 'spell', 'truefalse'], crystals: ['quiz', 'truefalse', 'builder'], review: ['spell', 'builder', 'quiz', 'spell', 'audio'] }[mode];
     S()?.setMeta(x.kind === 's' && !x.preview ? { scope: 'custom', taskKey: x.key, lesson_id: x.lesson.id, title: x.title } : x.preview ? { scope: 'custom', preview: true, taskKey: x.key, lesson_id: x.a.lesson_id || null, title: x.title }
       : { scope: 'assignment', taskKey: x.key, assignment_id: x.a.id, lesson_id: x.a.lesson_id || null, grade: x.a.grade || null, section_index: x.a.section_indexes ? x.a.section_indexes[0] : null, title: x.title });
     Nav.setCustom({ key: x.key, crumbs: crumbsFor(x) });

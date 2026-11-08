@@ -1,0 +1,35 @@
+/* LEXI NEXT: compact lesson, existing palette and source artwork. */
+.builder-token{min-width:48px;min-height:48px;touch-action:none}
+.builder-token[aria-pressed="true"]{outline:3px solid #5260ca;outline-offset:3px}
+.builder-tools{display:flex;flex-wrap:wrap;gap:16px;margin-top:20px}
+#play .question>.btn.secondary{margin:12px 20px 12px 0;min-height:48px}
+@media(min-width:1000px){
+ html body[data-page="lesson"] #pageContent #learningArea #lessonHeading{padding:16px 20px!important;margin:0 0 12px!important}
+ html body[data-page="lesson"] #pageContent #learningArea #currentLesson{font-size:clamp(22px,2.4vw,30px)!important;line-height:1.2!important;margin:4px 0!important}
+ html body[data-page="lesson"] #pageContent #learningArea #lessonHeading .eyebrow{margin-bottom:4px!important}
+ html body[data-page="lesson"] #pageContent #learningArea #launcher{display:flex;flex-direction:column;gap:8px}
+ html body[data-page="lesson"] #pageContent #learningArea #launcher .modes{order:-2;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+ html body[data-page="lesson"] #pageContent #learningArea .mode-stage{padding:10px!important;margin:0!important}
+ html body[data-page="lesson"] #pageContent #learningArea .mode-stage header{margin-bottom:6px!important}
+ html body[data-page="lesson"] #pageContent #learningArea .mode-stage header p,html body[data-page="lesson"] #pageContent #learningArea .mode small,html body[data-page="lesson"] #pageContent #learningArea .mode-heading,html body[data-page="lesson"] #pageContent #learningArea #lexiTip{display:none!important}
+ html body[data-page="lesson"] #pageContent #learningArea .stage-modes{display:grid!important;grid-template-columns:1fr!important;gap:6px!important}
+ html body[data-page="lesson"] #pageContent #learningArea .mode{min-height:48px!important;padding:8px 12px!important;margin:0!important}
+ html body[data-page="lesson"] #pageContent #learningArea #quickStart{grid-column:1/-1;min-height:48px!important}
+ html body[data-page="lesson"] #pageContent #learningArea #lessonWords{margin:0!important}
+}
+@media(prefers-reduced-motion:reduce){.builder-token{animation:none!important;transition:none!important}}
+
+.practice-mode-switcher{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:12px 0 20px}.practice-mode-switcher select{min-height:48px;max-width:100%;padding:8px 12px;border:1px solid #a4add2;border-radius:12px;background:#fff;color:#232c56;font:inherit}
+@media(min-width:1000px){
+ html body[data-page="lesson"] #pageContent #learningArea #lessonHeading{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:16px!important}
+ html body[data-page="lesson"] #pageContent #learningArea #currentLesson{font-size:24px!important}
+ html body[data-page="lesson"] #pageContent #learningArea .lesson-head-actions{width:auto!important;display:flex!important;flex-direction:row!important}
+ html body[data-page="lesson"] #pageContent #learningArea .lesson-head-actions button{width:auto!important;white-space:nowrap}
+ html body[data-page="lesson"] #pageContent #learningArea .mode-symbol{width:32px!important;height:32px!important;min-width:32px!important}
+ html body[data-page="lesson"] #pageContent #learningArea .mode-symbol svg{width:22px!important;height:22px!important}
+ html body[data-page="lesson"] #pageContent #learningArea .mode strong{font-size:14px!important}
+}
+.builder-token.placed{animation:lexi-tile-place .14s ease-out}
+@keyframes lexi-tile-place{from{transform:scale(.94)}to{transform:scale(1)}}
+
+.builder-bank{min-height:64px;padding:8px}.builder-bank-hint{align-self:center;color:#5b6589;font-size:14px}

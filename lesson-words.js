@@ -12,6 +12,10 @@
   if (!root || !list || !tools) return;
   const COLLAPSE_OVER = 16, PREVIEW_WIDE = 12, PREVIEW_PHONE = 8, SEARCH_FROM = 13;
   const phone = matchMedia('(max-width:760px)');
+  const wide = matchMedia('(min-width:1000px)'), launcher=$('launcher'), modes=document.querySelector('#launcher .modes'), modeHeading=document.querySelector('#launcher .mode-heading');
+  function orderModes(){if(!launcher||!modes||!modeHeading)return;if(wide.matches)launcher.prepend(modes);else modeHeading.after(modes);}
+  modes?.setAttribute('role','group');modes?.setAttribute('aria-label','Игровые режимы урока');
+  orderModes();wide.addEventListener('change',orderModes);
   const smooth = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   const plural = (n, a, b, c) => { n = Math.abs(n) % 100; const n1 = n % 10; return n > 10 && n < 20 ? c : n1 > 1 && n1 < 5 ? b : n1 === 1 ? a : c; };
   const words = n => n + ' ' + plural(n, 'слово', 'слова', 'слов');
@@ -85,15 +89,16 @@
   phone.addEventListener?.('change', paint);
   new MutationObserver(paint).observe(document.body, { attributes: true, attributeFilter: ['data-page'] });
 
-  function focusTarget(node) { if (!node) return; if (!node.hasAttribute('tabindex')) node.tabIndex = -1; node.focus({ preventScroll: true }); }
+  function focusTarget(node) { if (!node) return; if (!node.matches('button,input,select,textarea,a[href],[tabindex]')) node.tabIndex = -1; node.focus({ preventScroll: true }); }
   function reveal() {
     if (document.body.dataset.page !== 'lesson') return;
     requestAnimationFrame(() => { root.scrollIntoView({ block: 'start', behavior: smooth() }); focusTarget($('lessonWordsTitle')); });
   }
   function toGames() {
     const heading = document.querySelector('#launcher .mode-heading'), modes = document.querySelector('#launcher .modes');
-    (document.getElementById('selectionChip') || heading || modes)?.scrollIntoView({ block: 'start', behavior: smooth() });
-    focusTarget(heading?.querySelector('h2'));
+    const visibleHeading=heading&&heading.getClientRects().length?heading:null;
+    (visibleHeading||modes)?.scrollIntoView({ block: 'start', behavior: smooth() });
+    focusTarget(visibleHeading?.querySelector('h2')||modes?.querySelector('button:not(:disabled)'));
     if (modes) { modes.classList.remove('lw-pulse'); void modes.offsetWidth; modes.classList.add('lw-pulse'); setTimeout(() => modes.classList.remove('lw-pulse'), 1600); }
   }
   window.LexigoLessonWords = Object.freeze({ reveal, toGames, refresh: paint });

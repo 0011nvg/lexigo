@@ -4,7 +4,7 @@ import { chromium } from './browser-runtime.mjs';
 import { useFakeCloud } from './fake-cloud.mjs';   // 2026-11-04: материалы учителя — только в аккаунте учителя
 import { PDFDocument } from 'pdf-lib';
 import { execSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();await useFakeCloud(page, { role: 'teacher' });
@@ -36,6 +36,7 @@ try {
     assert.equal(await page.evaluate(() => document.querySelectorAll('#lexigoPrint .crit-keys li').length), 20, label + ': 20 keys');
     const pdf = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
     await page.emulateMedia({ media: 'screen' });
+    mkdirSync('test-results',{recursive:true});writeFileSync('test-results/print-layout-'+(long?'long':'regular')+'.pdf',pdf);
     const pages = (await PDFDocument.load(pdf)).getPageCount();
     assert.ok(pages >= 2 && pages <= 3, label + ': one student page + teacher criteria (' + pages + ' pages)');
     if (hasPdftotext) { writeFileSync('/tmp/lexigo-pages.pdf', pdf); const p2 = execSync('pdftotext -f 2 -l 2 /tmp/lexigo-pages.pdf -').toString(); assert.match(p2, /Критерии оценивания для учителя/, label + ': criteria start on page 2'); const p1 = execSync('pdftotext -f 1 -l 1 /tmp/lexigo-pages.pdf -').toString(); assert.doesNotMatch(p1, /Критерии|Ключи/, label + ': student page has no criteria'); }

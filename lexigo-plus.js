@@ -128,14 +128,14 @@
 
   /* ---------- 3. configurable final test ---------- */
   const BOSS_KEY = 'lexigo_boss_types_v1';
-  const BOSS_TYPES = [['spell', 'Напиши слово', 'по памяти, без подсказок', true], ['audio', 'Аудиодиктант', 'услышь и напиши', true], ['builder', 'Конструктор слов', 'собери слово или фразу', false], ['fix', 'Исправь ошибку', 'найди опечатку', false], ['quiz', 'Выбери перевод', 'один из четырёх', false], ['truefalse', 'Верно / неверно', 'проверь перевод', false], ['listen', 'Слушай и выбирай', 'узнай на слух', false]];
-  const BOSS_DEFAULT = ['spell', 'builder', 'fix', 'quiz'];
+  const BOSS_TYPES = [['truefalse', 'Верно / Неверно', 'проверь перевод', false], ['quiz', 'Перевод', 'выбери правильный перевод', false], ['builder', 'Собери слово', 'составь слово из букв', false], ['audio', 'Аудиодиктант', 'послушай и напиши слово', true]];
+  const BOSS_DEFAULT = ['truefalse', 'quiz', 'builder'];
   const audioOK = () => typeof audioAvailable === 'function' && audioAvailable();
   function bossTypes() {
     const saved = readJSON(BOSS_KEY, null);
     let t = Array.isArray(saved) ? saved.filter(x => BOSS_TYPES.some(b => b[0] === x)) : BOSS_DEFAULT.slice();
     if (!audioOK()) t = t.filter(x => !['audio', 'listen'].includes(x));
-    if (!t.some(x => ['spell', 'audio'].includes(x))) t.unshift('spell');
+    if (!t.length) t = BOSS_DEFAULT.slice();
     return t;
   }
   // every way of starting the final test (launcher, dashboard link, whole book, route) uses the chosen task types
@@ -167,8 +167,8 @@
     const msg = el('p', 'boss-msg'); msg.setAttribute('role', 'status');
     const paint = () => {
       grid.querySelectorAll('button').forEach(b => { const on = chosen.has(b.dataset.type); b.setAttribute('aria-pressed', String(on)); b.querySelector('.tick').textContent = on ? '✓' : ''; });
-      const ok = [...chosen].some(t => ['spell', 'audio'].includes(t));
-      msg.textContent = !chosen.size ? 'Отметь хотя бы один тип заданий.' : !ok ? 'Добавь «Напиши слово» или «Аудиодиктант»: в финальном тесте слово нужно написать самому хотя бы раз.' : 'В тесте: ' + [...chosen].map(t => MODE_NAMES[t]).join(', ') + '. Ошибки вернутся в конце теста — это работа над ошибками.';
+      const ok = chosen.size > 0;
+      msg.textContent = !chosen.size ? 'Отметь хотя бы один тип заданий.' : !ok ? 'Добавь «Напиши слово» или «Аудиодиктант»: в финальном тесте слово нужно написать самому хотя бы раз.' : 'В тесте: ' + [...chosen].map(t => MODE_NAMES[t]).join(', ') + '. Ошибки вернутся после других заданий — это работа над ошибками.';
       msg.classList.toggle('warn', !chosen.size || !ok);
       go.disabled = !chosen.size || !ok || pool.length < 3;
       if (pool.length < 3) { msg.textContent = 'Для финального теста нужно минимум 3 отдельных слова (без фраз). Сейчас: ' + pool.length + '.'; msg.classList.add('warn'); }

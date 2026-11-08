@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const require=createRequire(import.meta.url),H=require('../attempt-history.js');
+const sessions=[{id:'s1',created_at:'2026-11-08T08:00:00Z',mode:'boss',events:[{w:'a',m:'quiz',ok:false,answer:'pear',expected:'apple',attempt_index:1},{w:'a',m:'quiz',ok:true,r:true,answer:'apple',expected:'apple',attempt_index:5},{w:'b',ok:true,h:true},{w:'c',k:'self',ok:true}]}];
+const rows=H.rows(sessions);assert.equal(rows.length,4);assert.equal(rows[0].date,sessions[0].created_at);assert.equal(rows[1].retry,true);assert.equal(rows[2].answer,null);assert.equal(rows[2].expected,null);
+assert.deepEqual(H.summary(rows),{answered:3,correct:1,wrong:2,retries:1,accuracy:0});
+assert.equal(H.filter(rows,{word:'pear'}).length,1);assert.equal(H.filter(rows,{mode:'quiz'}).length,2);assert.equal(H.filter(rows,{from:'2026-11-09'}).length,0);assert.equal(H.filter(rows,{errors:true}).length,2);
+const state={mode:'boss',words:[{id:'a',en:'apple',ru:'яблоко'},{id:'b',en:'pear',ru:'груша'}]};let result;
+const window={isSingleWordEntry:()=>true,wordForm:s=>s};
+vm.runInNewContext(fs.readFileSync('local-game-adapter.js','utf8'),{window,console});
+const A=window.LexigoLocalGameAdapter.create({getState:()=>state,shuffle:a=>a.slice(),normalize:s=>s.trim().toLowerCase(),audioAvailable:()=>true,speak(){},record(){},renderQuestion(){},answerUI:(...args)=>result=args,textAnswerHints(){}});
+let q=A.question('audio',state.words[0]);assert.equal(q.model.prompt,null);assert.equal(q.model.autoplay,true);assert.equal(state.answerDetail,null);
+const input={value:'aplpe',focus(){}};q.actions.submit(input,{});assert.equal(result[1],false);assert.equal(state.answerDetail.answer,'aplpe');assert.equal(state.answerDetail.expected,'apple');assert.ok(Number.isFinite(Date.parse(state.answerDetail.answered_at)));
+q=A.question('quiz',state.words[0]);assert.equal(state.answerDetail,null);q.actions.answer('b');assert.equal(state.answerDetail.answer,'груша');assert.equal(state.answerDetail.expected,'яблоко');assert.equal(result[1],false);
+q=A.question('spell',state.words[0]);q.actions.submit({value:'x'.repeat(300)},{});assert.equal(state.answerDetail.answer.length,200);
+console.log('PASS: historical gaps, first/retry accuracy, filters, audio and submitted-answer capture');

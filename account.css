@@ -201,3 +201,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
 
 /* Profile avatars */
 .ava-pick{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.ava-pick button{padding:4px;aspect-ratio:1;overflow:hidden}.profile-avatar-image{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}.cab-ava{overflow:hidden;padding:3px}.avatar-upload{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.avatar-upload-label{display:inline-flex;margin-top:10px;cursor:pointer}.avatar-upload:focus-visible + *{outline:3px solid #315ff6}
+/* Detailed session history uses the existing account tokens and table. */
+.attempt-history .join-row{display:grid;grid-template-columns:minmax(140px,1fr) minmax(160px,1.2fr) minmax(130px,1fr) minmax(130px,1fr);gap:12px;margin:16px 0;align-items:end}
+.attempt-history .join-row label{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.attempt-history .join-row label:last-child{flex-direction:row;align-items:center;grid-column:1/-1;min-height:44px}
+.attempt-history .join-row input[type=checkbox]{flex:none;width:22px;height:22px}
+.attempt-history .join-row input,.attempt-history .join-row select{width:100%;min-height:44px}
+.attempt-history .tbl{min-width:900px}
+.attempt-history td{overflow-wrap:anywhere;max-width:240px}
+@media(max-width:650px){.attempt-history .join-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}

@@ -2,7 +2,7 @@
  * without server rewrite rules; no grade/module/game implementation is duplicated. */
 (()=>{'use strict';
  const byId=id=>document.getElementById(id),make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
- const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',fix:'Исправь ошибку',audio:'Аудиодиктант',crystals:'Кристальная экспедиция',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
+ const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',audio:'Аудиодиктант',crystals:'Кристальная экспедиция',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
  const originalStart=start,originalStop=stop;let applying=false,revealWords=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
  /* 2026-11-02 v2: уроки от учителя и свои уроки учителя — полноценные страницы #/my/a-<задание> и #/my/t-<урок>
     (my-lessons.js). Старые ссылки index.html?task=<id> и ?lesson=<id> переводятся на них. */
@@ -13,11 +13,15 @@
  const lessonPath=()=>'/lesson/'+book.grade+'/'+currentKey();
  const coursePath=()=>'/course/'+book.grade+'/'+modules(book).indexOf(mod);
  function link(label,path,className=''){const a=make('a',label);a.href=path.startsWith('/')?'#'+path:path;a.className=className;return a}
- function focusPage(){const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
+ function focusPage({preserve=false}={}){if(preserve)return;const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
  /* 2026-11-04: «Материалы для учителя» — только для учителя (роль подтверждает cloud.js по профилю на сервере;
     до ответа сервера — подсказка с устройства). Учительские данные защищает сервер, здесь — что показывать. */
  const isTeacher=()=>document.body.dataset.role?document.body.dataset.role==='teacher':!!(window.LexigoAccountHint&&LexigoAccountHint.uid()&&LexigoAccountHint.role()==='teacher');
  function show(page){
+  let switcher=byId('practiceModeSwitcher');
+  if(!switcher){switcher=make('label');switcher.id='practiceModeSwitcher';switcher.className='practice-mode-switcher';switcher.append(make('span','Режим занятия'));const select=make('select');select.setAttribute('aria-label','Режим занятия');for(const [mode,name] of Object.entries(modeNames)){const option=make('option',name);option.value=mode;select.append(option)}select.onchange=()=>{const base=location.hash.slice(1).split('/play/')[0];const run=()=>navigate(base+'/play/'+select.value);if(select.value==='boss'&&window.LexigoPlus&&!base.startsWith('/book/'))LexigoPlus.bossDialog(types=>start('boss',null,types));else run()};switcher.append(select);byId('gameTitle').after(switcher)}
+  switcher.hidden=page!=='play';if(page==='play')switcher.querySelector('select').value=game?.mode||location.hash.split('/').pop();
+
   document.body.dataset.page=page;
   LexigoDashboard.sync(page);
   for(const [id,on] of Object.entries({lessonsPage:page==='lessons',myLessonPage:page==='mylesson',homePage:page==='home',coursePage:page==='course',learningArea:['lesson','words','teacher','play'].includes(page),lessonHeading:['lesson','words','teacher'].includes(page),catalogAside:['words','teacher'].includes(page),launcher:page==='lesson',teacherPage:page==='teacher',game:page==='play'})){
@@ -61,7 +65,7 @@
  function stablePath(){if(!book)return null;if(unit==='__all'){const s=book.sections.find(x=>x.module===mod&&x.words.length);return s?'/l/'+book.grade+'/m-'+s.words[0].id:null}const s=book.sections[Number(unit)];return s&&s.words.length?'/l/'+book.grade+'/'+s.words[0].id:null}
  function navigate(path,{replace=false}={}){history[replace?'replaceState':'pushState']({},'','#'+path);render()}
  function render(){
-  const route=location.hash.slice(1)||'/home';if(lastURL===route)return;lastURL=route;applying=true;
+  const route=location.hash.slice(1)||'/home';if(lastURL===route)return;const preserve=document.body.dataset.page==='play'&&lastURL.split('/play/')[0]===route.split('/play/')[0];lastURL=route;applying=true;
   try{
    if(game)originalStop();const parts=route.split('/').filter(Boolean);
    /* 2026-11-04: урок учителя по ссылке — #/s/<токен> (короткий адрес для учеников) → страница урока #/my/s-<токен> */
@@ -102,10 +106,10 @@
    else if(parts[0]==='course'&&DB.books.some(b=>String(b.grade)===parts[1])){show('course');course(parts[1],parts[2])}
 
    else{show('home');crumbs([]);document.title='LEXI — английский по шагам';if(route!=='/home'){history.replaceState({},'','#/home');lastURL='/home'}}
-  }finally{applying=false}focusPage();
+  }finally{applying=false}focusPage({preserve});
   if(revealWords){revealWords=false;if(document.body.dataset.page==='lesson'){if(window.LexigoLessonWords)window.LexigoLessonWords.reveal();else window.LEXI_REVEAL_WORDS=true}}
  }
- start=function(...args){originalStart(...args);if(!applying&&game){const wb=wholeBook();const path=wb?'/book/'+wb.grade+'/play/'+game.mode:(custom?'/my/'+custom.key:lessonPath())+'/play/'+game.mode;history[location.hash==='#'+path?'replaceState':'pushState']({},'','#'+path);lastURL=path;show('play');if(wb)bookCrumbs(wb.grade,game.mode);else if(custom)crumbs([...custom.crumbs,[modeNames[game.mode],null]]);else lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage()}};
+ start=function(...args){const preserve=document.body.dataset.page==='play';originalStart(...args);if(!applying&&game){const wb=wholeBook();const path=wb?'/book/'+wb.grade+'/play/'+game.mode:(custom?'/my/'+custom.key:lessonPath())+'/play/'+game.mode;history[location.hash==='#'+path?'replaceState':'pushState']({},'','#'+path);lastURL=path;show('play');if(wb)bookCrumbs(wb.grade,game.mode);else if(custom)crumbs([...custom.crumbs,[modeNames[game.mode],null]]);else lessonCrumbs(modeNames[game.mode]);byId('gameTitle').textContent=modeNames[game.mode];document.title=modeNames[game.mode]+' — LEXI';focusPage({preserve})}};
  stop=function(){const wb=wholeBook();originalStop();if(!applying&&document.body.dataset.page==='play')navigate(wb?'/course/'+wb.grade+'/0':custom?'/my/'+custom.key:lessonPath())};
  /* 2026-11-03: «Весь учебник» — свой адрес #/book/<класс>/play/<игра>: учебник берётся из адреса, а не из последнего открытого урока */
  function wholeBook(){const w=window.LexigoWholeBook&&window.LexigoWholeBook.current;return w&&DB.books.some(b=>String(b.grade)===String(w.grade))?w:null}

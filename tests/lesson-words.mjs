@@ -35,7 +35,7 @@ const rows = page => page.locator('#lessonWords #words .wordrow');
   assert.match(await page.locator('#lwStatus').innerText(), /все слова/);
   // словарь — над играми, отдельной кнопки «Посмотреть слова» нет
   const [wy, gy] = await page.evaluate(() => [document.getElementById('lessonWords').getBoundingClientRect().top, document.querySelector('#launcher .modes').getBoundingClientRect().top]);
-  assert.ok(wy < gy, 'the dictionary comes before the games');
+  assert.ok(gy < wy, 'desktop: games come before the dictionary');
   assert.equal(await page.locator('#openWords').isVisible(), false);
   assert.equal(await page.locator('#wordSetBar').isVisible(), false);
   await rows(page).nth(1).locator('.say-btn').click();
@@ -51,7 +51,7 @@ const rows = page => page.locator('#lessonWords #words .wordrow');
   assert.match(await page.locator('#wordsDone').innerText(), new RegExp('Тренировать выбранные \\(' + (expected.length - 2) + '\\)'));
   assert.equal(await page.locator('#all').isDisabled(), false);
   await page.locator('#wordsDone').click();
-  assert.equal(await page.evaluate(() => document.activeElement?.closest('.mode-heading') !== null), true, '«Тренировать» leads to the games');
+  assert.equal(await page.evaluate(() => document.activeElement?.closest('.modes, .mode-heading') !== null), true, '«Тренировать» leads to the games');
   await page.locator('[data-mode="quiz"]').click();
   await page.waitForFunction(() => document.body.dataset.page === 'play');
   const played = await page.evaluate(() => game.words.map(w => w.id).sort());

@@ -1,1 +1,4 @@
 test-results/
+
+node_modules/
+static-preview/

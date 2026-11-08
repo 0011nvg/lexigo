@@ -41,7 +41,7 @@
   const levelStart = l => 50 * l * (l - 1);
   function levelOf(xp) { xp = Math.max(0, Number(xp) || 0); let l = 1; while (xp >= levelStart(l + 1)) l++; return { level: l, title: LEVEL_TITLES[Math.min(l - 1, LEVEL_TITLES.length - 1)], from: levelStart(l), to: levelStart(l + 1), xp }; }
   const MODES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристаллы', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
-  const ASSIGNABLE = ['quiz', 'spell', 'pairs', 'truefalse', 'cards', 'fix', 'builder', 'listen', 'audio', 'mixed', 'boss', 'crystals'];
+  const ASSIGNABLE = ['quiz', 'spell', 'pairs', 'truefalse', 'cards', 'builder', 'listen', 'audio', 'mixed', 'boss', 'crystals'];
   /* Подходит ли игра к набору слов. Правила совпадают с самими играми (practice-controller.js):
      «Конструктор», «Аудиодиктант», «Кристаллы», «Финальный тест» — только отдельные слова, без фраз. */
   const MODE_HINTS = { cards: 'переворачивай и вспоминай', quiz: 'выбор перевода', spell: 'написание по памяти', pairs: 'поиск пар на время', truefalse: 'быстрая проверка',

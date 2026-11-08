@@ -426,6 +426,13 @@ begin
 
   -- 1) разбор ответов, прогресс слов, XP за слово (не более 2 начислений на слово в день)
   for e in select * from jsonb_array_elements(v_events) loop
+    -- Optional detail is bounded; legacy events remain valid.
+    if (e ? 'answer' and (jsonb_typeof(e->'answer') <> 'string' or char_length(e->>'answer') > 200))
+       or (e ? 'expected' and (jsonb_typeof(e->'expected') <> 'string' or char_length(e->>'expected') > 200))
+       or (e ? 'answered_at' and (jsonb_typeof(e->'answered_at') <> 'string' or char_length(e->>'answered_at') > 40)) then
+      raise exception 'bad answer detail';
+    end if;
+    if e ? 'answered_at' then perform (e->>'answered_at')::timestamptz; end if;
     w := e->>'w';
     if w is null or w !~ '^[A-Za-z0-9_.:-]{1,60}$' then continue; end if;
     ok := coalesce((e->>'ok')::boolean, false);
@@ -439,7 +446,7 @@ begin
       v_first := v_first + 1;
       if ok and not hinted then v_first_ok := v_first_ok + 1; end if;
     end if;
-    if skill = 'recall' then v_recall_total := v_recall_total + 1; if ok then v_recall_ok := v_recall_ok + 1; end if; end if;
+    if skill = 'recall' and not retry then v_recall_total := v_recall_total + 1; if ok then v_recall_ok := v_recall_ok + 1; end if; end if;
     insert into public.word_progress(user_id, word_id) values (uid, w) on conflict do nothing;
     if ok then
       v_correct := v_correct + 1;
@@ -501,7 +508,7 @@ begin
 
   -- 3) страж модуля: сервер сам проверяет результат (≥80 % первых ответов и ≥70 % по памяти)
   if v_mode = 'boss' and v_finished and v_first >= 3 and v_first_ok * 10 >= v_first * 8
-     and v_recall_total > 0 and v_recall_ok * 10 >= v_recall_total * 7 and nullif(p->>'boss_key','') is not null then
+     and (v_recall_total = 0 or v_recall_ok * 10 >= v_recall_total * 7) and nullif(p->>'boss_key','') is not null then
     insert into public.boss_wins(user_id, boss_key) values (uid, left(p->>'boss_key', 80)) on conflict do nothing;
     if found then v_xp := v_xp + 50; update public.user_stats set bosses = bosses + 1 where user_id = uid; end if;
   end if;

@@ -80,7 +80,9 @@ const visible = (page, sel) => page.locator(sel).isVisible();
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, permissions: ['notifications'] });
   const state = await useFakeCloud(ctx, { role: 'student' });
   await ctx.addInitScript(() => {
-    // браузер без связи с push-сервисом: подписку имитируем, всё остальное — настоящее (service worker, разрешение)
+    // Test-only permission and subscription; actual local service worker registration.
+    Object.defineProperty(Notification,'permission',{configurable:true,get:()=>'granted'});
+    Notification.requestPermission=async()=>'granted';
     const key = new Uint8Array(65).fill(4);
     const fake = { endpoint: 'https://fcm.googleapis.com/fcm/send/test-device', options: { applicationServerKey: null }, toJSON: () => ({ endpoint: 'https://fcm.googleapis.com/fcm/send/test-device', keys: { p256dh: 'BPfake_p256dh_key_for_tests_only_0123456789', auth: 'auth_secret_123' } }), getKey: () => key.buffer, unsubscribe: async () => { window.__unsub = (window.__unsub || 0) + 1; window.__sub = null; return true; } };
     if (window.PushManager) {

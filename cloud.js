@@ -93,18 +93,22 @@
       return key.length <= 160 ? key : null;
     } catch { return null; }
   }
-  const origRecord = record;
+  function appendAnswer(w,ok,skill){
+ if(!game||!w?.id)return;
+ if(!game.cloud)game.cloud={id:C.clientId(),events:[],meta:metaFromContext(),sent:false};
+ if(game.cloud.events.length>=600)return;
+ const ev={w:String(w.id).slice(0,60),ok:!!ok,k:skill};
+ if(game.hinted)ev.h=true;if(game.retryActive)ev.r=true;if(game.activeQuestionMode)ev.m=game.activeQuestionMode;
+ const detail=game.answerDetail;
+ if(detail&&detail.wordId===w.id){ev.answer=detail.answer;ev.expected=detail.expected;ev.answered_at=detail.answered_at;game.cloud.lastAnswerDetail=detail;}
+ ev.attempt_index=game.cloud.events.length+1;game.cloud.events.push(ev);
+ }
+ document.addEventListener('lexigo:answer',e=>{const d=e.detail;if(d?.hinted&&game?.answerDetail&&game.cloud?.lastAnswerDetail!==game.answerDetail)appendAnswer(d.word,d.correct,d.skill||'recognition');});
+ const origRecord = record;
   record = function (w, ok, skill = 'recognition') {
     origRecord(w, ok, skill);
     try {
-      if (!game || !w || !w.id) return;
-      if (!game.cloud) game.cloud = { id: C.clientId(), events: [], meta: metaFromContext(), sent: false };
-      if (game.cloud.events.length >= 600) return;
-      const ev = { w: String(w.id).slice(0, 60), ok: !!ok, k: skill };
-      if (game.hinted) ev.h = true;
-      if (game.retryActive) ev.r = true;
-      if (game.activeQuestionMode) ev.m = game.activeQuestionMode;
-      game.cloud.events.push(ev);
+      appendAnswer(w,ok,skill);
     } catch { /* never break practice */ }
   };
   const origSave = saveLearningAttempt;
@@ -116,7 +120,7 @@
   };
 
   // rounds left in the middle (back button, another game, closing the tab) are kept as unfinished
-  const isPreview = g => !!(g && g.cloud && g.cloud.meta && g.cloud.meta.preview);
+  const isPreview = g => !!(g && (g.deviceOnly || g.cloud && g.cloud.meta && g.cloud.meta.preview));
   function keepUnfinished() { if (isPreview(game)) return; try { if (game && game.cloud && !game.cloud.sent && game.cloud.events.length) { if (Hint.uid()) { game.cloud.sent = writeQueue([...readQueue(), payload(game, false)]); } } } catch { /* never break practice */ } }
   const origStop = stop;
   stop = function (...args) { keepUnfinished(); flush(); return origStop.apply(this, args); };

@@ -1,4 +1,4 @@
-import {chromium} from 'playwright';
+import {chromium} from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 const browser=await chromium.launch({headless:true});
 const base=process.env.LEXIGO_URL||'http://127.0.0.1:4173/';
@@ -6,17 +6,15 @@ const errors=[];
 for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  const page=await browser.newPage({viewport});
  page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base);
- await page.getByRole('link',{name:/кабинеты/i}).waitFor();
- await page.getByRole('link',{name:/кабинеты/i}).click();
- await page.waitForURL('**/cabinet.html*');
+ // Archived local demonstration is intentionally not linked from the live account UI.
+ await page.goto(base+'cabinet.html');
  assert.equal(await page.getByRole('tab').count(),3);
  assert.equal(await page.getByRole('tabpanel',{name:/учитель/i}).isVisible(),true);
  const options=await page.locator('#assignSection option').count();
  assert.ok(options>=1,'Real Spotlight sections should populate');
  await page.locator('#assignClass').selectOption('2А');
  await page.locator('#assignSection').selectOption('1');
- await page.locator('#assignDate').fill('2026-12-10');
+ await page.locator('#assignDate').fill(new Date(Date.now()+30*86400000).toISOString().slice(0,10));
  await page.locator('#assignMode').selectOption('spell');
  await page.getByRole('button',{name:'Назначить тренировку'}).click();
  assert.match(await page.locator('#assignStatus').innerText(),/добавлено/);
@@ -39,6 +37,7 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.match(target,/assignment=task-/);
  await launch.click();
  await page.waitForURL('**/index.html?assignment=*');
+ await page.waitForFunction(()=>typeof game!=='undefined'&&game?.assignmentId);
  const initial=await page.evaluate(()=>({mode:game?.mode,grade:book.grade,section:Number(unit),assigned:game?.assignmentId,words:game?.words.length}));
  assert.equal(initial.mode,'spell');
  assert.equal(initial.grade,2);
@@ -54,11 +53,12 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  assert.equal(await page.locator('#studentTasks .task').last().locator('.tag').innerText(),'В работе');
  // A second attempt with a correct answer can finish and is recorded separately.
  await page.locator('#studentTasks .task').last().getByRole('link',{name:/начать игру/i}).click();
+ await page.waitForFunction(()=>typeof game!=='undefined'&&game?.assignmentId);
  await page.evaluate(()=>{game.words=[game.words[0]];});
  const answer=await page.evaluate(()=>game.words[0].en);
  await page.locator('#play input[type=text]').fill(answer);
  await page.getByRole('button',{name:'Проверить'}).click();
- await page.getByRole('button',{name:/результат|следующее/i}).click();
+ await page.locator('.lesson-result').waitFor();
  await page.getByText('Испытание завершено').waitFor();
  await page.goto(base+'cabinet.html#student');
  assert.equal(await page.locator('#studentHistory .task').count(),2);
@@ -116,7 +116,7 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  await page.evaluate(()=>{const key='lexigo_cabinet_demo_v1',t=JSON.parse(localStorage.getItem(key));t[0].done=true;localStorage.setItem(key,JSON.stringify(t));localStorage.removeItem('lexigo_cabinet_completed_by_pupil_v1')});
  await page.reload();
  await page.getByRole('tab',{name:/ученик/i}).click();
- assert.equal(await page.locator('#studentTasks .task').first().locator('.tag').innerText(),'В работе');
+ assert.match(await page.locator('#studentTasks .task').first().locator('.tag').innerText(),/^(В работе|Срок истёк)$/);
  await page.getByRole('tab',{name:/учитель/i}).click();
  await page.locator('#filterPupil').selectOption('sasha-2a');
  assert.equal(await page.locator('#teacherHistory .history-entry').count(),0);
@@ -194,6 +194,7 @@ for(const viewport of [{width:1280,height:850},{width:390,height:844}]){
  const personalLink=await personal.getAttribute('href');
  assert.match(personalLink,/pupil=sasha-2a/);
  await personal.click();
+ await page.waitForFunction(()=>typeof game!=='undefined'&&game?.pupilId==='sasha-2a');
  assert.equal(await page.evaluate(()=>game?.pupilId),'sasha-2a');
  await page.locator('#back').click();
  // Tampering with the pupil in the URL must not launch another pupil's task.

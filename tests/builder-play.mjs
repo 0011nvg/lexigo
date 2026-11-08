@@ -14,6 +14,7 @@ const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const multiset = a => [...a].sort().join('\u0001');
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page.addInitScript(()=>document.addEventListener('lexigo:answer',e=>{window.builderLast={correct:e.detail.correct,text:e.detail.feedback.textContent}}));
   page.on('pageerror', e => errors.push(e.message));
   page.on('dialog', d => { errors.push('alert: ' + d.message()); d.dismiss(); });
   await page.goto(BASE + '#/home');
@@ -42,10 +43,12 @@ try {
       if (wrong && seq.join('') === order.join('')) seq.push(seq.shift());
       for (const ch of seq) await page.locator('#play .builder-bank .builder-token:not([hidden])').filter({ hasText: new RegExp('^' + esc(ch) + '$') }).first().click();
       assert.equal(await page.locator('#play .builder-bank .builder-token:not([hidden])').count(), 0, 'every tile used exactly once');
+      await page.evaluate(()=>window.builderLast=null);
       await page.locator('#play .builder-tools button', { hasText: 'Проверить' }).click();
-      await page.locator('#play .feedback').waitFor();
-      assert.equal(await page.locator('#play .feedback').getAttribute('data-result'), wrong ? 'miss' : 'ok', (wrong ? 'wrong order rejected: ' : 'accepted: ') + st.answer);
-      if (wrong) { wrongTried++; assert.match(await page.locator('#play .feedback').innerText(), new RegExp('Правильный порядок: «' + esc(st.answer) + '»')); }
+      await page.waitForFunction(()=>window.builderLast!==null);
+      const feedback=await page.evaluate(()=>window.builderLast);
+      assert.equal(feedback.correct,!wrong,(wrong?'wrong order rejected: ':'accepted: ')+st.answer);
+      if (wrong) { wrongTried++; assert.match(feedback.text, new RegExp('Правильный порядок: «' + esc(st.answer) + '»')); }
       questions++;
       await nextQ(page);
     }

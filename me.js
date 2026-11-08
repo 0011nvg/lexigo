@@ -230,7 +230,7 @@
       const assessed = s.correct + s.wrong;
       hist.append(h('div', { class: 'row' }, h('div', { class: 'row-main' }, h('b', { text: displaySessionTitle(s.title || 'Тренировка') }), h('small', { text: (C.MODES[s.mode] || s.mode) + ' · ' + C.fmtDate(s.created_at, true) + (s.finished ? '' : ' · не завершена') })),
         assessed ? h('span', { class: 'score', title: 'Верно с первой попытки', text: s.accuracy != null ? s.accuracy + '%' : s.correct + '/' + assessed }) : null,
-        s.xp ? h('span', { class: 'chip blue', text: '+' + s.xp + ' XP' }) : null));
+        s.xp ? h('span', { class: 'chip blue', text: '+' + s.xp + ' XP' }) : null, h('button',{class:'btn-link',type:'button',text:'Ответы',onclick:()=>sessionAnswers(s.id)})));
     }
 
     // classes
@@ -327,7 +327,7 @@
     for (const g of T.groups) {
       const ms = T.members.filter(m => m.group_id === g.id), link = base + 'auth.html?join=' + g.join_code;
       const rows = ms.map(m => { const r = studentRow(m.student_id); return h('tr', null,
-        h('td', null, h('b', { text: studentName(m.student_id) })),
+        h('td', null, h('b', { text: studentName(m.student_id) }),h('button',{class:'btn-link',type:'button',text:'История',onclick:()=>pupilHistory(m.student_id)})),
         h('td', { text: C.levelOf(r.xp).level + ' ур. · ' + r.xp + ' XP' }),
         h('td', { text: r.week }),
         h('td', null, r.avg == null ? '—' : h('span', { class: 'chip ' + (r.avg >= 80 ? 'ok' : r.avg >= 60 ? 'warn' : 'miss'), text: r.avg + '%' })),
@@ -393,6 +393,14 @@
           h('button', { class: 'btn-acc ghost small', type: 'button', text: 'Удалить', onclick: () => dialog('Удалить задание?', h('p', { text: 'Задание исчезнет у учеников. Уже сохранённые тренировки останутся в их истории.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить', onclick: async () => { const { error } = await sb.from('assignments').delete().eq('id', a.id); if (error) return fail(error); close(); await refresh(); } })]) }))));
     }
     return wrap;
+  }
+  async function sessionAnswers(id){
+   const {data,error}=await sb.from('sessions').select('id,events,title,created_at,mode').eq('id',id).maybeSingle();if(error)return fail(error);if(!data)return toast('Результат недоступен.');
+   dialog(displaySessionTitle(data.title||'Ответы занятия'),LexiAttemptHistory.render([data],{modeNames:C.MODES,wordById:id=>C.words().get(id)}));
+  }
+  async function pupilHistory(id){
+   const {data,error}=await sb.from('sessions').select('id,events,title,created_at,mode,grade,section_index,accuracy,correct,wrong,total,finished').eq('user_id',id).order('created_at',{ascending:false}).limit(300);if(error)return fail(error);
+   dialog('История · '+studentName(id),LexiAttemptHistory.render(data||[],{modeNames:C.MODES,wordById:id=>C.words().get(id)}));
   }
   async function results(a) {
     const targets = a.student_id ? [a.student_id] : T.members.filter(m => m.group_id === a.group_id).map(m => m.student_id);

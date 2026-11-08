@@ -17,5 +17,7 @@ if (process.argv.includes('--write')) { fs.writeFileSync(path, JSON.stringify({ 
 const base = JSON.parse(fs.readFileSync(path, 'utf8'));
 assert.equal(JSON.stringify(inv.books), JSON.stringify(base.books), 'Vocabulary books / sections / words / order changed');
 assert.equal(inv.ids, base.ids, 'Word IDs or order changed'); assert.equal(inv.totalWords, base.totalWords);
-for (const m of base.modes) assert.ok(modes.includes(m), 'Mode removed: ' + m);
-console.log(`PASS inventory: ${inv.totalWords} words, ${inv.totalSections} sections, ${inv.books.length} books identical to baseline (sha256 per book); ${base.modes.length} original modes present (+${modes.length - base.modes.length} new)`);
+for (const m of base.modes.filter(m=>m!=='fix')) assert.ok(modes.includes(m), 'Mode removed: ' + m);
+assert.ok(!modes.includes('fix'),'Retired correction mode must not have a launcher entry');
+assert.ok(fs.readFileSync('cloud-core.js','utf8').includes("fix: 'Исправь ошибку'"),'Historical mode labels must remain readable');
+console.log(`PASS inventory: ${inv.totalWords} words, ${inv.totalSections} sections, ${inv.books.length} books identical to baseline; correction mode retired with historical labels retained`);

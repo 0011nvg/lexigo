@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 
 // 2026-11-03: a right answer moves on by itself; a wrong one waits for «Следующее»
@@ -11,7 +11,7 @@ const errors=[];
 async function run(viewport){
  const page=await browser.newPage({viewport,reducedMotion:'reduce'});
  page.on('pageerror',error=>errors.push(error.message));
- await page.goto(base);
+ await page.goto(base+'#/lesson/5/0');
  await page.locator('#words input[type=checkbox]').first().waitFor({state:'attached'});
  // Accept case and harmless sentence punctuation without altering source vocabulary.
  assert.equal(await page.evaluate(()=>normalize('Fine things!')),await page.evaluate(()=>normalize('fine things')));
@@ -129,10 +129,10 @@ async function run(viewport){
   selected=new Set(singles.map(w=>w.id));
   const original=[...document.querySelectorAll('#taskTypes input')].map(x=>[x,x.checked]);
   try{
-   // the final test is configured in its own settings (2026-11-02); a set without a writing task is still refused
-   const previous=game;start('boss',null,['fix']);
-   if(game!==previous)throw Error('Boss accepted typo correction as independent recall');
-   if(!document.querySelector('.lx-notice'))throw Error('Refusal must be explained by Lexi');document.querySelector('.lx-notice').remove();
+   start('boss',null,['quiz']);
+   if(!game||game.activeQuestionMode!=='quiz')throw Error('Recognition-only final test rejected');
+   if(game.recallTotal!==0)throw Error('Recognition credited as unaided writing');
+   stop();
    start('boss',null,['spell']);
    if(!game||game.mode!=='boss'||!['spell','audio'].includes(game.activeQuestionMode))throw Error('Boss lacks unaided recall');
    stop();
@@ -164,27 +164,26 @@ async function run(viewport){
  // Final assessment must not be passed by a high score without independent recall.
  await page.evaluate(()=>{
   const base={words:[{},{},{},{},{}],retries:0,firstCorrect:5,recallTotal:0,recallScore:0,retryQueue:[],retryIds:new Set()};
-  if(finalTestPassed(base))throw Error('No independent recall accepted');
+  if(!finalTestPassed(base))throw Error('Recognition-only test rejected despite 100% first accuracy');
   if(finalTestPassed({...base,recallTotal:2,recallScore:1}))throw Error('Less than 70% recall accepted');
   if(!finalTestPassed({...base,recallTotal:2,recallScore:2}))throw Error('Valid result rejected');
   if(finalTestPassed({...base,recallTotal:2,recallScore:2,retryQueue:[{}]}))throw Error('Pending retry accepted');
   if(finalTestPassed({...base,firstCorrect:3,recallTotal:2,recallScore:2}))throw Error('Below 80% first attempts accepted');
  });
- // An incorrect retry must reappear; success on a later retry resolves it.
+ // One retry per word: failure remains visible, success resolves the pending error.
  await page.evaluate(()=>{
   const w=scope[0],saved=progress[w.id],previous=game;
   try{
-   game={mode:'spell',words:[w],index:0,answered:false,hinted:false,retryActive:false,retryIds:new Set(),retryQueue:[],retryIndexes:new Set(),retries:0,firstCorrect:0,recallTotal:0,recallScore:0,score:0,misses:0,activeQuestionMode:'spell'};
-   answerUI(w,false,w.en,'recall');
-   if(game.retryQueue.length!==1)throw Error('First mistake not queued');
-   advance();
-   if(!game.retryActive||game.words.length!==2)throw Error('First retry missing');
-   answerUI(w,false,w.en,'recall');
-   if(game.retryQueue.length!==1)throw Error('Failed retry not requeued');
-   advance();
-   if(!game.retryActive||game.words.length!==3)throw Error('Second retry missing');
-   answerUI(w,true,w.en,'recall');
-   if(game.retryQueue.length!==0||game.retryIds.has(w.id))throw Error('Correct retry did not clear error');
+   for(const retryCorrect of [false,true]){
+    game={mode:'spell',words:[w],index:0,answered:false,hinted:false,retryActive:false,retryIds:new Set(),retryQueue:[],retryIndexes:new Set(),retries:0,firstCorrect:0,recallTotal:0,recallScore:0,score:0,misses:0,activeQuestionMode:'spell'};
+    answerUI(w,false,w.en,'recall');
+    if(game.retryQueue.length!==1)throw Error('First mistake not queued');
+    advance();
+    if(!game.retryActive||game.words.length!==2)throw Error('First retry missing');
+    answerUI(w,retryCorrect,w.en,'recall');
+    if(game.retryQueue.length!==0||game.words.length!==2)throw Error('Retry caused an unbounded extra attempt');
+    if(game.retryIds.has(w.id)===retryCorrect)throw Error('Retry result was not preserved');
+   }
    if(finalTestPassed({...game,mode:'boss',firstCorrect:0,recallTotal:1,recallScore:1}))throw Error('Retry inflated initial accuracy');
   }finally{if(saved)progress[w.id]=saved;else delete progress[w.id];game=previous;save();updateStats()}
  });

@@ -452,8 +452,8 @@
   }
 
   /* ---------- слова уровня: по порядку набора, без лишних повторов; ошибки — в следующем блоке ---------- */
-  const TYPES = { 1: ['quiz', 'truefalse', 'quiz', 'fix', 'truefalse'], 2: ['quiz', 'builder', 'truefalse', 'fix', 'quiz'], 3: ['quiz', 'builder', 'fix', 'spell', 'truefalse'],
-    4: ['builder', 'spell', 'quiz', 'fix', 'truefalse'], 5: ['spell', 'builder', 'fix', 'quiz', 'spell'] };
+  const TYPES = { 1: ['quiz', 'truefalse', 'quiz', 'builder', 'truefalse'], 2: ['quiz', 'builder', 'truefalse', 'builder', 'quiz'], 3: ['quiz', 'builder', 'builder', 'spell', 'truefalse'],
+    4: ['builder', 'spell', 'quiz', 'builder', 'truefalse'], 5: ['spell', 'builder', 'builder', 'quiz', 'spell'] };
   const singleWord = w => typeof isSingleVocabularyWord === 'function' ? isSingleVocabularyWord(w.en) : /^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/.test(String(w.en).trim());
   /* весь набор слов (у урока, модуля, всего учебника — по порядку); у урока учителя — его слова */
   function wordPool(g) {

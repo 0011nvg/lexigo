@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;};
 const btn=(text,cls,fn)=>{const b=el('button',cls||'btn',text);b.type='button';b.onclick=fn;return b;};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const moveWord=n=>n%100>=11&&n%100<=14?'ходов':n%10===1?'ход':n%10>=2&&n%10<=4?'хода':'ходов';
 let G=null,data;
 const key=()=> 'lexigo_crystal_v4'+(window.LexigoAccountHint?.uid()?':'+window.LexigoAccountHint.uid():'');
 function load(){try{data=JSON.parse(localStorage.getItem(key())||'null');}catch{}if(!data||typeof data!=='object')data={};if(!data.levels||typeof data.levels!=='object')data.levels={};data.calm=data.calm===true;}
@@ -21,7 +22,7 @@ function showMap(){
  const rules=el('p','cq-rules','Без ряда кристаллы возвращаются обратно, ход сохраняется. Новые кристаллы падают сверху; новые ряды взрываются автоматически. Диагонали не считаются. С уровня 3 появляются неподвижные камни.');map.append(rules);
  const list=el('div','cq-levels');
  for(const L of E.LEVELS){const unlocked=open(L.id),r=data.levels[L.id];const b=btn('', 'cq-level'+(unlocked?'':' locked'),()=>{if(unlocked)startLevel(L.id);});b.dataset.level=L.id;b.disabled=!unlocked;b.setAttribute('aria-label','Уровень '+L.id+'. '+L.name+(unlocked?'':'. Сначала пройди предыдущий уровень'));
-  const text=el('span','cq-level-txt');text.append(el('strong',null,L.name),el('small',null,L.target+' очков · '+L.moves+' ходов'+(L.rocks.length?' · камни: '+L.rocks.length:'')));
+  const text=el('span','cq-level-txt');text.append(el('strong',null,L.name),el('small',null,L.target+' очков · '+L.moves+' '+moveWord(L.moves)+(L.rocks.length?' · камни: '+L.rocks.length:'')));
   b.append(el('span','cq-num',unlocked?L.id:'🔒'),text,el('span','cq-stars',r?.won?'★'.repeat(r.stars||1):'☆'));list.append(b);
  }
  map.append(list,el('p','muted tiny','Пройденные уровни и рекорды сохраняются на этом устройстве.'));
@@ -31,10 +32,10 @@ function startLevel(id){
  if(!G||!open(id))return;const L=E.level(id);if(!L)return;
  G.revision++;G.st=E.create(id,E.dailySeed(id,new Date().toLocaleDateString('sv-SE')));G.busy=false;G.sel=null;G.focus=0;heading('💎 '+L.id+'. '+L.name);
  const play=el('section','cq-play cq-simple'+(reduced()?' calm':''));
- play.innerHTML='<div class="cq-hud"><div class="cq-moves"><b id="cqMoves"></b><small>ходов осталось</small></div><div class="cq-scorebox"><b id="cqScore">0</b><small id="cqTarget"></small><div class="cq-starbar"><i id="cqStarFill"></i></div></div><img class="cq-friend" src="assets/lexi-head.webp" alt="Лекси"></div><div class="cq-stage"><div class="cq-board" id="cqBoard" role="group" tabindex="0"></div></div><p id="cqMessage" class="cq-message" role="status" aria-live="polite"></p><p class="cq-help">Перетащи кристалл к соседнему или нажми два соседних. Клавиатура: стрелки — выбор, Enter — взять, стрелка — сдвиг. Камни не двигаются.</p><div class="cq-tools"></div>';
+ play.innerHTML='<div class="cq-hud"><div class="cq-moves"><b id="cqMoves"></b><small id="cqMovesLabel">ходов</small></div><div class="cq-scorebox"><b id="cqScore">0</b><small id="cqTarget"></small><div class="cq-starbar"><i id="cqStarFill"></i></div></div><img class="cq-friend" src="assets/lexi-head.webp" alt="Лекси"></div><div class="cq-stage"><div class="cq-board" id="cqBoard" role="group" tabindex="0"></div></div><p id="cqMessage" class="cq-message" role="status" aria-live="polite"></p><p class="cq-help">Перетащи кристалл к соседнему или нажми два соседних. Клавиатура: стрелки — выбор, Enter — взять, стрелка — сдвиг. Камни не двигаются.</p><div class="cq-tools"></div>';
  play.querySelector('.cq-tools').append(btn('💡 Подсказка','btn secondary',hint),btn('⏸ Пауза','btn secondary',pause),btn(data.calm?'Анимация: спокойная':'Анимация: обычная','btn secondary',()=>{data.calm=!data.calm;persist();startLevelAfterPreference();}));
  const soundButton=btn(data.muted?'Звук: выключен':'Звук: включён','btn secondary',()=>{data.muted=!data.muted;persist();soundButton.textContent=data.muted?'Звук: выключен':'Звук: включён';if(!data.muted)sound('swap');});soundButton.dataset.pref='muted';play.querySelector('.cq-tools').append(soundButton);
- $('play').replaceChildren(play);const board=$('cqBoard');board.style.setProperty('--n',G.st.size);bind(board);draw(G.st.cells);hud();message('Цель: '+L.target+' очков за '+L.moves+' ходов.'+(L.rocks.length?' Серые камни нельзя перемещать или разбить.':''));board.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
+ $('play').replaceChildren(play);const board=$('cqBoard');board.style.setProperty('--n',G.st.size);bind(board);draw(G.st.cells);hud();message('Цель: '+L.target+' очков за '+L.moves+' '+moveWord(L.moves)+'.'+(L.rocks.length?' Серые камни нельзя перемещать или разбить.':''));board.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
 }
 function startLevelAfterPreference(){const p=document.querySelector('.cq-play');p?.classList.toggle('calm',reduced());const b=p?.querySelector('.cq-tools button:last-child');if(b)b.textContent=data.calm?'Анимация: спокойная':'Анимация: обычная';}
 function draw(cells){
@@ -45,7 +46,7 @@ function draw(cells){
 }
 function selection(){if(!G)return;document.querySelectorAll('#cqBoard .cq-gem').forEach(b=>{const i=Number(b.dataset.i);b.classList.toggle('sel',i===G.sel);b.classList.toggle('kbd',!!G.keyboard&&i===G.focus);b.setAttribute('aria-pressed',String(i===G.sel));});}
 function message(text){if($('cqMessage'))$('cqMessage').textContent=text;}
-function hud(){const st=G?.st;if(!st||!$('cqMoves'))return;$('cqMoves').textContent=st.moves;$('cqScore').textContent=st.score;$('cqTarget').textContent='Цель: '+st.target+' очков';$('cqStarFill').style.width=Math.min(100,st.score/st.target*100)+'%';$('bar').style.width=Math.min(100,st.score/st.target*100)+'%';$('counter').textContent='Уровень '+st.level+' из '+E.LEVELS.length+' · 10 очков за кристалл';$('cqBoard').setAttribute('aria-label','Поле 7 на 7. '+st.moves+' ходов, '+st.score+' из '+st.target+' очков.');}
+function hud(){const st=G?.st;if(!st||!$('cqMoves'))return;$('cqMoves').textContent=st.moves;$('cqMovesLabel').textContent=moveWord(st.moves);$('cqScore').textContent=st.score;$('cqTarget').textContent='Цель: '+st.target+' очков';$('cqStarFill').style.width=Math.min(100,st.score/st.target*100)+'%';$('bar').style.width=Math.min(100,st.score/st.target*100)+'%';$('counter').textContent='Уровень '+st.level+' из '+E.LEVELS.length+' · 10 очков за кристалл';$('cqBoard').setAttribute('aria-label','Поле 7 на 7. '+st.moves+' ходов, '+st.score+' из '+st.target+' очков.');}
 function tap(i){if(!G?.st||G.busy||G.st.over)return;if(G.st.cells[i]?.rock){message('Это неподвижный камень. Выбери соседние кристаллы.');return;}G.focus=i;
  if(G.sel===i)G.sel=null;else if(G.sel==null)G.sel=i;else if(E.neighbors(G.st,G.sel,i)){const a=G.sel;G.sel=null;attempt(a,i);return;}else G.sel=i;selection();}
 function bind(board){

@@ -21,7 +21,7 @@ function selectedBook(){const grade=((location.hash.match(/^#\/(?:course|book)\/
 const roundKey=(grade,mode)=>'B'+grade+'|'+mode;
 function lexical(b){const seen=new Set();return b.sections.flatMap(s=>s.words).filter(w=>(typeof isLexicalEntry!=='function'||isLexicalEntry(w))&&!seen.has(w.id)&&seen.add(w.id))}
 function eligibleFor(words,mode){
- if(mode==='boss'||mode==='crystals')return words.filter(w=>SINGLE.test(String(w.en).trim()));
+ if(mode==='boss')return words.filter(w=>SINGLE.test(String(w.en).trim()));
  if(mode==='builder')return words.filter(w=>typeof isBuilderWord!=='function'||isBuilderWord(w));
  if(mode==='audio')return words.filter(w=>typeof isSingleWordEntry!=='function'||isSingleWordEntry(w));
  return words}
@@ -34,7 +34,7 @@ function render(){const b=selectedBook();if(!b||!window.LexiRounds)return;const 
  for(const [mode,title] of configs){if(mode==='audio'&&typeof audioAvailable==='function'&&!audioAvailable())continue;if(mode==='listen'&&typeof audioAvailable==='function'&&!audioAvailable())continue;
   const eligible=eligibleFor(words,mode);if(!eligible.length)continue;adoptOld(b.grade,mode);
   const btn=tile(title,'',null,()=>play(b,mode));
-  if(mode==='crystals'){btn.querySelector('small').textContent='15 слов учебника по порядку · своя игра с уровнями'}
+  if(mode==='crystals'){btn.querySelector('small').textContent='Три в ряд · пять уровней с целью по очкам'}
   else{const i=LexiRounds.info(roundKey(b.grade,mode),eligible,sizeOf(mode));btn.querySelector('small').textContent=progressText(i,'\n');const meter=document.createElement('span');meter.className='wb-meter';const fill=document.createElement('i');fill.style.width=Math.round(i.done/Math.max(1,i.total)*100)+'%';meter.append(fill);btn.append(meter)}
   btn.dataset.wbMode=mode;modes.append(btn)}
  /* несколько игр сразу */

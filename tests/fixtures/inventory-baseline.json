@@ -15,15 +15,15 @@
    "grade": 2,
    "sections": 36,
    "modules": 7,
-   "words": 257,
-   "hash": "210429f4c4446e6c32f8f3337e3ebcde2d4bc64cfea8ed92252ac499b8893153"
+   "words": 274,
+   "hash": "d7f7bf67186815fe1e3dbd24f5a35aec4b829cb69258dbb6c374ffdb99f44504"
   },
   {
    "grade": 3,
    "sections": 51,
-   "modules": 6,
-   "words": 432,
-   "hash": "19e3e6de239e6f645a1c741c6400cbba46000e22f3e1e8e65f6629fa527f1f40"
+   "modules": 9,
+   "words": 436,
+   "hash": "11ad9b6d4e8cfcc2d2828994613ddc2fdab32863a0949c388f242fc469d93dd3"
   },
   {
    "grade": 4,
@@ -75,9 +75,9 @@
    "hash": "48c148b9091d345a52a3106c97864b988b20e7538ae100ae6e783f31717ccb7f"
   }
  ],
- "totalWords": 11698,
+ "totalWords": 11719,
  "totalSections": 575,
- "ids": "05a8230546dd93dfbad41e1ba960b7a16544ce6a51b1f341536b3c32c40b3bff",
+ "ids": "580d12ea5d20029d1c56348c0df3b7e023252434e426caa5246c394dc4a0234b",
  "modes": [
   "cards",
   "quiz",
@@ -85,7 +85,6 @@
   "listen",
   "pairs",
   "builder",
-  "fix",
   "spell",
   "audio",
   "crystals",

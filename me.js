@@ -28,7 +28,7 @@
   const relDay = d => { const n = daysAgo(d); return n <= 0 ? 'сегодня' : n === 1 ? 'вчера' : n + ' ' + plural(n, 'день', 'дня', 'дней') + ' назад'; };
   const isLearned = r => r.recall_count >= 2 && r.streak >= 2;
   const needsReview = r => (r.due_at && Date.parse(r.due_at) <= Date.now()) || (r.wrong_count > 0 && r.streak < 2);
-  const modules = b => [...new Set(b.sections.map(s => s.module))];
+  const modules = b => window.LexigoModules(b);
   const lexicalCount = b => b.sections.reduce((n, s) => n + s.words.filter(C.isLexical).length, 0);
   async function allRows(q) { const out = []; for (let p = 0; p < 15; p++) { const { data, error } = await q().range(p * 1000, p * 1000 + 999); if (error) throw error; out.push(...data); if (data.length < 1000) break; } return out; }
 

@@ -16,3 +16,7 @@
     if (book.grade <= 4) for (const s of book.sections) if (MODULES[s.module]) s.module = MODULES[s.module];
   }
 })();
+
+window.LexigoModules = b => { const list=[...new Set(b.sections.map(s=>s.module))]; return Number(b.grade)===3 ? list.sort((a,z)=>(Number(a.match(/\d+/)?.[0])||0)-(Number(z.match(/\d+/)?.[0])||0)) : list; };
+
+window.LexigoSectionEntries = b => b.sections.map((s,i)=>({s,i})).sort((a,z)=>(a.s.sourceOrder??a.i)-(z.s.sourceOrder??z.i));

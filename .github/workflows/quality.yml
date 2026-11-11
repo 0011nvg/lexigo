@@ -14,6 +14,7 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/verify.mjs
+      - run: node tests/materials.mjs
       - run: node tests/balanced-groups.mjs
       - run: node tests/retry-policy.mjs
       - run: node tests/attempt-history.mjs

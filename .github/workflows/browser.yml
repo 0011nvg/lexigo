@@ -19,6 +19,7 @@ jobs:
       - run: sudo apt-get install -y poppler-utils
       - run: python3 -m http.server 4173 --bind 127.0.0.1 &
       - run: node tests/verify.mjs
+      - run: node tests/materials.mjs
       - run: node tests/balanced-groups.mjs
       - run: node tests/retry-policy.mjs
       - run: node tests/attempt-history.mjs
@@ -27,6 +28,7 @@ jobs:
       - run: node tests/inventory.mjs
       - run: node tests/crystal-engine.mjs
       - run: LEXIGO_WEBKIT=1 node tests/crystal-play.mjs
+      - run: node tests/game-layout.mjs
       - run: node tests/progress-model.mjs
       - run: node tests/dashboard.mjs
       - run: node tests/results.mjs
@@ -97,10 +99,8 @@ jobs:
         run: |
           . /tmp/stack.env
           node tests/e2e/email-flow.mjs
-      - name: Crystal expedition rating (browser + server)
-        run: |
-          . /tmp/stack.env
-          node tests/e2e/crystal-rating.mjs
+      # Crystal v4 uses separate local records. The v3 word/rating protocol is retained
+      # on the server for history; its retired UI journey does not apply to v4.
       - name: Rounds in blocks continue on another device (browser + server)
         run: |
           . /tmp/stack.env

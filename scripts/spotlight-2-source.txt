@@ -1,0 +1,337 @@
+Вводный раздел|Let's Go!
+and=и
+Fine, thanks!=Спасибо, хорошо!
+go=идти, ходить
+goodbye=до свидания
+hello=здравствуй(те)
+How are you?=Как дела?
+Let's=давай(те)
+me=меня, мне
+my=мой
+What's your name?=Как тебя зовут?
+you=ты, вы
+
+Starter Module|Hello!
+book=книга
+brother=брат
+children=дети
+daddy=папа
+friend=друг
+grandma=бабушка
+grandpa=дедушка
+mummy=мама
+pen=ручка
+pencil=карандаш
+sister=сестра
+sit down=садись, садитесь
+stand up=встань(те)
+workbook=рабочая тетрадь
+
+Starter Module|My Family!
+blue=голубой, синий
+colour=цвет
+family=семья
+green=зелёный
+meet=встречаться, знакомиться
+red=красный
+white=белый
+yellow=жёлтый
+
+Module 1|Unit 1: My Home!
+bed=кровать
+chair=стул
+home=дом
+house=дом (строение)
+in=в
+it=он, она, оно (о предметах, животных)
+look at=смотреть на что-либо, кого-либо
+lovely=прекрасный, красивый
+nice=хороший, милый
+our=наш
+radio=радио
+see=видеть
+table=стол
+tree house=домик на дереве
+What's this?=Что это?
+yes=да
+
+Module 1|Unit 2: Where’s Chuckles?
+bathroom=ванная комната
+bedroom=спальня
+black=чёрный
+brown=коричневый
+garden=сад
+he=он
+kitchen=кухня
+no=нет
+she=она
+they=они
+where=где
+
+Module 1|Unit 3: In the Bath!
+bath=ванна
+door=дверь
+eye=глаз
+living room=гостиная
+make=делать
+on=на
+window=окно
+
+Module 2|Unit 4: My Birthday!
+age=возраст
+birthday=день рождения
+candle=свеча
+city=город
+country=страна
+eight=восемь
+five=пять
+four=четыре
+happy=счастливый
+How old are you?=Сколько тебе лет?
+nine=девять
+one=один
+party=праздник, вечеринка
+sad=грустный
+seven=семь
+six=шесть
+ten=десять
+they=они
+three=три
+two=два
+
+Module 2|Unit 5: Yummy Chocolate!
+apple=яблоко
+banana=банан
+biscuit=печенье
+burger=бургер
+chips=картофель фри
+chocolate=шоколад
+give=давать
+please=пожалуйста
+sandwich=бутерброд
+Thank you!=Спасибо!
+too=тоже
+What's your favourite food?=Какая у тебя любимая еда?
+yummy=вкусный
+
+Module 2|Unit 6: My Favourite Food!
+eat=есть
+ice cream=мороженое
+milk=молоко
+orange juice=апельсиновый сок
+pizza=пицца
+
+Module 2|The Town Mouse & The Country Mouse
+bread=хлеб
+country=сельская местность
+help=помогать
+like=нравиться, любить
+meat=мясо
+pretty=прелестный, симпатичный
+town=город
+very=очень
+want=хотеть
+
+Module 2|Gardens in the UK
+birdhouse=скворечник
+gnome=гном
+greenhouse=теплица
+people=люди
+their=их (чьё?)
+them=их (кого?), им
+UK=Соединённое Королевство (Великобритании и Северной Ирландии)
+
+Module 2|Food Favourites!
+dish=блюдо
+popular=популярный
+
+Module 2|Gardens in Russia
+country house=загородный дом, дача
+fruit=фрукт, фрукты
+grow=расти, выращивать
+Russia=Россия
+vegetable=овощ
+village=деревня
+
+Module 2|Typical Russian Food
+pie=пирог
+Russian=русский
+
+Module 3|Unit 7: My Animals!
+toy=игрушка
+animal=животное
+bird=птица
+chimp=шимпанзе
+dance=танцевать
+fish=рыба
+frog=лягушка
+horse=лошадь
+jump=прыгать
+run=бегать
+sing=петь
+swim=плавать
+
+Module 3|Unit 8: I Can Jump!
+boy=мальчик
+can=мочь, уметь
+climb=взбираться, карабкаться
+fly=летать
+girl=девочка
+
+Module 3|Unit 9: At the Circus!
+circus=цирк
+clown=клоун
+funny=смешной
+magician=фокусник
+swing=качаться
+
+Module 4|Unit 10: My Toys!
+ballerina=балерина
+doll=кукла
+have fun=веселиться
+his=его
+shelf=полка
+teddy bear=плюшевый мишка
+toy soldier=игрушечный солдатик
+under=под
+
+Module 4|Unit 11: She’s got blue eyes!
+clever=умный
+dark hair=тёмные волосы
+ear=ухо
+feet=ступни
+hand=кисть руки
+mouth=рот
+nose=нос
+wonderful=чудесный, прекрасный
+
+Module 4|Unit 12: Teddy’s Wonderful!
+ball=мяч
+fair hair=светлые волосы
+jack-in-the-box=попрыгунчик (игрушка)
+puppet=кукла, надевающаяся на руку
+
+Module 5|Unit 13: My Holidays!
+boat=лодка
+coat=пальто
+hat=шляпа
+holiday=каникулы, отпуск, праздник
+It's hot!=Жарко!
+It's raining!=Идёт дождь!
+It's sunny!=Солнечно!
+jacket=куртка
+play=играть
+put on=надевать
+shorts=шорты
+take off=снимать
+wear=носить (одежду)
+What's the weather like?=Какая сейчас погода?
+bread=хлеб
+country=сельская местность
+help=помогать
+like=нравиться, любить
+
+Module 5|Unit 14: It’s Windy!
+island=остров
+meat=мясо
+It's cold!=Холодно!
+pretty=прелестный, симпатичный
+It's windy!=Ветрено!
+town=город
+jeans=джинсы
+very=очень
+magic=волшебный
+want=хотеть
+shoes=туфли
+skirt=юбка
+socks=носки
+T-shirt=футболка
+crazy about=быть без ума от кого-либо, чего-либо
+
+Module 5|Unit 15: A Magic Island!
+autumn=осень
+especially=особенно
+English=английский язык; английский
+flower=цветок
+all kinds of=все виды
+music=музыка
+clothes=одежда
+sea=море
+cute=симпатичный, славный
+spring=весна
+different=различный
+summer=лето
+Great Britain=Великобритания
+sun=солнце
+us=нас, нам
+shop=магазин
+winter=зима
+capital=столица
+
+Module 5|Where I Live and What I Do
+school=школа
+shop=магазин
+park=парк
+bus stop=автобусная остановка
+hospital=больница
+zoo=зоопарк
+cinema=кинотеатр
+
+Module 5|The Town Mouse & The Country Mouse
+bread=хлеб
+country=сельская местность
+help=помогать
+like=нравиться, любить
+meat=мясо
+pretty=прелестный, симпатичный
+town=город
+very=очень
+want=хотеть
+
+Module 5|Crazy about Animals!
+crazy about=быть без ума от кого-либо, чего-либо
+especially=особенно
+
+Module 5|Teddy Bear Shops
+all kinds of=все виды
+clothes=одежда
+cute=симпатичный, славный
+different=различный
+Great Britain=Великобритания
+shop=магазин
+
+Module 5|Great Britain
+capital=столица
+bus=автобус
+cab=такси
+
+Module 5|Pets
+lie=лежать
+pet=домашний питомец
+sheepdog=овчарка
+
+Module 5|Russian souvenirs
+souvenir=сувенир
+take=брать
+traditional=традиционный
+wooden=деревянный
+
+Module 5|Holidays in Russia
+camp=детский лагерь
+cool=прохладный
+north=север
+pick=собирать
+seaside=морское побережье
+song=песня
+south=юг
+warm=тёплый
+
+Module 5|In the classroom
+I'm sorry, I'm late. Can I come in?=Извините, я опоздал(а). Можно войти?
+Excuse me, please, can I go out?=Извините, можно выйти?
+Who is absent/away today?=Кто сегодня отсутствует?
+Lena/Oleg is. (Nobody is).=Лена/Олег. (Никто).
+What's the matter with her/him?=Что с ней/ним случилось?
+She/He is ill.=Она/Он болеет.
+Do you speak English?=Ты говоришь по-английски?
+Yes, I do. I speak English a little.=Да. Я немного говорю по-английски.

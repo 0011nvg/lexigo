@@ -58,7 +58,7 @@ try {
     const s5 = DB.books.find(b => b.grade === 5); const sec = s5.sections.find(s => s.words.some(w => !isLexicalEntry(w)));
     const idx = s5.sections.indexOf(sec); return { idx, total: words.length, headers: headers.length };
   });
-  assert.equal(leak.total, 11698, 'source data must stay complete');
+  assert.equal(leak.total, 11719, 'source data must stay complete');
   await page.goto(BASE + '#/lesson/5/' + leak.idx + '/play/spell');
   await page.locator('#play .question').waitFor();
   assert.ok(await page.evaluate(() => game.words.every(isLexicalEntry)));
@@ -93,6 +93,7 @@ try {
   await page.locator('#play .builder-tools button', { hasText: 'Проверить' }).click();
   if (assembled.toLowerCase().replace(/\s+/g, '') !== word.toLowerCase().replace(/\s+/g, '')) {
     assert.equal(await page.locator('#play .feedback[data-result=miss]').count(), 1);
+    await page.locator('#play .why summary').click();
     assert.match(await page.locator('#play .why').innerText(), /Правильный порядок/);
   }
   ok('builder: tiles, check, explanation on wrong order');
@@ -103,6 +104,7 @@ try {
   const en = await page.evaluate(() => game.words[0].en);
   await page.fill('#play .answerbox input', en.slice(0, -1) + (en.endsWith('x') ? 'y' : 'x'));
   await page.locator('#play .answerbox button').click();
+  await page.locator('#play .why summary').click();
   assert.ok(await page.locator('#play .why .diff mark').count() >= 1);
   ok('spell: wrong letters highlighted');
 

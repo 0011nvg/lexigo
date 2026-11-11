@@ -108,6 +108,7 @@ try {
   await page.waitForFunction(i => game.index !== i, st.i);
   const st2 = await page.evaluate(() => ({ ru: game.words[game.index].ru, claim: document.querySelector('#play .question p[style]').textContent.trim(), en: game.words[game.index].en }));
   await page.locator('#play .buttons .btn', { hasText: st2.claim === st2.ru.trim() ? 'Неверно' : 'Верно' }).first().click();
+  await page.locator('#play .feedback.fb-tf .why summary').click();
   const why = await page.locator('#play .feedback.fb-tf .why').innerText();
   assert.ok(why.includes(st2.en) && why.includes(st2.ru.trim()), 'the explanation names the word and its meaning');
   assert.ok(await page.locator('#play button', { hasText: /Следующее/ }).isVisible());

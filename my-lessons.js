@@ -287,7 +287,7 @@
     const fit = fitOf(x, mode);
     if (!fit.ok) { toast(fit.note); return false; }
     let ws = x.words.slice();
-    if (mode === 'boss' || mode === 'crystals') ws = ws.filter(C.isSingleWord);
+    if (mode === 'boss') ws = ws.filter(C.isSingleWord);
     if (mode === 'review') ws = ws.filter(w => { try { return isReviewWord(w); } catch { return false; } });
     if (x.a && !x.a.lesson_id && x.a.section_indexes && x.a.section_indexes.length) {
       // задание по Spotlight: контекст учебника (нужен «Кристаллам» и итогам), без смены страницы

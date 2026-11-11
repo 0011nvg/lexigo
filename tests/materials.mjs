@@ -1,0 +1,8 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import crypto from 'node:crypto';import vm from 'node:vm';
+const data=JSON.parse(fs.readFileSync('data.json','utf8'));
+for(const grade of [2,3]){const b=data.books.find(b=>b.grade===grade);const blocks=fs.readFileSync('scripts/spotlight-'+grade+'-source.txt','utf8').trim().split(/\r?\n\s*\r?\n/);for(const block of blocks){const [head,...lines]=block.split(/\r?\n/),[module,title]=head.split('|');const section=b.sections.find(s=>s.module===module&&s.title===title);assert.ok(section,grade+' '+title);assert.deepEqual(section.words.map(w=>w.en+'='+w.ru),lines.map(l=>{const at=l.indexOf('=');return l.slice(0,at).trim()+'='+l.slice(at+1).trim()}));}}
+const hash=crypto.createHash('sha256').update(JSON.stringify(data.books.find(b=>b.grade===3).sections.slice(0,25))).digest('hex');assert.equal(hash,'2b6638f8f5eb53c4d2dcd8335afa9a376cba6d13982e185544c72ebffec3237e','grade 3 part 1 must remain unchanged');
+const ctx={window:{LEXIGO_DATA:data}};vm.runInNewContext(fs.readFileSync('vocabulary/lesson-titles.js','utf8'),ctx);
+const b=data.books.find(b=>b.grade===3);assert.deepEqual(Array.from(ctx.window.LexigoModules(b)),['Вводный раздел',...Array.from({length:8},(_,i)=>'Модуль '+(i+1))]);
+const six=Array.from(ctx.window.LexigoSectionEntries(b)).filter(x=>x.s.module==='Модуль 6'&&x.s.words.length);assert.equal(six[0].i,49);assert.equal(six[1].i,28);assert.match(six[0].s.title,/Урок 11/);assert.match(six[1].s.title,/Урок 12/);
+console.log('PASS reviewed Word vocabulary, source order, stable lesson indexes, grade 3 part 1 unchanged');

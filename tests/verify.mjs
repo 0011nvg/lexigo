@@ -8,7 +8,7 @@ const html=fs.readFileSync('index.html','utf8').replace(/\?v=[\w.-]+"/g,'"'); //
 const context={window:{}};
 vm.runInNewContext(js,context,{timeout:5000});
 assert.equal(JSON.stringify(context.window.LEXIGO_DATA),JSON.stringify(data),'data.js and data.json must match');
-const expected={2:236,3:423,4:376};
+const expected={2:274,3:436,4:376};
 let all=[];
 for(const book of data.books){
  const words=book.sections.flatMap(s=>s.words);
@@ -23,7 +23,7 @@ for(const book of data.books){
   }
  }
 }
-assert.equal(all.length,1035);
+assert.equal(all.length,1086);
 assert.equal(new Set(all.map(w=>w.id)).size,all.length,'Duplicate word IDs');
 assert.ok(html.includes('<script src="data.js"></script>'));
 const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
@@ -34,11 +34,11 @@ for(const match of scripts) new vm.Script(match[1],{filename:'index.html'});
 for(const id of ['book','module','unit','words','quickStart','game','launcher','showReport','exportReport','reportContent']){
  assert.ok(html.includes(`id="${id}"`),`Missing UI element ${id}`);
 }
-// Extended dictionaries are additive: do not replace the original 1035 records or their IDs.
+// Grades 2–3 follow the reviewed Word sources; grade 4 additions retain their existing IDs.
 const additions='vocabulary/spotlight-2-4-additions.js';
 assert.ok(html.includes('<script src="'+additions+'"></script>'));
 vm.runInNewContext(fs.readFileSync(additions,'utf8'),context,{timeout:5000,filename:additions});
-for(const [grade,count] of Object.entries({2:257,3:432,4:384})){
+for(const [grade,count] of Object.entries({2:274,3:436,4:384})){
  const book=context.window.LEXIGO_DATA.books.find(b=>String(b.grade)===grade);
  assert.equal(book.sections.flatMap(s=>s.words).length,count,'Spotlight '+grade+' update mismatch');
 }
@@ -68,8 +68,8 @@ for(const b of expanded.filter(b=>b.grade>=5)){
 assert.ok(expanded.filter(b=>b.grade<=4).every(b=>b.sections.every(s=>!/^Module /.test(s.module))),'Grades 2–4 modules are shown in Russian');
 assert.ok(expanded.every(b=>b.sections.every(s=>!/^(\d+[a-f]|Unit \d)/.test(s.title))),'Every lesson has a «Урок …» label and a short name');
 const expandedWords=expanded.flatMap(b=>b.sections.flatMap(s=>s.words));
-assert.equal(expandedWords.length,11698,'Extended vocabulary total changed');
-assert.equal(new Set(expandedWords.map(w=>w.id)).size,11698,'Duplicate IDs across books');
+assert.equal(expandedWords.length,11719,'Extended vocabulary total changed');
+assert.equal(new Set(expandedWords.map(w=>w.id)).size,11719,'Duplicate IDs across books');
 assert.ok(expandedWords.every(w=>typeof w.en==='string'&&w.en.trim()&&typeof w.ru==='string'&&w.ru.trim()));
 assert.ok(html.includes('2–10 классы'),'Landing class range not updated');
-console.log('PASS: 1035 original IDs intact + 38 added + 8344 imported (5–9) + 2281 Spotlight 10 = 11698 words, Spotlight 2–10, lesson labels «Урок 1a · …», unique IDs, mirrored legacy data and JS syntax');
+console.log('PASS: updated grade 2–3 source counts, unchanged grade 4–10, unique IDs, mirrored data and JS syntax');

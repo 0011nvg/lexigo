@@ -29,7 +29,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "hello",
-              "ru": "здравствуй (те)",
+              "ru": "здравствуй(те)",
               "id": "w4"
             },
             {
@@ -38,18 +38,13 @@ window.LEXIGO_DATA = {
               "id": "w5"
             },
             {
-              "en": "I",
-              "ru": "я",
-              "id": "w6"
-            },
-            {
               "en": "Let's",
               "ru": "давай(те)",
               "id": "w7"
             },
             {
               "en": "me",
-              "ru": "мне",
+              "ru": "меня, мне",
               "id": "w8"
             },
             {
@@ -67,7 +62,8 @@ window.LEXIGO_DATA = {
               "ru": "ты, вы",
               "id": "w11"
             }
-          ]
+          ],
+          "sourceOrder": 0
         },
         {
           "module": "Starter Module",
@@ -140,10 +136,11 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "workbook",
-              "ru": "тетрадь",
+              "ru": "рабочая тетрадь",
               "id": "w25"
             }
-          ]
+          ],
+          "sourceOrder": 1
         },
         {
           "module": "Starter Module",
@@ -189,7 +186,8 @@ window.LEXIGO_DATA = {
               "ru": "жёлтый",
               "id": "w33"
             }
-          ]
+          ],
+          "sourceOrder": 2
         },
         {
           "module": "Module 1",
@@ -266,7 +264,7 @@ window.LEXIGO_DATA = {
               "id": "w47"
             },
             {
-              "en": "What’s this?",
+              "en": "What's this?",
               "ru": "Что это?",
               "id": "w48"
             },
@@ -275,7 +273,8 @@ window.LEXIGO_DATA = {
               "ru": "да",
               "id": "w49"
             }
-          ]
+          ],
+          "sourceOrder": 3
         },
         {
           "module": "Module 1",
@@ -336,7 +335,8 @@ window.LEXIGO_DATA = {
               "ru": "где",
               "id": "w60"
             }
-          ]
+          ],
+          "sourceOrder": 4
         },
         {
           "module": "Module 1",
@@ -377,7 +377,8 @@ window.LEXIGO_DATA = {
               "ru": "окно",
               "id": "w67"
             }
-          ]
+          ],
+          "sourceOrder": 5
         },
         {
           "module": "Module 2",
@@ -445,7 +446,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "party",
-              "ru": "празднование, праздник",
+              "ru": "праздник, вечеринка",
               "id": "w80"
             },
             {
@@ -477,8 +478,14 @@ window.LEXIGO_DATA = {
               "en": "three",
               "ru": "три",
               "id": "w86"
+            },
+            {
+              "en": "two",
+              "ru": "два",
+              "id": "s2_20261111_6_19"
             }
-          ]
+          ],
+          "sourceOrder": 6
         },
         {
           "module": "Module 2",
@@ -506,7 +513,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "chips",
-              "ru": "жареная картошка, картофель фри",
+              "ru": "картофель фри",
               "id": "w91"
             },
             {
@@ -540,7 +547,7 @@ window.LEXIGO_DATA = {
               "id": "w97"
             },
             {
-              "en": "What’s your favourite food?",
+              "en": "What's your favourite food?",
               "ru": "Какая у тебя любимая еда?",
               "id": "w98"
             },
@@ -549,7 +556,8 @@ window.LEXIGO_DATA = {
               "ru": "вкусный",
               "id": "w99"
             }
-          ]
+          ],
+          "sourceOrder": 7
         },
         {
           "module": "Module 2",
@@ -580,7 +588,8 @@ window.LEXIGO_DATA = {
               "ru": "пицца",
               "id": "w104"
             }
-          ]
+          ],
+          "sourceOrder": 8
         },
         {
           "module": "Module 2",
@@ -603,7 +612,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "like",
-              "ru": "любить",
+              "ru": "нравиться, любить",
               "id": "w108"
             },
             {
@@ -631,7 +640,8 @@ window.LEXIGO_DATA = {
               "ru": "хотеть",
               "id": "w113"
             }
-          ]
+          ],
+          "sourceOrder": 9
         },
         {
           "module": "Module 2",
@@ -643,7 +653,7 @@ window.LEXIGO_DATA = {
           "title": "Gardens in the UK",
           "words": [
             {
-              "en": "bird house",
+              "en": "birdhouse",
               "ru": "скворечник",
               "id": "w114"
             },
@@ -653,7 +663,7 @@ window.LEXIGO_DATA = {
               "id": "w115"
             },
             {
-              "en": "green house",
+              "en": "greenhouse",
               "ru": "теплица",
               "id": "w116"
             },
@@ -669,7 +679,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "them",
-              "ru": "их (кого?)",
+              "ru": "их (кого?), им",
               "id": "w119"
             },
             {
@@ -677,7 +687,8 @@ window.LEXIGO_DATA = {
               "ru": "Соединённое Королевство (Великобритании и Северной Ирландии)",
               "id": "w120"
             }
-          ]
+          ],
+          "sourceOrder": 10
         },
         {
           "module": "Module 2",
@@ -693,7 +704,8 @@ window.LEXIGO_DATA = {
               "ru": "популярный",
               "id": "w122"
             }
-          ]
+          ],
+          "sourceOrder": 11
         },
         {
           "module": "Module 2",
@@ -716,7 +728,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "grow",
-              "ru": "расти",
+              "ru": "расти, выращивать",
               "id": "w125"
             },
             {
@@ -734,7 +746,8 @@ window.LEXIGO_DATA = {
               "ru": "деревня",
               "id": "w128"
             }
-          ]
+          ],
+          "sourceOrder": 12
         },
         {
           "module": "Module 2",
@@ -750,12 +763,18 @@ window.LEXIGO_DATA = {
               "ru": "русский",
               "id": "w130"
             }
-          ]
+          ],
+          "sourceOrder": 13
         },
         {
           "module": "Module 3",
           "title": "Unit 7: My Animals!",
           "words": [
+            {
+              "en": "toy",
+              "ru": "игрушка",
+              "id": "w158"
+            },
             {
               "en": "animal",
               "ru": "животное",
@@ -811,7 +830,8 @@ window.LEXIGO_DATA = {
               "ru": "плавать",
               "id": "w141"
             }
-          ]
+          ],
+          "sourceOrder": 14
         },
         {
           "module": "Module 3",
@@ -842,7 +862,8 @@ window.LEXIGO_DATA = {
               "ru": "девочка",
               "id": "w146"
             }
-          ]
+          ],
+          "sourceOrder": 15
         },
         {
           "module": "Module 3",
@@ -873,7 +894,8 @@ window.LEXIGO_DATA = {
               "ru": "качаться",
               "id": "w151"
             }
-          ]
+          ],
+          "sourceOrder": 16
         },
         {
           "module": "Module 4",
@@ -906,25 +928,21 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "teddy bear",
-              "ru": "плюшевый, игрушечный медведь",
+              "ru": "плюшевый мишка",
               "id": "w157"
             },
             {
-              "en": "toy",
-              "ru": "игрушка",
-              "id": "w158"
-            },
-            {
-              "en": "toy box",
-              "ru": "коробка для игрушек",
-              "id": "w159"
+              "en": "toy soldier",
+              "ru": "игрушечный солдатик",
+              "id": "s2_extra_0"
             },
             {
               "en": "under",
               "ru": "под",
               "id": "w160"
             }
-          ]
+          ],
+          "sourceOrder": 17
         },
         {
           "module": "Module 4",
@@ -947,12 +965,12 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "feet",
-              "ru": "ноги",
+              "ru": "ступни",
               "id": "w164"
             },
             {
               "en": "hand",
-              "ru": "рука",
+              "ru": "кисть руки",
               "id": "w165"
             },
             {
@@ -970,7 +988,8 @@ window.LEXIGO_DATA = {
               "ru": "чудесный, прекрасный",
               "id": "w168"
             }
-          ]
+          ],
+          "sourceOrder": 18
         },
         {
           "module": "Module 4",
@@ -993,10 +1012,11 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "puppet",
-              "ru": "кукла (надевающаяся на руку)",
+              "ru": "кукла, надевающаяся на руку",
               "id": "w172"
             }
-          ]
+          ],
+          "sourceOrder": 19
         },
         {
           "module": "Module 5",
@@ -1019,21 +1039,21 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "holiday",
-              "ru": "праздник, отпуск",
+              "ru": "каникулы, отпуск, праздник",
               "id": "w176"
             },
             {
-              "en": "It’s hot!",
+              "en": "It's hot!",
               "ru": "Жарко!",
               "id": "w177"
             },
             {
-              "en": "It’s raining!",
+              "en": "It's raining!",
               "ru": "Идёт дождь!",
               "id": "w178"
             },
             {
-              "en": "It’s sunny!",
+              "en": "It's sunny!",
               "ru": "Солнечно!",
               "id": "w179"
             },
@@ -1064,15 +1084,36 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "wear",
-              "ru": "носить",
+              "ru": "носить (одежду)",
               "id": "w185"
             },
             {
-              "en": "What’s the weather like?",
+              "en": "What's the weather like?",
               "ru": "Какая сейчас погода?",
               "id": "w186"
+            },
+            {
+              "en": "bread",
+              "ru": "хлеб",
+              "id": "w213"
+            },
+            {
+              "en": "country",
+              "ru": "сельская местность",
+              "id": "w214"
+            },
+            {
+              "en": "help",
+              "ru": "помогать",
+              "id": "w215"
+            },
+            {
+              "en": "like",
+              "ru": "нравиться, любить",
+              "id": "w216"
             }
-          ]
+          ],
+          "sourceOrder": 20
         },
         {
           "module": "Module 5",
@@ -1084,14 +1125,29 @@ window.LEXIGO_DATA = {
               "id": "w187"
             },
             {
-              "en": "It’s cold!",
+              "en": "meat",
+              "ru": "мясо",
+              "id": "w217"
+            },
+            {
+              "en": "It's cold!",
               "ru": "Холодно!",
               "id": "w188"
             },
             {
-              "en": "It’s windy!",
+              "en": "pretty",
+              "ru": "прелестный, симпатичный",
+              "id": "w218"
+            },
+            {
+              "en": "It's windy!",
               "ru": "Ветрено!",
               "id": "w189"
+            },
+            {
+              "en": "town",
+              "ru": "город",
+              "id": "w219"
             },
             {
               "en": "jeans",
@@ -1099,9 +1155,19 @@ window.LEXIGO_DATA = {
               "id": "w190"
             },
             {
+              "en": "very",
+              "ru": "очень",
+              "id": "w220"
+            },
+            {
               "en": "magic",
               "ru": "волшебный",
               "id": "w191"
+            },
+            {
+              "en": "want",
+              "ru": "хотеть",
+              "id": "w221"
             },
             {
               "en": "shoes",
@@ -1120,10 +1186,16 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "T-shirt",
-              "ru": "футболка, тенниска",
+              "ru": "футболка",
               "id": "w195"
+            },
+            {
+              "en": "crazy about",
+              "ru": "быть без ума от кого-либо, чего-либо",
+              "id": "w222"
             }
-          ]
+          ],
+          "sourceOrder": 21
         },
         {
           "module": "Module 5",
@@ -1135,8 +1207,13 @@ window.LEXIGO_DATA = {
               "id": "w196"
             },
             {
+              "en": "especially",
+              "ru": "особенно",
+              "id": "w223"
+            },
+            {
               "en": "English",
-              "ru": "английский (язык)",
+              "ru": "английский язык; английский",
               "id": "w197"
             },
             {
@@ -1145,9 +1222,19 @@ window.LEXIGO_DATA = {
               "id": "w198"
             },
             {
+              "en": "all kinds of",
+              "ru": "все виды",
+              "id": "w224"
+            },
+            {
               "en": "music",
               "ru": "музыка",
               "id": "w199"
+            },
+            {
+              "en": "clothes",
+              "ru": "одежда",
+              "id": "w225"
             },
             {
               "en": "sea",
@@ -1155,14 +1242,29 @@ window.LEXIGO_DATA = {
               "id": "w200"
             },
             {
+              "en": "cute",
+              "ru": "симпатичный, славный",
+              "id": "w226"
+            },
+            {
               "en": "spring",
               "ru": "весна",
               "id": "w201"
             },
             {
+              "en": "different",
+              "ru": "различный",
+              "id": "w227"
+            },
+            {
               "en": "summer",
               "ru": "лето",
               "id": "w202"
+            },
+            {
+              "en": "Great Britain",
+              "ru": "Великобритания",
+              "id": "w228"
             },
             {
               "en": "sun",
@@ -1171,15 +1273,26 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "us",
-              "ru": "нас",
+              "ru": "нас, нам",
               "id": "w204"
+            },
+            {
+              "en": "shop",
+              "ru": "магазин",
+              "id": "w207"
             },
             {
               "en": "winter",
               "ru": "зима",
               "id": "w205"
+            },
+            {
+              "en": "capital",
+              "ru": "столица",
+              "id": "w230"
             }
-          ]
+          ],
+          "sourceOrder": 22
         },
         {
           "module": "Module 5",
@@ -1193,7 +1306,7 @@ window.LEXIGO_DATA = {
             {
               "en": "shop",
               "ru": "магазин",
-              "id": "w207"
+              "id": "w229"
             },
             {
               "en": "park",
@@ -1220,7 +1333,8 @@ window.LEXIGO_DATA = {
               "ru": "кинотеатр",
               "id": "w212"
             }
-          ]
+          ],
+          "sourceOrder": 23
         },
         {
           "module": "Module 5",
@@ -1229,49 +1343,50 @@ window.LEXIGO_DATA = {
             {
               "en": "bread",
               "ru": "хлеб",
-              "id": "w213"
+              "id": "s2_20261111_26_0"
             },
             {
               "en": "country",
               "ru": "сельская местность",
-              "id": "w214"
+              "id": "s2_20261111_26_1"
             },
             {
               "en": "help",
               "ru": "помогать",
-              "id": "w215"
+              "id": "s2_20261111_26_2"
             },
             {
               "en": "like",
-              "ru": "любить",
-              "id": "w216"
+              "ru": "нравиться, любить",
+              "id": "s2_20261111_26_3"
             },
             {
               "en": "meat",
               "ru": "мясо",
-              "id": "w217"
+              "id": "s2_20261111_26_4"
             },
             {
               "en": "pretty",
               "ru": "прелестный, симпатичный",
-              "id": "w218"
+              "id": "s2_20261111_26_5"
             },
             {
               "en": "town",
               "ru": "город",
-              "id": "w219"
+              "id": "s2_20261111_26_6"
             },
             {
               "en": "very",
               "ru": "очень",
-              "id": "w220"
+              "id": "s2_20261111_26_7"
             },
             {
               "en": "want",
               "ru": "хотеть",
-              "id": "w221"
+              "id": "s2_20261111_26_8"
             }
-          ]
+          ],
+          "sourceOrder": 24
         },
         {
           "module": "Module 5",
@@ -1284,15 +1399,16 @@ window.LEXIGO_DATA = {
           "words": [
             {
               "en": "crazy about",
-              "ru": "сходить с ума по чему-либо, кому-либо",
-              "id": "w222"
+              "ru": "быть без ума от кого-либо, чего-либо",
+              "id": "s2_20261111_28_0"
             },
             {
               "en": "especially",
               "ru": "особенно",
-              "id": "w223"
+              "id": "s2_20261111_28_1"
             }
-          ]
+          ],
+          "sourceOrder": 25
         },
         {
           "module": "Module 5",
@@ -1301,34 +1417,35 @@ window.LEXIGO_DATA = {
             {
               "en": "all kinds of",
               "ru": "все виды",
-              "id": "w224"
+              "id": "s2_20261111_29_0"
             },
             {
               "en": "clothes",
               "ru": "одежда",
-              "id": "w225"
+              "id": "s2_20261111_29_1"
             },
             {
               "en": "cute",
               "ru": "симпатичный, славный",
-              "id": "w226"
+              "id": "s2_20261111_29_2"
             },
             {
               "en": "different",
               "ru": "различный",
-              "id": "w227"
+              "id": "s2_20261111_29_3"
             },
             {
               "en": "Great Britain",
               "ru": "Великобритания",
-              "id": "w228"
+              "id": "s2_20261111_29_4"
             },
             {
               "en": "shop",
               "ru": "магазин",
-              "id": "w229"
+              "id": "s2_20261111_29_5"
             }
-          ]
+          ],
+          "sourceOrder": 26
         },
         {
           "module": "Module 5",
@@ -1337,7 +1454,7 @@ window.LEXIGO_DATA = {
             {
               "en": "capital",
               "ru": "столица",
-              "id": "w230"
+              "id": "s2_20261111_30_0"
             },
             {
               "en": "bus",
@@ -1349,7 +1466,8 @@ window.LEXIGO_DATA = {
               "ru": "такси",
               "id": "w232"
             }
-          ]
+          ],
+          "sourceOrder": 27
         },
         {
           "module": "Module 5",
@@ -1375,7 +1493,129 @@ window.LEXIGO_DATA = {
               "ru": "овчарка",
               "id": "w235"
             }
-          ]
+          ],
+          "sourceOrder": 28
+        },
+        {
+          "module": "Module 5",
+          "title": "Russian souvenirs",
+          "words": [
+            {
+              "en": "souvenir",
+              "ru": "сувенир",
+              "id": "s2_extra_1"
+            },
+            {
+              "en": "take",
+              "ru": "брать",
+              "id": "s2_extra_2"
+            },
+            {
+              "en": "traditional",
+              "ru": "традиционный",
+              "id": "s2_extra_3"
+            },
+            {
+              "en": "wooden",
+              "ru": "деревянный",
+              "id": "s2_extra_4"
+            }
+          ],
+          "sourceOrder": 29
+        },
+        {
+          "module": "Module 5",
+          "title": "Holidays in Russia",
+          "words": [
+            {
+              "en": "camp",
+              "ru": "детский лагерь",
+              "id": "s2_extra_5"
+            },
+            {
+              "en": "cool",
+              "ru": "прохладный",
+              "id": "s2_extra_6"
+            },
+            {
+              "en": "north",
+              "ru": "север",
+              "id": "s2_extra_7"
+            },
+            {
+              "en": "pick",
+              "ru": "собирать",
+              "id": "s2_extra_8"
+            },
+            {
+              "en": "seaside",
+              "ru": "морское побережье",
+              "id": "s2_extra_9"
+            },
+            {
+              "en": "song",
+              "ru": "песня",
+              "id": "s2_extra_10"
+            },
+            {
+              "en": "south",
+              "ru": "юг",
+              "id": "s2_extra_11"
+            },
+            {
+              "en": "warm",
+              "ru": "тёплый",
+              "id": "s2_extra_12"
+            }
+          ],
+          "sourceOrder": 30
+        },
+        {
+          "module": "Module 5",
+          "title": "In the classroom",
+          "words": [
+            {
+              "en": "I'm sorry, I'm late. Can I come in?",
+              "ru": "Извините, я опоздал(а). Можно войти?",
+              "id": "s2_extra_13"
+            },
+            {
+              "en": "Excuse me, please, can I go out?",
+              "ru": "Извините, можно выйти?",
+              "id": "s2_extra_14"
+            },
+            {
+              "en": "Who is absent/away today?",
+              "ru": "Кто сегодня отсутствует?",
+              "id": "s2_extra_15"
+            },
+            {
+              "en": "Lena/Oleg is. (Nobody is).",
+              "ru": "Лена/Олег. (Никто).",
+              "id": "s2_extra_16"
+            },
+            {
+              "en": "What's the matter with her/him?",
+              "ru": "Что с ней/ним случилось?",
+              "id": "s2_extra_17"
+            },
+            {
+              "en": "She/He is ill.",
+              "ru": "Она/Он болеет.",
+              "id": "s2_extra_18"
+            },
+            {
+              "en": "Do you speak English?",
+              "ru": "Ты говоришь по-английски?",
+              "id": "s2_extra_19"
+            },
+            {
+              "en": "Yes, I do. I speak English a little.",
+              "ru": "Да. Я немного говорю по-английски.",
+              "id": "s2_extra_20"
+            }
+          ],
+          "sourceOrder": 31
         }
       ]
     },
@@ -2643,52 +2883,16 @@ window.LEXIGO_DATA = {
         {
           "module": "Module 5",
           "title": "Дополнительные слова",
-          "words": [
-            {
-              "en": "hump",
-              "ru": "горб",
-              "id": "w458"
-            }
-          ]
+          "words": []
         },
         {
-          "module": "Module 5",
+          "module": "Module 7",
           "title": "Unit 14: In the park!",
           "words": [
-            {
-              "en": "Thursday",
-              "ru": "четверг",
-              "id": "w459"
-            },
-            {
-              "en": "last week",
-              "ru": "на прошлой неделе",
-              "id": "w460"
-            },
             {
               "en": "basketball",
               "ru": "баскетбол",
               "id": "w461"
-            },
-            {
-              "en": "Tuesday",
-              "ru": "вторник",
-              "id": "w462"
-            },
-            {
-              "en": "Wednesday",
-              "ru": "среда",
-              "id": "w463"
-            },
-            {
-              "en": "body",
-              "ru": "туловище, тело",
-              "id": "w464"
-            },
-            {
-              "en": "last month",
-              "ru": "в прошлом месяце",
-              "id": "w465"
             },
             {
               "en": "bell",
@@ -2696,75 +2900,14 @@ window.LEXIGO_DATA = {
               "id": "w466"
             },
             {
-              "en": "cow",
-              "ru": "корова",
-              "id": "w467"
-            },
-            {
               "en": "fabulous",
               "ru": "потрясающий, изумительный",
               "id": "w468"
             },
             {
-              "en": "fat",
-              "ru": "толстый, тучный",
-              "id": "w469"
-            },
-            {
-              "en": "fly a kite",
-              "ru": "запускать воздушного змея",
-              "id": "w470"
-            },
-            {
-              "en": "afternoon",
-              "ru": "день",
-              "id": "w471"
-            },
-            {
-              "en": "foot",
-              "ru": "ступня",
-              "id": "w472"
-            },
-            {
-              "en": "evening",
-              "ru": "вечер",
-              "id": "w473"
-            },
-            {
-              "en": "get on the train",
-              "ru": "сесть в поезд",
-              "id": "w474"
-            }
-          ]
-        },
-        {
-          "module": "Module 5",
-          "title": "Unit 16: On Sundays",
-          "words": [
-            {
               "en": "hot dog",
-              "ru": "сосиска в булочке, хот-дог",
+              "ru": "хот-дог, сосиска в булочке",
               "id": "w475"
-            },
-            {
-              "en": "go to bed",
-              "ru": "ложиться спать",
-              "id": "w476"
-            },
-            {
-              "en": "have a shower",
-              "ru": "принимать душ",
-              "id": "w477"
-            },
-            {
-              "en": "head",
-              "ru": "голова",
-              "id": "w478"
-            },
-            {
-              "en": "behind",
-              "ru": "позади, сзади",
-              "id": "w479"
             },
             {
               "en": "laugh",
@@ -2772,49 +2915,14 @@ window.LEXIGO_DATA = {
               "id": "w480"
             },
             {
-              "en": "long",
-              "ru": "длинный",
-              "id": "w481"
-            },
-            {
-              "en": "car",
-              "ru": "автомобиль",
-              "id": "w482"
-            },
-            {
               "en": "mac",
-              "ru": "резиновый плащ, макинтош",
+              "ru": "непромокаемый плащ, макинтош",
               "id": "w483"
-            },
-            {
-              "en": "man",
-              "ru": "мужчина",
-              "id": "w484"
-            },
-            {
-              "en": "in front of",
-              "ru": "перед",
-              "id": "w485"
             },
             {
               "en": "park",
               "ru": "парк",
               "id": "w486"
-            },
-            {
-              "en": "have breakfast",
-              "ru": "завтракать",
-              "id": "w487"
-            },
-            {
-              "en": "mouth",
-              "ru": "рот",
-              "id": "w488"
-            },
-            {
-              "en": "next to",
-              "ru": "рядом, близко",
-              "id": "w489"
             },
             {
               "en": "race",
@@ -2827,54 +2935,9 @@ window.LEXIGO_DATA = {
               "id": "w491"
             },
             {
-              "en": "have lunch",
-              "ru": "обедать",
-              "id": "w492"
-            },
-            {
-              "en": "sheep",
-              "ru": "овца",
-              "id": "w493"
-            },
-            {
-              "en": "present",
-              "ru": "подарок",
-              "id": "w494"
-            },
-            {
-              "en": "listen to music",
-              "ru": "слушать музыку",
-              "id": "w495"
-            },
-            {
-              "en": "short",
-              "ru": "короткий",
-              "id": "w496"
-            },
-            {
-              "en": "room",
-              "ru": "комната",
-              "id": "w497"
-            },
-            {
-              "en": "tail",
-              "ru": "хвост",
-              "id": "w498"
-            },
-            {
               "en": "ring",
               "ru": "звенеть",
               "id": "w499"
-            },
-            {
-              "en": "morning",
-              "ru": "утро",
-              "id": "w500"
-            },
-            {
-              "en": "thin",
-              "ru": "худой",
-              "id": "w501"
             },
             {
               "en": "sleep",
@@ -2882,19 +2945,82 @@ window.LEXIGO_DATA = {
               "id": "w502"
             },
             {
+              "en": "soccer",
+              "ru": "футбол",
+              "id": "w506"
+            }
+          ],
+          "sourceOrder": 32
+        },
+        {
+          "module": "Module 8",
+          "title": "Unit 16: On Sundays",
+          "words": [
+            {
+              "en": "afternoon",
+              "ru": "день после полудня",
+              "id": "w471"
+            },
+            {
+              "en": "evening",
+              "ru": "вечер",
+              "id": "w473"
+            },
+            {
+              "en": "go to bed",
+              "ru": "ложиться спать",
+              "id": "w476"
+            },
+            {
+              "en": "have a shower",
+              "ru": "принимать душ",
+              "id": "w477"
+            },
+            {
+              "en": "have breakfast",
+              "ru": "завтракать",
+              "id": "w487"
+            },
+            {
+              "en": "have lunch",
+              "ru": "обедать",
+              "id": "w492"
+            },
+            {
+              "en": "have supper",
+              "ru": "ужинать",
+              "id": "s3_extra_29"
+            },
+            {
+              "en": "listen to music",
+              "ru": "слушать музыку",
+              "id": "w495"
+            },
+            {
+              "en": "morning",
+              "ru": "утро",
+              "id": "w500"
+            },
+            {
               "en": "night",
               "ru": "ночь",
               "id": "w503"
             },
             {
-              "en": "tooth",
-              "ru": "зуб",
-              "id": "w504"
+              "en": "relative",
+              "ru": "родственник",
+              "id": "w507"
+            },
+            {
+              "en": "visit",
+              "ru": "посещать, навещать",
+              "id": "w510"
             }
-          ]
+          ],
+          "sourceOrder": 35
         },
         {
-          "module": "Module 5",
+          "module": "Module 6",
           "title": "Unit 12: My House!",
           "words": [
             {
@@ -2903,34 +3029,9 @@ window.LEXIGO_DATA = {
               "id": "w505"
             },
             {
-              "en": "soccer",
-              "ru": "футбол",
-              "id": "w506"
-            },
-            {
-              "en": "relative",
-              "ru": "родственник",
-              "id": "w507"
-            },
-            {
-              "en": "track",
-              "ru": "путь (железнодорожный)",
-              "id": "w508"
-            },
-            {
               "en": "cupboard",
-              "ru": "настенный шкаф",
+              "ru": "шкаф для посуды",
               "id": "w509"
-            },
-            {
-              "en": "visit",
-              "ru": "посещать, навещать",
-              "id": "w510"
-            },
-            {
-              "en": "woman",
-              "ru": "женщина",
-              "id": "w511"
             },
             {
               "en": "everywhere",
@@ -2941,11 +3042,27 @@ window.LEXIGO_DATA = {
               "en": "fridge",
               "ru": "холодильник",
               "id": "w513"
+            },
+            {
+              "en": "How many …?",
+              "ru": "Сколько …?",
+              "id": "s3_extra_24"
+            },
+            {
+              "en": "mirror",
+              "ru": "зеркало",
+              "id": "w546"
+            },
+            {
+              "en": "sofa",
+              "ru": "диван",
+              "id": "w545"
             }
-          ]
+          ],
+          "sourceOrder": 29
         },
         {
-          "module": "Module 5",
+          "module": "Module 7",
           "title": "Months",
           "words": [
             {
@@ -3008,20 +3125,16 @@ window.LEXIGO_DATA = {
               "ru": "сентябрь",
               "id": "w525"
             }
-          ]
+          ],
+          "sourceOrder": 33
         },
         {
-          "module": "Module 5",
+          "module": "Module 8",
           "title": "Fun at school",
           "words": [
             {
-              "en": "How many ... ?",
-              "ru": "Сколько ...?",
-              "id": "w526"
-            },
-            {
               "en": "add",
-              "ru": "добавлять",
+              "ru": "складывать, прибавлять",
               "id": "w527"
             },
             {
@@ -3050,18 +3163,13 @@ window.LEXIGO_DATA = {
               "id": "w532"
             },
             {
-              "en": "talk",
-              "ru": "говорить, разговаривать",
-              "id": "w533"
-            },
-            {
               "en": "design",
               "ru": "придумывать, конструировать",
               "id": "w534"
             },
             {
               "en": "domesticated",
-              "ru": "домашний",
+              "ru": "одомашненный",
               "id": "w535"
             },
             {
@@ -3076,150 +3184,28 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "figure out",
-              "ru": "вычислять",
+              "ru": "разобраться, вычислить",
               "id": "w538"
             },
             {
-              "en": "spider",
-              "ru": "паук",
-              "id": "w539"
+              "en": "hear",
+              "ru": "слышать",
+              "id": "s3_20261111_30_11"
             },
             {
-              "en": "rabbit",
-              "ru": "кролик",
-              "id": "w540"
+              "en": "in the street",
+              "ru": "на улице",
+              "id": "s3_20261111_30_12"
             },
             {
-              "en": "seahorse",
-              "ru": "морской конёк",
-              "id": "w541"
+              "en": "knew",
+              "ru": "знал, знала",
+              "id": "s3_20261111_30_13"
             },
             {
-              "en": "tortoise",
-              "ru": "черепаха",
-              "id": "w542"
-            },
-            {
-              "en": "walk",
-              "ru": "ходить",
-              "id": "w543"
-            },
-            {
-              "en": "parrot",
-              "ru": "попугай",
-              "id": "w544"
-            },
-            {
-              "en": "sofa",
-              "ru": "диван",
-              "id": "w545"
-            },
-            {
-              "en": "mirror",
-              "ru": "зеркало",
-              "id": "w546"
-            }
-          ]
-        },
-        {
-          "module": "Module 5",
-          "title": "Unit 13: We're having a great time!",
-          "words": [
-            {
-              "en": "day off",
-              "ru": "выходной день",
-              "id": "w547"
-            },
-            {
-              "en": "face",
-              "ru": "лицо",
-              "id": "w548"
-            },
-            {
-              "en": "drive",
-              "ru": "водить машину",
-              "id": "w549"
-            },
-            {
-              "en": "twenty",
-              "ru": "двадцать",
-              "id": "w550"
-            },
-            {
-              "en": "thirty",
-              "ru": "тридцать",
-              "id": "w551"
-            },
-            {
-              "en": "forty",
-              "ru": "сорок",
-              "id": "w552"
-            },
-            {
-              "en": "fifty",
-              "ru": "пятьдесят",
-              "id": "w553"
-            },
-            {
-              "en": "sixty",
-              "ru": "шестьдесят",
-              "id": "w554"
-            },
-            {
-              "en": "seventy",
-              "ru": "семьдесят",
-              "id": "w555"
-            },
-            {
-              "en": "eighty",
-              "ru": "восемьдесят",
-              "id": "w556"
-            },
-            {
-              "en": "ninety",
-              "ru": "девяносто",
-              "id": "w557"
-            },
-            {
-              "en": "hundred",
-              "ru": "сто",
-              "id": "w558"
-            }
-          ]
-        },
-        {
-          "module": "Module 5",
-          "title": "Unit 15: A fun day!",
-          "words": [
-            {
-              "en": "cartoon",
-              "ru": "мультфильм",
-              "id": "w559"
-            },
-            {
-              "en": "clock",
-              "ru": "часы",
-              "id": "w560"
-            },
-            {
-              "en": "over there",
-              "ru": "там",
-              "id": "w561"
-            },
-            {
-              "en": "piano",
-              "ru": "пианино",
-              "id": "w562"
-            },
-            {
-              "en": "hand",
-              "ru": "стрелка часов",
-              "id": "w563"
-            },
-            {
-              "en": "join",
-              "ru": "присоединяться",
-              "id": "w564"
+              "en": "know",
+              "ru": "знать",
+              "id": "s3_20261111_30_14"
             },
             {
               "en": "map",
@@ -3235,37 +3221,6 @@ window.LEXIGO_DATA = {
               "en": "noon",
               "ru": "полдень",
               "id": "w567"
-            }
-          ]
-        },
-        {
-          "module": "Module 5",
-          "title": "How the Camel Got His Hump",
-          "words": [
-            {
-              "en": "upside down",
-              "ru": "вверх ногами",
-              "id": "w568"
-            },
-            {
-              "en": "Monday",
-              "ru": "понедельник",
-              "id": "w569"
-            },
-            {
-              "en": "angry",
-              "ru": "сердитый",
-              "id": "w570"
-            },
-            {
-              "en": "watch TV",
-              "ru": "смотреть телевизор",
-              "id": "w571"
-            },
-            {
-              "en": "quiz",
-              "ru": "викторина",
-              "id": "w572"
             },
             {
               "en": "painting",
@@ -3273,18 +3228,13 @@ window.LEXIGO_DATA = {
               "id": "w573"
             },
             {
-              "en": "camel",
-              "ru": "верблюд",
-              "id": "w574"
-            },
-            {
-              "en": "Sunday",
-              "ru": "воскресенье",
-              "id": "w575"
+              "en": "scene",
+              "ru": "эпизод",
+              "id": "s3_20261111_30_19"
             },
             {
               "en": "set a clock",
-              "ru": "устанавливать часы",
+              "ru": "выставлять время на часах",
               "id": "w576"
             },
             {
@@ -3332,25 +3282,177 @@ window.LEXIGO_DATA = {
               "ru": "дикий",
               "id": "w585"
             }
-          ]
+          ],
+          "sourceOrder": 36
+        },
+        {
+          "module": "Module 7",
+          "title": "Unit 13: We're having a great time!",
+          "words": [
+            {
+              "en": "day off",
+              "ru": "выходной день",
+              "id": "w547"
+            },
+            {
+              "en": "drive",
+              "ru": "водить машину",
+              "id": "w549"
+            },
+            {
+              "en": "face",
+              "ru": "лицо",
+              "id": "w548"
+            },
+            {
+              "en": "make a sandcastle",
+              "ru": "строить замок из песка",
+              "id": "s3_extra_26"
+            },
+            {
+              "en": "over there",
+              "ru": "вон там",
+              "id": "w561"
+            },
+            {
+              "en": "paint a picture",
+              "ru": "рисовать картину красками",
+              "id": "s3_extra_27"
+            },
+            {
+              "en": "piano",
+              "ru": "пианино",
+              "id": "w562"
+            },
+            {
+              "en": "upside down",
+              "ru": "вверх ногами",
+              "id": "w568"
+            },
+            {
+              "en": "watch TV",
+              "ru": "смотреть телевизор",
+              "id": "w571"
+            }
+          ],
+          "sourceOrder": 31
+        },
+        {
+          "module": "Module 8",
+          "title": "Unit 15: A fun day!",
+          "words": [
+            {
+              "en": "cartoon",
+              "ru": "мультфильм",
+              "id": "w559"
+            },
+            {
+              "en": "clock",
+              "ru": "часы",
+              "id": "w560"
+            },
+            {
+              "en": "Friday",
+              "ru": "пятница",
+              "id": "s3_extra_28"
+            },
+            {
+              "en": "hand",
+              "ru": "стрелка часов",
+              "id": "w563"
+            },
+            {
+              "en": "join",
+              "ru": "присоединяться",
+              "id": "w564"
+            },
+            {
+              "en": "Monday",
+              "ru": "понедельник",
+              "id": "w569"
+            },
+            {
+              "en": "quiz",
+              "ru": "викторина",
+              "id": "w572"
+            },
+            {
+              "en": "Sunday",
+              "ru": "воскресенье",
+              "id": "w575"
+            },
+            {
+              "en": "Thursday",
+              "ru": "четверг",
+              "id": "w459"
+            },
+            {
+              "en": "Tuesday",
+              "ru": "вторник",
+              "id": "w462"
+            },
+            {
+              "en": "Wednesday",
+              "ru": "среда",
+              "id": "w463"
+            },
+            {
+              "en": "Saturday",
+              "ru": "суббота",
+              "id": "s3_20261111_32_11"
+            }
+          ],
+          "sourceOrder": 34
         },
         {
           "module": "Module 5",
+          "title": "How the Camel Got His Hump",
+          "words": [
+            {
+              "en": "angry",
+              "ru": "сердитый",
+              "id": "w570"
+            },
+            {
+              "en": "camel",
+              "ru": "верблюд",
+              "id": "w574"
+            },
+            {
+              "en": "hump",
+              "ru": "горб",
+              "id": "w458"
+            },
+            {
+              "en": "last week",
+              "ru": "на прошлой неделе",
+              "id": "w460"
+            },
+            {
+              "en": "last month",
+              "ru": "в прошлом месяце",
+              "id": "w465"
+            }
+          ],
+          "sourceOrder": 27
+        },
+        {
+          "module": "Module 8",
           "title": "The Toy Soldier",
           "words": [
             {
               "en": "arm",
-              "ru": "рука",
+              "ru": "рука от плеча до кисти",
               "id": "w586"
             },
             {
               "en": "by himself",
-              "ru": "один",
+              "ru": "один, самостоятельно",
               "id": "w587"
             },
             {
               "en": "cheer",
-              "ru": "приветствовать",
+              "ru": "подбадривать, приветствовать возгласами",
               "id": "w588"
             },
             {
@@ -3370,12 +3472,12 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "How do you do?",
-              "ru": "приветствие при знакомстве",
+              "ru": "Здравствуйте! (при знакомстве)",
               "id": "w592"
             },
             {
               "en": "look out",
-              "ru": "выглядывать",
+              "ru": "выглядывать; осторожно! (предупреждение)",
               "id": "w593"
             },
             {
@@ -3403,10 +3505,11 @@ window.LEXIGO_DATA = {
               "ru": "небо",
               "id": "w598"
             }
-          ]
+          ],
+          "sourceOrder": 37
         },
         {
-          "module": "Module 5",
+          "module": "Module 8",
           "title": "Arthur & Rascal",
           "words": [
             {
@@ -3416,7 +3519,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "be careful",
-              "ru": "быть осторожным",
+              "ru": "будь осторожен",
               "id": "w600"
             },
             {
@@ -3426,7 +3529,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "drop",
-              "ru": "бросать",
+              "ru": "ронять, опускать",
               "id": "w602"
             },
             {
@@ -3474,10 +3577,11 @@ window.LEXIGO_DATA = {
               "ru": "победитель",
               "id": "w611"
             }
-          ]
+          ],
+          "sourceOrder": 38
         },
         {
-          "module": "Module 5",
+          "module": "Module 8",
           "title": "Mother's Day",
           "words": [
             {
@@ -3490,7 +3594,8 @@ window.LEXIGO_DATA = {
               "ru": "улыбаться",
               "id": "w613"
             }
-          ]
+          ],
+          "sourceOrder": 39
         },
         {
           "module": "Module 5",
@@ -3526,10 +3631,11 @@ window.LEXIGO_DATA = {
               "ru": "шея",
               "id": "w618"
             }
-          ]
+          ],
+          "sourceOrder": 40
         },
         {
-          "module": "Module 5",
+          "module": "Module 6",
           "title": "British Homes!",
           "words": [
             {
@@ -3539,7 +3645,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "cottage",
-              "ru": "коттедж",
+              "ru": "небольшой загородный дом, коттедж",
               "id": "w620"
             },
             {
@@ -3547,15 +3653,16 @@ window.LEXIGO_DATA = {
               "ru": "полный (чего-либо)",
               "id": "w621"
             }
-          ]
+          ],
+          "sourceOrder": 41
         },
         {
-          "module": "Module 5",
+          "module": "Module 7",
           "title": "Get ready, get set, go!",
           "words": [
             {
               "en": "easy",
-              "ru": "легкий",
+              "ru": "лёгкий",
               "id": "w622"
             },
             {
@@ -3585,7 +3692,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "three-legged",
-              "ru": "трехногий",
+              "ru": "трёхногий",
               "id": "w628"
             },
             {
@@ -3593,10 +3700,11 @@ window.LEXIGO_DATA = {
               "ru": "связывать",
               "id": "w629"
             }
-          ]
+          ],
+          "sourceOrder": 42
         },
         {
-          "module": "Module 5",
+          "module": "Module 8",
           "title": "Cartoon Favourites!",
           "words": [
             {
@@ -3619,7 +3727,8 @@ window.LEXIGO_DATA = {
               "ru": "лёгкая закуска",
               "id": "w633"
             }
-          ]
+          ],
+          "sourceOrder": 43
         },
         {
           "module": "Module 5",
@@ -3632,7 +3741,7 @@ window.LEXIGO_DATA = {
           "words": [
             {
               "en": "actor",
-              "ru": "актер, артист",
+              "ru": "актёр, артист",
               "id": "w634"
             },
             {
@@ -3675,10 +3784,11 @@ window.LEXIGO_DATA = {
               "ru": "необычный",
               "id": "w642"
             }
-          ]
+          ],
+          "sourceOrder": 44
         },
         {
-          "module": "Module 5",
+          "module": "Module 6",
           "title": "House museums in Russia",
           "words": [
             {
@@ -3721,10 +3831,11 @@ window.LEXIGO_DATA = {
               "ru": "писатель",
               "id": "w650"
             }
-          ]
+          ],
+          "sourceOrder": 45
         },
         {
-          "module": "Module 5",
+          "module": "Module 7",
           "title": "Fun after school",
           "words": [
             {
@@ -3744,7 +3855,7 @@ window.LEXIGO_DATA = {
             },
             {
               "en": "karate",
-              "ru": "карате",
+              "ru": "каратэ",
               "id": "w654"
             },
             {
@@ -3757,10 +3868,11 @@ window.LEXIGO_DATA = {
               "ru": "ставить пьесу",
               "id": "w656"
             }
-          ]
+          ],
+          "sourceOrder": 46
         },
         {
-          "module": "Module 5",
+          "module": "Module 8",
           "title": "Cartoon time",
           "words": [
             {
@@ -3773,7 +3885,246 @@ window.LEXIGO_DATA = {
               "ru": "заяц",
               "id": "w658"
             }
-          ]
+          ],
+          "sourceOrder": 47
+        },
+        {
+          "module": "Module 5",
+          "title": "Unit 9: Cows are funny!",
+          "words": [
+            {
+              "en": "body",
+              "ru": "туловище, тело",
+              "id": "w464"
+            },
+            {
+              "en": "cow",
+              "ru": "корова",
+              "id": "w467"
+            },
+            {
+              "en": "fat",
+              "ru": "толстый, тучный",
+              "id": "w469"
+            },
+            {
+              "en": "foot",
+              "ru": "ступня",
+              "id": "w472"
+            },
+            {
+              "en": "get on the train",
+              "ru": "сесть в поезд",
+              "id": "w474"
+            },
+            {
+              "en": "head",
+              "ru": "голова",
+              "id": "w478"
+            },
+            {
+              "en": "leg",
+              "ru": "нога",
+              "id": "s3_extra_21"
+            },
+            {
+              "en": "long",
+              "ru": "длинный",
+              "id": "w481"
+            },
+            {
+              "en": "man",
+              "ru": "мужчина",
+              "id": "w484"
+            },
+            {
+              "en": "mouth",
+              "ru": "рот",
+              "id": "w488"
+            },
+            {
+              "en": "sheep",
+              "ru": "овца",
+              "id": "w493"
+            },
+            {
+              "en": "short",
+              "ru": "короткий",
+              "id": "w496"
+            },
+            {
+              "en": "tail",
+              "ru": "хвост",
+              "id": "w498"
+            },
+            {
+              "en": "thin",
+              "ru": "худой",
+              "id": "w501"
+            },
+            {
+              "en": "tooth",
+              "ru": "зуб",
+              "id": "w504"
+            },
+            {
+              "en": "track",
+              "ru": "железнодорожный путь",
+              "id": "w508"
+            },
+            {
+              "en": "woman",
+              "ru": "женщина",
+              "id": "w511"
+            }
+          ],
+          "sourceOrder": 25
+        },
+        {
+          "module": "Module 5",
+          "title": "Unit 10: Clever animals!",
+          "words": [
+            {
+              "en": "crawl",
+              "ru": "ползать",
+              "id": "s3_extra_22"
+            },
+            {
+              "en": "parrot",
+              "ru": "попугай",
+              "id": "w544"
+            },
+            {
+              "en": "rabbit",
+              "ru": "кролик",
+              "id": "w540"
+            },
+            {
+              "en": "seahorse",
+              "ru": "морской конёк",
+              "id": "w541"
+            },
+            {
+              "en": "spider",
+              "ru": "паук",
+              "id": "w539"
+            },
+            {
+              "en": "talk",
+              "ru": "говорить, разговаривать",
+              "id": "w533"
+            },
+            {
+              "en": "tortoise",
+              "ru": "сухопутная черепаха",
+              "id": "w542"
+            },
+            {
+              "en": "walk",
+              "ru": "ходить",
+              "id": "w543"
+            },
+            {
+              "en": "twenty",
+              "ru": "двадцать",
+              "id": "w550"
+            },
+            {
+              "en": "thirty",
+              "ru": "тридцать",
+              "id": "w551"
+            },
+            {
+              "en": "forty",
+              "ru": "сорок",
+              "id": "w552"
+            },
+            {
+              "en": "fifty",
+              "ru": "пятьдесят",
+              "id": "w553"
+            },
+            {
+              "en": "sixty",
+              "ru": "шестьдесят",
+              "id": "w554"
+            },
+            {
+              "en": "seventy",
+              "ru": "семьдесят",
+              "id": "w555"
+            },
+            {
+              "en": "eighty",
+              "ru": "восемьдесят",
+              "id": "w556"
+            },
+            {
+              "en": "ninety",
+              "ru": "девяносто",
+              "id": "w557"
+            },
+            {
+              "en": "a hundred",
+              "ru": "сто",
+              "id": "w558"
+            }
+          ],
+          "sourceOrder": 26
+        },
+        {
+          "module": "Module 6",
+          "title": "Unit 11: Grandma! Grandpa!",
+          "words": [
+            {
+              "en": "behind",
+              "ru": "позади, сзади",
+              "id": "w479"
+            },
+            {
+              "en": "bloom",
+              "ru": "цвести",
+              "id": "s3_extra_23"
+            },
+            {
+              "en": "car",
+              "ru": "автомобиль",
+              "id": "w482"
+            },
+            {
+              "en": "in front of",
+              "ru": "перед",
+              "id": "w485"
+            },
+            {
+              "en": "next to",
+              "ru": "рядом с",
+              "id": "w489"
+            },
+            {
+              "en": "present",
+              "ru": "подарок",
+              "id": "w494"
+            },
+            {
+              "en": "room",
+              "ru": "комната",
+              "id": "w497"
+            }
+          ],
+          "sourceOrder": 28
+        },
+        {
+          "module": "Module 6",
+          "title": "It was 50 years ago!",
+          "words": [
+            {
+              "en": "50 years ago",
+              "ru": "50 лет назад",
+              "id": "s3_extra_25"
+            }
+          ],
+          "sourceOrder": 30
         }
       ]
     },

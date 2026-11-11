@@ -34,14 +34,14 @@ async function scenario(viewport){
  await page.locator('#cqBoard .cq-gem').first().waitFor();
  const sound=page.locator('.cq-tools [data-pref="muted"]');await sound.click();assert.match(await sound.innerText(),/выключен/);await sound.click();assert.match(await sound.innerText(),/включён/);
  for(let i=0;i<3;i++){
-  if(await page.locator('.cq-word').count())break;
+  if(await page.locator('.crystal-result').count())break;
   const move=await page.evaluate(()=>LexiCrystalEngine.findMove(LexiCrystalQuest.state()));
   await page.locator('#cqBoard .cq-gem[data-i="'+move[0]+'"]').click();
   await page.locator('#cqBoard .cq-gem[data-i="'+move[1]+'"]').click();
-  await page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.cq-word'),null,{timeout:10000});
+  await page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.crystal-result'),null,{timeout:10000});
  }
  assert.ok(await page.evaluate(()=>LexiCrystalQuest.state().movesUsed>=1),'moves were made');
- assert.match(await page.locator('.cq-goals').innerText(),/Набери 1500 очков[\s\S]*Ответь верно на 12 слов/);
+ assert.equal(await page.evaluate(()=>LexiCrystalQuest.state().target),450);
  await page.locator('#back').click();
  // 2026-11-04: «Для учителя» — только в аккаунте учителя: тот же урок в отдельной вкладке, вход учителем (fake-cloud)
  const tp=await browser.newPage({viewport,reducedMotion:'reduce',acceptDownloads:true});await useFakeCloud(tp,{role:'teacher'});await tp.goto(page.url());await tp.locator('#launcher').waitFor();await tp.locator('#roleSwitch').waitFor({state:'visible',timeout:15000});

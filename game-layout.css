@@ -1,0 +1,85 @@
+/* Game screens at 100% zoom. Natural document scrolling remains available on small windows. */
+@media screen {
+ body[data-page="play"] .site-header{height:64px!important;min-height:64px!important;padding-top:6px!important;padding-bottom:6px!important}
+ body[data-page="play"] #breadcrumbs{padding-top:8px!important;margin:0 0 8px!important;gap:6px!important;font-size:12px!important;line-height:1.3!important}
+ body[data-page="play"] main#pageContent{padding-top:0!important;padding-bottom:92px!important}
+ body[data-page="play"] #game{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:6px 14px!important;max-width:900px!important;min-height:0!important;margin:0 auto!important;padding:0!important}
+ body[data-page="play"] #game>.toprow{grid-column:1/-1!important;margin:0!important;min-height:38px!important;gap:8px!important}
+ body[data-page="play"] #gameTitle{font-size:clamp(18px,2.3vw,25px)!important;line-height:1.2!important;margin:0!important;padding:0!important}
+ body[data-page="play"] .practice-mode-switcher{margin:0!important;gap:8px!important;font-size:13px!important}
+ body[data-page="play"] .practice-mode-switcher>span{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important}
+ body[data-page="play"] .practice-mode-switcher select{min-height:38px!important;margin:0!important;padding:6px 10px!important;max-width:240px!important;font-size:14px!important}
+ body[data-page="play"] #game>.progress,body[data-page="play"] #game>#counter,body[data-page="play"] #play,body[data-page="play"] #game>.progress-note{grid-column:1/-1!important}
+ body[data-page="play"] #game>.progress{height:5px!important;margin:0!important}
+ body[data-page="play"] #counter{font-size:12px!important;line-height:1.35!important;margin:0!important}
+ body[data-page="play"] #play{display:flex!important;flex-direction:column!important;gap:8px!important;min-width:0!important}
+ body[data-page="play"] #play>.question{padding:16px 20px!important;margin:0!important;border-radius:18px!important}
+ body[data-page="play"] #play .question>p{margin:0 0 8px!important;line-height:1.35!important}
+ body[data-page="play"] #play .question h2{font-size:clamp(21px,2.8vw,30px)!important;line-height:1.18!important;margin:4px 0 14px!important;overflow-wrap:anywhere!important}
+ body[data-page="play"] #play .options{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
+ body[data-page="play"] #play .option{min-height:44px!important;padding:10px 14px!important;font-size:16px!important;line-height:1.3!important;overflow-wrap:anywhere!important}
+ body[data-page="play"] #play .feedback{margin:0!important;padding:10px 14px!important;font-size:15px!important;line-height:1.4!important}
+ body[data-page="play"] #play .feedback .learning-tip{padding:4px 8px!important;margin:5px 0 0!important;font-size:12px!important}
+ body[data-page="play"] #play>.btn{align-self:flex-start!important;margin:0!important;min-height:44px!important}
+ body[data-page="play"] #play .buttons{margin:8px 0 0!important;gap:8px!important}
+ body[data-page="play"] #play .flash{min-height:150px!important;padding:20px!important}
+ body[data-page="play"] #play .flash h2{margin:0!important}
+ body[data-page="play"] #play .builder-tools{margin-top:8px!important;gap:8px!important}
+ body[data-page="play"] #play .builder-bank{min-height:54px!important}
+ body[data-page="play"] #play .question>.btn.secondary{min-height:44px!important;margin:6px 8px 6px 0!important}
+ body[data-page="play"] #game>.progress-note{font-size:11px!important;margin:4px 0!important}
+ body[data-page="play"] .pair-instruction{margin:0!important;font-size:14px!important}
+ body[data-page="play"] .pair-hud{margin:0!important;padding:4px 10px!important}
+ body[data-page="play"] .pair-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+ body[data-page="play"] .pair-grid .pair{min-height:44px!important;padding:8px!important;font-size:15px!important;line-height:1.25!important}
+ .cq-simple{width:100%!important;max-width:620px!important;gap:6px!important}
+ .cq-simple .cq-hud{gap:8px!important}
+ .cq-simple .cq-moves,.cq-simple .cq-scorebox{padding:6px 12px!important;border-radius:14px!important}
+ .cq-simple .cq-moves b{font-size:24px!important}
+ .cq-simple .cq-scorebox>b{font-size:22px!important;line-height:1!important}
+ .cq-simple .cq-scorebox>small{font-size:12px!important}
+ .cq-simple .cq-friend{width:52px!important;height:52px!important;object-fit:contain!important;align-self:center!important}
+ .cq-simple .cq-stage{width:min(100%,max(252px,calc(100dvh - 390px)))!important;max-width:420px!important;margin:0 auto!important}
+ .cq-simple .cq-board{width:100%!important;height:auto!important;aspect-ratio:1!important}
+ .cq-simple .cq-gem{transition:transform .15s,opacity .15s!important}
+ .cq-simple .cq-rock{border:3px solid #8d98b2!important;background:linear-gradient(135deg,#d5dbea,#76839e)!important;color:#53627d!important;font-size:24px!important;box-shadow:inset 0 -3px 0 #5f6d86!important;border-radius:9px!important;cursor:default!important}
+ .cq-simple .cq-message{min-height:2.7em!important;margin:0!important;text-align:center!important;font-size:14px!important;line-height:1.35!important;color:#233d75!important;font-weight:700!important}
+ .cq-simple .cq-help{margin:0!important;font-size:11px!important;line-height:1.3!important;color:#52617e!important}
+ .cq-simple .cq-tools{margin:0!important;gap:6px!important;justify-content:center!important;flex-wrap:wrap!important}
+ .cq-simple .cq-tools .btn{font-size:12px!important;min-height:36px!important;padding:7px 10px!important}
+ .cq-simple .cq-gem.hint{outline:3px solid #ffe064!important;outline-offset:-4px!important}
+ .cq-simple .cq-gem.sel{outline:3px solid white!important;outline-offset:-4px!important}
+ .cq-simple .cq-gem.kbd{box-shadow:inset 0 0 0 3px #ffe064!important}
+ .cq-result-lexi{width:72px!important;height:72px!important;object-fit:contain!important}
+ .cq-result-actions{display:flex!important;gap:8px!important;justify-content:center!important;flex-wrap:wrap!important}
+ .cq-rules{margin:0!important;font-size:14px!important}
+ .cq-pause{position:absolute!important;inset:0!important;z-index:20!important;background:#172b64bb!important;display:grid!important;place-items:center!important;border-radius:20px!important}
+ .cq-pause-card{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:10px!important;padding:24px!important;background:white!important;border-radius:20px!important;max-width:90%!important}
+ .cq-pause-card h2{flex-basis:100%!important;text-align:center!important;margin:0!important}
+}
+@media screen and (max-width:600px){
+ body[data-page="play"] .site-header{height:58px!important;min-height:58px!important}
+ body[data-page="play"] #game{gap:6px!important}
+ body[data-page="play"] #gameTitle{font-size:18px!important}
+ body[data-page="play"] .practice-mode-switcher select{max-width:165px!important;font-size:12px!important}
+ body[data-page="play"] #play>.question{padding:14px!important}
+ body[data-page="play"] #play .option{font-size:14px!important;padding:9px!important;min-height:44px!important}
+ body[data-page="play"] .pair-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ body[data-page="play"] .cq-simple .cq-stage{width:min(100%,max(280px,calc(100dvh - 400px)))!important}
+ .cq-simple .cq-help{font-size:11px!important}
+ .cq-map-head{padding:14px!important;gap:10px!important}.cq-map-lexi{width:56px!important;height:56px!important}.cq-map-head p{font-size:13px!important}
+}
+@media screen and (max-width:360px){body[data-page="play"] #gameTitle{font-size:16px!important}body[data-page="play"] .practice-mode-switcher select{max-width:145px!important}.cq-simple .cq-tools .btn{font-size:11px!important}}
+
+@media screen{body[data-page="play"] #lexiCoach{grid-column:1/-1;display:flex!important;margin:0!important;padding:0!important;min-height:0!important;font-size:12px!important;gap:6px!important}body[data-page="play"] #lexiCoach img{width:32px!important;height:32px!important}body[data-page="play"] #game{padding:12px 18px!important}body[data-page="play"] #game>.toprow .btn{min-height:36px!important;padding:7px 12px!important}}
+
+@media screen{body[data-page="play"] #lexiCoach .lexi-avatar{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important}body[data-page="play"] #lexiCoach .lexi-bubble{margin:0!important;padding:6px 10px!important;font-size:12px!important;line-height:1.3!important}body[data-page="play"] #play .feedback details.why{padding:0!important;margin:5px 0!important;background:transparent!important;border:0!important}body[data-page="play"] #play .feedback details.why summary{font-size:13px;font-weight:700;cursor:pointer}body[data-page="play"] #play .feedback details.why p{margin:5px 0!important;font-size:13px!important;line-height:1.3!important}}
+
+@media screen{body[data-page="play"] #play .feedback-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px}body[data-page="play"] #play .feedback-row>.btn{margin:0;min-height:44px;position:sticky;top:72px}}
+@media screen and (max-height:700px) and (min-width:761px){body[data-page="play"] #lexiCoach{display:none!important}body[data-page="play"] #play .question h2{margin:2px 0 8px!important}body[data-page="play"] #play>.question{padding:12px 16px!important}}
+
+@media screen{body[data-page="play"] #game:has(.cq-simple) #lexiCoach,body[data-page="play"] #game:has(.crystal-result) #lexiCoach,body[data-page="play"] #game:has(.cq-simple)>#counter,body[data-page="play"] #game:has(.cq-simple)>.progress{display:none!important}.cq-simple .cq-stage{width:min(100%,max(252px,calc(100dvh - 470px)))!important}}
+
+@media screen{.crystal-result{text-align:center;padding:12px}.crystal-result .cq-res-stars{color:#e6a400!important;font-size:36px!important;margin:10px 0!important}.crystal-result h2{margin:8px 0!important}.crystal-result p{margin:8px 0!important}}
+
+@media screen{body[data-page="play"] #play .question h2{padding:0!important;min-height:0!important}body[data-page="play"] #game:has(.builder-line) #lexiCoach{display:none!important}body[data-page="play"] #play .builder-line{min-height:52px!important;padding:4px!important;margin:6px 0!important}body[data-page="play"] #play .builder-bank{min-height:52px!important;padding:4px!important;margin:6px 0!important}body[data-page="play"] #play .question:has(.builder-line)>p.tiny{font-size:12px!important;line-height:1.3!important;margin-bottom:4px!important}body[data-page="play"] #play .question>p:empty{display:none!important}body[data-page="play"] #play .builder-tools .btn{min-height:44px!important;font-size:14px!important;padding:8px 12px!important}}

@@ -27,6 +27,8 @@ jobs:
       - name: Verify data, learning rules and isolated database
         run: |
           node tests/verify.mjs
+          node tests/materials.mjs
+          node tests/crystal-engine.mjs
           node tests/inventory.mjs
           node tests/balanced-groups.mjs
           node tests/retry-policy.mjs
@@ -37,6 +39,8 @@ jobs:
           node tests/lexi-next.mjs
           node tests/history-cabinets.mjs
           node tests/learning.mjs
+          node tests/game-layout.mjs
+          node tests/crystal-play.mjs
           node tests/plus.mjs
           node tests/rounds.mjs
           node tests/print-layout.mjs

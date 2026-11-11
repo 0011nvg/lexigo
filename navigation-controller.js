@@ -2,18 +2,18 @@
  * without server rewrite rules; no grade/module/game implementation is duplicated. */
 (()=>{'use strict';
  const byId=id=>document.getElementById(id),make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
- const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',audio:'Аудиодиктант',crystals:'Кристальная экспедиция',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
+ const modeNames={cards:'Карточки',quiz:'Выбери перевод',spell:'Напиши слово',pairs:'Найди пару',truefalse:'Верно / неверно',audio:'Аудиодиктант',crystals:'Кристалл',boss:'Финальный тест',mixed:'Тренировка дня',builder:'Конструктор слов',listen:'Слушай и выбирай',review:'Работа над ошибками'};
  const originalStart=start,originalStop=stop;let applying=false,revealWords=false,lastURL='',currentCourse=DB.books[0],moduleIndex=0;
  /* 2026-11-02 v2: уроки от учителя и свои уроки учителя — полноценные страницы #/my/a-<задание> и #/my/t-<урок>
     (my-lessons.js). Старые ссылки index.html?task=<id> и ?lesson=<id> переводятся на них. */
  let custom=null;const MY_KEY=/^(?:[at]-[0-9a-f-]{36}|s-[0-9a-z]{1,40})$/i;
  (()=>{const q=new URLSearchParams(location.search),t=q.get('task'),l=q.get('lesson'),id=t||l;if(id&&/^[0-9a-f-]{36}$/i.test(id)){q.delete('task');q.delete('lesson');const rest=q.toString();history.replaceState({},'',location.pathname+(rest?'?'+rest:'')+'#/my/'+(t?'a-':'t-')+id)}})();
- const modules=b=>[...new Set(b.sections.map(s=>s.module))];
+ const modules=b=>window.LexigoModules(b);
  const currentKey=()=>unit==='__all'?'m'+modules(book).indexOf(mod):String(unit);
  const lessonPath=()=>'/lesson/'+book.grade+'/'+currentKey();
  const coursePath=()=>'/course/'+book.grade+'/'+modules(book).indexOf(mod);
  function link(label,path,className=''){const a=make('a',label);a.href=path.startsWith('/')?'#'+path:path;a.className=className;return a}
- function focusPage({preserve=false}={}){if(preserve)return;const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
+ function focusPage({preserve=false}={}){if(preserve&&document.body.dataset.page!=='play')return;const target=document.querySelector('[data-route-active] h1')||byId('gameTitle');target?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
  /* 2026-11-04: «Материалы для учителя» — только для учителя (роль подтверждает cloud.js по профилю на сервере;
     до ответа сервера — подсказка с устройства). Учительские данные защищает сервер, здесь — что показывать. */
  const isTeacher=()=>document.body.dataset.role?document.body.dataset.role==='teacher':!!(window.LexigoAccountHint&&LexigoAccountHint.uid()&&LexigoAccountHint.role()==='teacher');
@@ -54,7 +54,7 @@
   byId('moduleTitle').textContent=ms[moduleIndex];const cards=byId('lessonCards');cards.replaceChildren();
   function add(title,subtitle,key,number){const a=link('','/lesson/'+currentCourse.grade+'/'+key,'lesson-card');const num=make('span',number);num.className='lesson-number';const label=make('span');label.append(make('strong',title),make('small',subtitle));a.append(num,label,make('span','→'));cards.append(a)}
   add('Все слова модуля','Общая тренировка по разделу','m'+moduleIndex,'↗');
-  let number=0;currentCourse.sections.forEach((s,i)=>{if(s.module===ms[moduleIndex]&&s.words.length)add(s.title,s.words.length+' слов',String(i),String(++number).padStart(2,'0'))});
+  let number=0;window.LexigoSectionEntries(currentCourse).forEach(({s,i})=>{if(s.module===ms[moduleIndex]&&s.words.length)add(s.title,s.words.length+' '+ruWords(s.words.length),String(i),String(++number).padStart(2,'0'))});
   crumbs([[currentCourse.grade+' класс',null]]);document.title=currentCourse.grade+' класс'+' — LEXI';
  }
  function stableTarget(grade,key){const b=DB.books.find(x=>String(x.grade)===String(grade));key=String(key||'');if(!b||!key)return null;

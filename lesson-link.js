@@ -17,7 +17,7 @@
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = String(text); return n; };
   const Nav = () => window.LexigoNav;
-  const modulesOf = b => [...new Set(b.sections.map(s => s.module))];
+  const modulesOf = b => window.LexigoModules(b);
   const ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4.5 4.5 0 0 0 6.4.4l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10.5a4.5 4.5 0 0 0-6.4-.4l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>';
 
   function siteBase() { return location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, ''); }

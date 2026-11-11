@@ -132,7 +132,7 @@
     okRecall: ['Ты вспомнил сам — это сильнее всего!', 'Amazing! По памяти!', 'Слово твоё. Great job!'],
     miss: ['Ничего, разберёмся.', 'Keep going! Ошибка — это шаг к знанию.', 'Почти! Посмотри разбор.', 'You can do it! Слово вернётся ещё раз.'],
     hint: ['Подсказка — это нормально. Закрепим ещё раз.', 'С подсказкой тоже учимся!'],
-    start: { cards: 'Переворачивай и вспоминай.', quiz: 'Выбирай перевод. Не спеши.', truefalse: 'Верно или нет? Смотри внимательно.', spell: 'Пиши по памяти. Есть подсказка 💡', fix: 'Найди ошибку в слове.', audio: 'Слушай и пиши. Можно слушать снова.', listen: 'Слушай и выбирай слово.', builder: 'Собирай по порядку.', pairs: 'Соединяй пары как можно быстрее!', crystals: 'Собери кристаллы — и отвечай на слова.', boss: 'Страж модуля ждёт. Без подсказок!', mixed: 'Тренировка дня: всего понемногу.', review: 'Работаем над ошибками. Ты справишься!' }
+    start: { cards: 'Переворачивай и вспоминай.', quiz: 'Выбирай перевод. Не спеши.', truefalse: 'Верно или нет? Смотри внимательно.', spell: 'Пиши по памяти. Есть подсказка 💡', fix: 'Найди ошибку в слове.', audio: 'Слушай и пиши. Можно слушать снова.', listen: 'Слушай и выбирай слово.', builder: 'Собирай по порядку.', pairs: 'Соединяй пары как можно быстрее!', crystals: 'Собери три в ряд и достигни цели по очкам.', boss: 'Страж модуля ждёт. Без подсказок!', mixed: 'Тренировка дня: всего понемногу.', review: 'Работаем над ошибками. Ты справишься!' }
   };
   const CALM_LINES = { ok: ['Верно.'], okRecall: ['Верно, по памяти.'], miss: ['Посмотри разбор.'], hint: ['Ответ с подсказкой.'] };
   function coach() {
@@ -187,7 +187,7 @@
   }
   function explain(detail) {
     const { word: w, mode, feedback } = detail; if (!feedback || detail.correct) return;
-    const box = el('div', 'why'); const title = el('strong', null, 'Почему неверно?'); box.append(title);
+    const box = el('details', 'why'); const title = el('summary', null, 'Почему неверно?'); box.append(title);
     const input = document.querySelector('#play .answerbox input');
     if (['spell', 'audio', 'fix', 'boss'].includes(mode) && input && input.value.trim()) {
       const d = diffHTML(input.value.trim(), String(w.en));
@@ -334,7 +334,7 @@
     if (r[0] === 'boss' && g.firstCorrect < (g.words.length - (g.retries || 0)) * .7) return ['review', 'Работа над ошибками', 'Сначала исправь ошибки, потом страж.'];
     return r;
   }
-  function lessonHash() { const wb = window.LexigoWholeBook && window.LexigoWholeBook.current; if (wb) return '/book/' + wb.grade; return '/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + [...new Set(book.sections.map(s => s.module))].indexOf(mod) : unit); }
+  function lessonHash() { const wb = window.LexigoWholeBook && window.LexigoWholeBook.current; if (wb) return '/book/' + wb.grade; return '/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + window.LexigoModules(book).indexOf(mod) : unit); }
 
   /* ---------- header chrome: level chip, streak, calm toggle ---------- */
   /* 2026-11-04: отдельного чипа «котёнок + звание → награды» в шапке больше нет — он дублировал «Награды» внизу
@@ -395,7 +395,7 @@
   function lessonLabel(path) {
     const m = path.match(/^\/lesson\/(\d+)\/(m?)(\d+)$/); if (!m) return '';
     const b = DB.books.find(x => String(x.grade) === m[1]); if (!b) return '';
-    if (m[2]) return b.grade + ' класс · ' + ([...new Set(b.sections.map(s => s.module))][Number(m[3])] || '');
+    if (m[2]) return b.grade + ' класс · ' + (window.LexigoModules(b)[Number(m[3])] || '');
     return b.grade + ' класс · ' + (b.sections[Number(m[3])]?.title || '');
   }
   function bookStats(b) {
@@ -426,7 +426,7 @@
     const list = $('lessonCards'); if (!list || list.dataset.lexi === list.childElementCount + ':' + location.hash) return;
     list.dataset.lexi = list.childElementCount + ':' + location.hash;
     const m = location.hash.match(/#\/course\/(\d+)\/(\d+)/); const b = DB.books.find(x => String(x.grade) === (m ? m[1] : String(DB.books[0].grade))); if (!b) return;
-    const ms = [...new Set(b.sections.map(s => s.module))]; const mi = m ? Number(m[2]) : 0; const moduleName = ms[mi] || ms[0];
+    const ms = window.LexigoModules(b); const mi = m ? Number(m[2]) : 0; const moduleName = ms[mi] || ms[0];
     let total = 0, count = 0;
     list.querySelectorAll('a.lesson-card').forEach(a => {
       const key = (a.getAttribute('href').match(/\/lesson\/\d+\/(m?\d+)$/) || [])[1]; if (!key) return;
@@ -502,7 +502,7 @@
     const page = document.body.dataset.page;
     applyModes();
     if (['lesson', 'words', 'play'].includes(page) && typeof book !== 'undefined' && book) {
-      const key = unit === '__all' ? 'm' + [...new Set(book.sections.map(s => s.module))].indexOf(mod) : unit;
+      const key = unit === '__all' ? 'm' + window.LexigoModules(book).indexOf(mod) : unit;
       const path = '/lesson/' + book.grade + '/' + key; if (quest.lastLesson !== path) { quest.lastLesson = path; saveQuest(); }
     }
     if (page === 'home') renderHome();

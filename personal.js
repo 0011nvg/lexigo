@@ -12,8 +12,8 @@
   const plural = (n, a, b, c) => { n = Math.abs(n) % 100; const n1 = n % 10; return n > 10 && n < 20 ? c : n1 > 1 && n1 < 5 ? b : n1 === 1 ? a : c; };
   const BOOKS = DB.books;
   const bookOf = g => BOOKS.find(b => String(b.grade) === String(g)) || null;
-  const modulesOf = b => [...new Set(b.sections.map(s => s.module))];
-  const MODE_NAMES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристальная экспедиция', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
+  const modulesOf = b => window.LexigoModules(b);
+  const MODE_NAMES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристалл', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
   const deviceNote = () => ({
     guest: 'Настройки пока сохраняются на этом устройстве. Войдите в аккаунт для синхронизации.',
     pending: 'Настройки сохранены на устройстве и ожидают отправки в облако.',

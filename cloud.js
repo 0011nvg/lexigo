@@ -53,7 +53,7 @@
       if (wb) return { scope: 'book', grade: Number(wb.grade), title: wb.grade + ' класс' + ' · весь учебник' };
       if (typeof book === 'undefined' || !book) return { scope: 'other' };
       const all = unit === '__all';
-      const modules = [...new Set(book.sections.map(s => s.module))];
+      const modules = window.LexigoModules(book);
       const key = all ? 'm' + modules.indexOf(mod) : String(unit);
       return { scope: all ? 'module' : 'lesson', grade: Number(book.grade), section_index: all ? null : Number(unit), route: '/lesson/' + book.grade + '/' + key,
         title: book.grade + ' класс' + ' · ' + (all ? mod : (book.sections[Number(unit)] || {}).title || mod) };

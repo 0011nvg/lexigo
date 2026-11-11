@@ -12,7 +12,7 @@
   const toast = (t, mood) => { try { window.LexiQuest?.toast(t, mood || 'think'); } catch { /* cosmetic */ } };
   const readJSON = (k, f) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v && typeof v === 'object' ? v : f; } catch { return f; } };
   const writeJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage full */ } };
-  const MODE_NAMES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристальная экспедиция', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
+  const MODE_NAMES = { cards: 'Карточки', quiz: 'Выбери перевод', spell: 'Напиши слово', pairs: 'Найди пару', truefalse: 'Верно / неверно', fix: 'Исправь ошибку', audio: 'Аудиодиктант', crystals: 'Кристалл', boss: 'Финальный тест', mixed: 'Тренировка дня', builder: 'Конструктор слов', listen: 'Слушай и выбирай', review: 'Работа над ошибками' };
   const lessonKey = () => (typeof book !== 'undefined' && book ? book.grade + ':' + unit : '');
   const SINGLE = w => /^[a-zA-Z]+(?:[-'’‘][a-zA-Z]+)*$/.test(String(w.en).trim());
 
@@ -32,7 +32,7 @@
     card.append(head, row); box.append(card); box.addEventListener('click', e => { if (e.target === box) close(); });
     document.addEventListener('keydown', esc); document.body.append(box); row.querySelector('button').focus();
   }
-  const openWords = () => { try { location.hash = '#/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + [...new Set(book.sections.map(s => s.module))].indexOf(mod) : unit) + '/words'; } catch { /* no lesson */ } };
+  const openWords = () => { try { location.hash = '#/lesson/' + book.grade + '/' + (unit === '__all' ? 'm' + window.LexigoModules(book).indexOf(mod) : unit) + '/words'; } catch { /* no lesson */ } };
   window.alert = msg => {
     const text = String(msg || '');
     const wordsRelated = /слов/i.test(text) && document.body.dataset.page !== 'words';
@@ -183,7 +183,7 @@
     const presets = el('div', 'boss-presets');
     const pAll = el('button', 'text-button', 'Выбрать все'); pAll.type = 'button'; pAll.onclick = () => { grid.querySelectorAll('button').forEach(b => chosen.add(b.dataset.type)); paint(); };
     const pRec = el('button', 'text-button', 'Рекомендуемый набор'); pRec.type = 'button'; pRec.onclick = () => { chosen.clear(); BOSS_DEFAULT.forEach(t => chosen.add(t)); paint(); };
-    presets.append(pAll, pRec, el('span', 'boss-note', '«Кристальная экспедиция» — отдельная игра и в тест не входит.'));
+    presets.append(pAll, pRec, el('span', 'boss-note', '«Кристалл» — отдельная игра и в тест не входит.'));
     const row = el('div', 'lx-notice-actions');
     const cancel = el('button', 'btn secondary', 'Отмена'); cancel.type = 'button'; cancel.onclick = () => box.remove();
     const go = el('button', 'btn', 'Начать тест →'); go.type = 'button';

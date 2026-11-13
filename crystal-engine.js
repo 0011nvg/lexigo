@@ -3,11 +3,11 @@
 'use strict';
 const COLORS=['сапфир','аметист','изумруд','рубин','топаз','бирюза'];
 const LEVELS=[
- {id:1,name:'Первые кристаллы',size:7,colors:5,moves:20,target:450,rocks:[]},
- {id:2,name:'Цепная реакция',size:7,colors:5,moves:20,target:650,rocks:[]},
- {id:3,name:'Каменная тропа',size:7,colors:5,moves:22,target:750,rocks:[24]},
- {id:4,name:'Сапфировая пещера',size:7,colors:6,moves:24,target:850,rocks:[17,31]},
- {id:5,name:'Сокровища Лекси',size:7,colors:6,moves:25,target:1000,rocks:[16,18,30,32]}
+ {id:1,name:'Первые кристаллы',size:7,colors:5,moves:10,target:300,rocks:[]},
+ {id:2,name:'Цепная реакция',size:7,colors:5,moves:10,target:400,rocks:[]},
+ {id:3,name:'Каменная тропа',size:7,colors:5,moves:10,target:450,rocks:[24]},
+ {id:4,name:'Сапфировая пещера',size:7,colors:6,moves:10,target:500,rocks:[17,31]},
+ {id:5,name:'Сокровища Лекси',size:7,colors:6,moves:10,target:550,rocks:[16,18,30,32]}
 ].map(l=>Object.freeze({...l,rocks:Object.freeze(l.rocks),stars:Object.freeze([l.target,l.target+200,l.target+400])}));
 function level(id){return LEVELS.find(l=>l.id===Number(id))||null;}
 function hashSeed(s){let h=2166136261>>>0;for(const c of String(s)){h^=c.codePointAt(0);h=Math.imul(h,16777619)>>>0;}return h;}

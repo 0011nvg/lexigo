@@ -87,4 +87,4 @@
 @media screen and (max-width:600px){body[data-page="play"] .cq-simple .cq-stage{width:min(100%,max(280px,calc(100dvh - 555px)))!important}}
 
 /* Большое поле кристаллов на телефоне и компьютере. */
-@media screen {body[data-page="play"] .cq-simple{max-width:none!important}body[data-page="play"] .cq-simple .cq-stage{width:min(100%,max(280px,calc(100dvh - 150px)))!important;max-width:none!important}}
+@media screen {body[data-page="play"] .cq-simple{max-width:none!important}body[data-page="play"] .cq-simple .cq-stage{width:min(100%,max(280px,calc(100dvh - 300px)))!important;max-width:none!important}}

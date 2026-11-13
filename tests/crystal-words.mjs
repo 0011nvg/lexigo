@@ -11,7 +11,7 @@ for(const [name,width,height] of [['desktop',1280,720],['phone',390,844],['short
   const info=await page.evaluate(()=>{const w=LexiCrystalQuest.debug().words[LexiCrystalQuest.debug().answers.length];const q=document.querySelector('.cq-word .question');return {en:w.en,ru:w.ru,proposed:q.querySelector('h2')?.nextElementSibling?.textContent,buttons:[...q.querySelectorAll('button')].map(x=>x.textContent.trim())}});
   let label=i%3===0?(info.proposed===info.ru?'✓ Верно':'✕ Неверно'):i%3===1?info.ru:info.en;
   if(i===0)label=label==='✓ Верно'?'✕ Неверно':'✓ Верно';
-  await page.locator('.cq-word .question button').filter({hasText:label}).first().click();await page.locator('.cq-continue').waitFor();
+  await page.locator('.cq-word .question').getByRole('button',{name:label,exact:true}).click();await page.locator('.cq-continue').waitFor();
   const end=await page.locator('.cq-continue').boundingBox();assert.ok(end.y+end.height<=height+1,`${name} continue offscreen`);
   await page.locator('.cq-continue').click();
  }

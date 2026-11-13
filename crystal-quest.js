@@ -18,7 +18,7 @@ function end(){if(G){G.dead=true;G=null;}}
 function heading(text){$('gameTitle').textContent=text;$('timer').textContent='';}
 function showMap(){
  if(!G)return;if(G.st&&G.answers?.length&&!G.attemptSaved){saveLearningAttempt(G.game,false);G.attemptSaved=true;}G.revision++;G.st=null;G.busy=false;heading('💎 Кристалл');$('counter').textContent='Один режим · пять уровней';$('bar').style.width='0%';
- const map=el('section','cq-map');map.innerHTML='<div class="cq-map-head"><img class="cq-map-lexi" src="assets/lexi-head.webp" alt=""><div><h2>Собери три в ряд</h2><p>Меняй соседние кристаллы местами. Ряд из трёх и более одинаковых по горизонтали или вертикали взрывается: каждый кристалл даёт 10 очков. Набери цель до окончания ходов. После нескольких ходов Лекси предложит задания со словами.</p></div></div>';
+ const map=el('section','cq-map');map.innerHTML='<div class="cq-map-head"><img class="cq-map-lexi" src="assets/lexi-head.webp" alt=""><div><h2>Собери три в ряд</h2><p>Меняй соседние кристаллы местами. Ряд из трёх и более одинаковых по горизонтали или вертикали взрывается: каждый кристалл даёт 10 очков. Набери цель до окончания ходов. После трёх удачных ходов Лекси предложит 5 заданий со словами.</p></div></div>';
  const rules=el('p','cq-rules','Без ряда кристаллы возвращаются обратно, ход сохраняется. Новые кристаллы падают сверху; новые ряды взрываются автоматически. Диагонали не считаются. С уровня 3 появляются неподвижные камни.');map.append(rules);
  const list=el('div','cq-levels');
  for(const L of E.LEVELS){const unlocked=open(L.id),r=data.levels[L.id];const b=btn('', 'cq-level'+(unlocked?'':' locked'),()=>{if(unlocked)startLevel(L.id);});b.dataset.level=L.id;b.disabled=!unlocked;b.setAttribute('aria-label','Уровень '+L.id+'. '+L.name+(unlocked?'':'. Сначала пройди предыдущий уровень'));
@@ -30,14 +30,14 @@ function showMap(){
 }
 function startLevel(id){
  if(!G||!open(id))return;const L=E.level(id);if(!L)return;
- if(G.st&&G.answers?.length&&!G.attemptSaved)saveLearningAttempt(G.game,false);G.attemptSaved=false;G.revision++;G.st=E.create(id,E.dailySeed(id,new Date().toLocaleDateString('sv-SE')));G.words=shuffle(G.game.words.filter((w,i,a)=>a.findIndex(x=>x.id===w.id)===i)).slice(0,7);G.answers=[];G.earned=0;G.wordsDone=false;G.game.score=0;G.game.firstCorrect=0;G.game.misses=0;G.game.savedAttempt=false;if(G.game.events)G.game.events=[];window.LexigoCloudSession?.restartRound?.(G.game);G.busy=false;G.sel=null;G.focus=0;heading('💎 '+L.id+'. '+L.name);
+ if(G.st&&G.answers?.length&&!G.attemptSaved)saveLearningAttempt(G.game,false);G.attemptSaved=false;G.revision++;G.st=E.create(id,E.dailySeed(id,new Date().toLocaleDateString('sv-SE')));const available=shuffle(G.game.words.filter((w,i,a)=>a.findIndex(x=>x.id===w.id)===i));G.words=available.length?Array.from({length:5},(_,i)=>available[i%available.length]):[];G.answers=[];G.earned=0;G.wordsDone=false;G.game.score=0;G.game.firstCorrect=0;G.game.misses=0;G.game.savedAttempt=false;if(G.game.events)G.game.events=[];window.LexigoCloudSession?.restartRound?.(G.game);G.busy=false;G.sel=null;G.focus=0;heading('💎 '+L.id+'. '+L.name);
  const play=el('section','cq-play cq-simple'+(reduced()?' calm':''));
  play.innerHTML='<div class="cq-hud"><div class="cq-moves"><b id="cqMoves"></b><small id="cqMovesLabel">ходов</small></div><div class="cq-scorebox"><b id="cqScore">0</b><small id="cqTarget"></small><div class="cq-starbar"><i id="cqStarFill"></i></div></div><img class="cq-friend" src="assets/lexi-head.webp" alt="Лекси"></div><div class="cq-stage"><div class="cq-board" id="cqBoard" role="group" tabindex="0"></div></div><p id="cqMessage" class="cq-message" role="status" aria-live="polite"></p><p class="cq-help">Перетащи кристалл к соседнему или нажми два соседних. Клавиатура: стрелки — выбор, Enter — взять, стрелка — сдвиг. Камни не двигаются.</p><div class="cq-tools"></div>';
  play.querySelector('.cq-tools').append(btn('💡 Подсказка','btn secondary',hint),btn('⏸ Пауза','btn secondary',pause),btn(data.calm?'Анимация: спокойная':'Анимация: обычная','btn secondary',()=>{data.calm=!data.calm;persist();startLevelAfterPreference();}));
  const soundButton=btn(data.muted?'Звук: выключен':'Звук: включён','btn secondary',()=>{data.muted=!data.muted;persist();soundButton.textContent=data.muted?'Звук: выключен':'Звук: включён';if(!data.muted)sound('swap');});soundButton.dataset.pref='muted';play.querySelector('.cq-tools').append(soundButton);
  $('play').replaceChildren(play);const board=$('cqBoard');board.style.setProperty('--n',G.st.size);bind(board);draw(G.st.cells);hud();message('Цель: '+L.target+' очков за '+L.moves+' '+moveWord(L.moves)+'.'+(L.rocks.length?' Серые камни нельзя перемещать или разбить.':''));board.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
 }
-function startLevelAfterPreference(){const p=document.querySelector('.cq-play');p?.classList.toggle('calm',reduced());const b=p?.querySelector('.cq-tools button:last-child');if(b)b.textContent=data.calm?'Анимация: спокойная':'Анимация: обычная';}
+function startLevelAfterPreference(){const p=document.querySelector('.cq-play');p?.classList.toggle('calm',reduced());const b=p?.querySelector('.cq-tools button:nth-child(3)');if(b)b.textContent=data.calm?'Анимация: спокойная':'Анимация: обычная';}
 function draw(cells){
  const board=$('cqBoard');if(!board||!G?.st)return;board.replaceChildren();
  cells.forEach((p,i)=>{if(!p)return;const b=el('button','cq-gem'+(p.rock?' cq-rock':' c'+p.c));b.type='button';b.tabIndex=-1;b.dataset.i=i;b.dataset.id=p.id;b.style.setProperty('--x',i%G.st.size);b.style.setProperty('--y',Math.floor(i/G.st.size));
@@ -102,7 +102,7 @@ function askWord(g,w,index){return new Promise(resolve=>{
   choices=shuffle([w,...distinct.slice(0,3)]).map(x=>({label:x[field],value:x.id}));correct=w.id;
   model={mode:'quiz',kind:'quiz',instruction:reverse?'Найди английское слово':'Выбери правильный перевод',prompt:reverse?w.ru:w.en,choices};
  }
- g.game.activeQuestionMode=kind==='reverse'?'quiz':kind;g.game.answered=false;g.game.hinted=false;g.game.retryActive=false;
+ g.game.activeQuestionMode=!alternatives.length?'spell':kind==='reverse'?'quiz':kind;g.game.answered=false;g.game.hinted=false;g.game.retryActive=false;
  function answer(value,label){
   if(g.game.answered)return;g.game.answered=true;
   const ok=kind==='truefalse'&&alternatives.length?value===correct:alternatives.length?value===correct:normalize(value)===normalize(w.en);

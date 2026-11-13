@@ -85,3 +85,6 @@
 @media screen{body[data-page="play"] #play .question h2{padding:0!important;min-height:0!important}body[data-page="play"] #game:has(.builder-line) #lexiCoach{display:none!important}body[data-page="play"] #play .builder-line{min-height:52px!important;padding:4px!important;margin:6px 0!important}body[data-page="play"] #play .builder-bank{min-height:52px!important;padding:4px!important;margin:6px 0!important}body[data-page="play"] #play .question:has(.builder-line)>p.tiny{font-size:12px!important;line-height:1.3!important;margin-bottom:4px!important}body[data-page="play"] #play .question>p:empty{display:none!important}body[data-page="play"] #play .builder-tools .btn{min-height:44px!important;font-size:14px!important;padding:8px 12px!important}}
 /* Keep all controls visible on narrow screens while preserving larger desktop gems. */
 @media screen and (max-width:600px){body[data-page="play"] .cq-simple .cq-stage{width:min(100%,max(280px,calc(100dvh - 555px)))!important}}
+
+/* Большое поле кристаллов на телефоне и компьютере. */
+@media screen {body[data-page="play"] .cq-simple{max-width:none!important}body[data-page="play"] .cq-simple .cq-stage{width:min(100%,max(280px,calc(100dvh - 150px)))!important;max-width:none!important}}

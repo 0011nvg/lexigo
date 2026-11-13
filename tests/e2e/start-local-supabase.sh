@@ -3,6 +3,7 @@
 # + PostgREST + a tiny proxy on :54321 that imitates https://<project>.supabase.co.
 # Requires: postgres binaries, curl, node. Binaries are downloaded from the official GitHub releases.
 set -euo pipefail
+trap 'echo "Local Supabase test setup failed at line $LINENO" >&2' ERR
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; W="${WORK:-/tmp/lexigo-supabase}"; mkdir -p "$W"
 PGBIN="${PGBIN:-/usr/lib/postgresql/16/bin}"; PGPORT=54329; SECRET="lexigo-local-test-secret-0123456789abcdef"
 [ -x "$W/postgrest" ] || { curl -sSL https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz | tar xJ -C "$W"; }
@@ -20,7 +21,7 @@ export GOTRUE_API_HOST=127.0.0.1 PORT=9999 API_EXTERNAL_URL=http://127.0.0.1:543
   GOTRUE_EXTERNAL_EMAIL_ENABLED=true GOTRUE_MAILER_AUTOCONFIRM=true GOTRUE_PASSWORD_MIN_LENGTH=8 GOTRUE_RATE_LIMIT_EMAIL_SENT=1000 GOTRUE_LOG_LEVEL=warn
 ( cd "$W" && ./auth migrate >/dev/null )
 $P -d lexigo_e2e -c "grant usage on schema auth to anon, authenticated, service_role; grant execute on all functions in schema auth to anon, authenticated, service_role;"
-$P -d lexigo_e2e -f "$ROOT/supabase/schema.sql" >/dev/null 2>&1
+$P -d lexigo_e2e -f "$ROOT/supabase/schema.sql" >/dev/null
 ( cd "$W" && nohup ./auth serve > "$W/auth.log" 2>&1 & )
 printf 'db-uri = "postgres://authenticator@127.0.0.1:%s/lexigo_e2e"\ndb-schemas = "public"\ndb-anon-role = "anon"\njwt-secret = "%s"\nserver-host = "127.0.0.1"\nserver-port = 3000\n' "$PGPORT" "$SECRET" > "$W/pgrst.conf"
 ( nohup "$W/postgrest" "$W/pgrst.conf" > "$W/pgrst.log" 2>&1 & )

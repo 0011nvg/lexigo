@@ -12,7 +12,7 @@ if [ ! -d "$W/pg" ]; then "$PGBIN/initdb" -D "$W/pg" -U postgres -A trust >/dev/
 sleep 1
 P="psql -h $W -p $PGPORT -U postgres -v ON_ERROR_STOP=1 -q"
 $P -c "drop database if exists lexigo_e2e" -c "create database lexigo_e2e"
-$P -d lexigo_e2e -f "$ROOT/tests/e2e/db-bootstrap.sql" 2>/dev/null
+$P -d lexigo_e2e -f "$ROOT/tests/e2e/db-bootstrap.sql"
 export GOTRUE_API_HOST=127.0.0.1 PORT=9999 API_EXTERNAL_URL=http://127.0.0.1:54321/auth/v1 GOTRUE_DB_DRIVER=postgres \
   DATABASE_URL="postgres://supabase_auth_admin@127.0.0.1:$PGPORT/lexigo_e2e?sslmode=disable" DB_NAMESPACE=auth \
   GOTRUE_SITE_URL=http://127.0.0.1:4173 GOTRUE_URI_ALLOW_LIST="http://127.0.0.1:4173/**" GOTRUE_JWT_SECRET="$SECRET" GOTRUE_JWT_EXP=3600 \

@@ -78,7 +78,7 @@
 @media screen{body[data-page="play"] #play .feedback-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px}body[data-page="play"] #play .feedback-row>.btn{margin:0;min-height:44px;position:sticky;top:72px}}
 @media screen and (max-height:700px) and (min-width:761px){body[data-page="play"] #lexiCoach{display:none!important}body[data-page="play"] #play .question h2{margin:2px 0 8px!important}body[data-page="play"] #play>.question{padding:12px 16px!important}}
 
-@media screen{body[data-page="play"] #game:has(.cq-simple) #lexiCoach,body[data-page="play"] #game:has(.crystal-result) #lexiCoach,body[data-page="play"] #game:has(.cq-simple)>#counter,body[data-page="play"] #game:has(.cq-simple)>.progress{display:none!important}.cq-simple .cq-stage{width:min(100%,max(252px,calc(100dvh - 470px)))!important}}
+@media screen{body[data-page="play"] #game:has(.cq-simple) #lexiCoach,body[data-page="play"] #game:has(.crystal-result) #lexiCoach,body[data-page="play"] #game:has(.cq-simple)>#counter,body[data-page="play"] #game:has(.cq-simple)>.progress{display:none!important}.cq-simple .cq-stage{width:min(100%,max(252px,calc(100dvh - 430px)))!important}}
 
 @media screen{.crystal-result{text-align:center;padding:12px}.crystal-result .cq-res-stars{color:#e6a400!important;font-size:36px!important;margin:10px 0!important}.crystal-result h2{margin:8px 0!important}.crystal-result p{margin:8px 0!important}}
 

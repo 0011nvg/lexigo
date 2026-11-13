@@ -45,7 +45,7 @@
 .cq-name small{flex-basis:100%}
 
 /* ---------- игровой экран ---------- */
-.cq-play{--cq-t:.2s;max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.cq-play{--cq-t:.2s;width:100%;max-width:none;margin:0 auto;display:flex;flex-direction:column;gap:10px}
 .cq-play.calm{--cq-t:.04s}
 .cq-hud{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:stretch;scroll-margin-top:96px}
 .cq-moves,.cq-scorebox,.cq-energy{border-radius:18px;background:#fff;box-shadow:var(--w-shadow);padding:8px 12px}
@@ -76,7 +76,7 @@
 .cq-goal-ico svg{width:20px;height:20px}
 
 /* поле */
-.cq-stage{position:relative;width:100%;max-width:max(300px,calc(100svh - 270px));margin:0 auto;border-radius:26px;padding:10px;background:radial-gradient(140% 100% at 50% 0%,#2c3f9e 0%,#17215a 60%,#0f1640 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 18px 40px -20px rgba(15,22,64,.9);touch-action:none;user-select:none;-webkit-user-select:none}
+.cq-stage{position:relative;width:100%;max-width:min(100%,max(300px,calc(100dvh - 120px)));margin:0 auto;border-radius:26px;padding:10px;background:radial-gradient(140% 100% at 50% 0%,#2c3f9e 0%,#17215a 60%,#0f1640 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 18px 40px -20px rgba(15,22,64,.9);touch-action:none;user-select:none;-webkit-user-select:none}
 .cq-board{position:relative;width:100%;aspect-ratio:1;outline:none;border-radius:18px}
 .cq-board:focus-visible{box-shadow:0 0 0 3px #b4ef3a}
 .cq-ice,.cq-gem{position:absolute;left:0;top:0;width:calc(100% / var(--n));height:calc(100% / var(--n));transform:translate(calc(var(--x) * 100%),calc(var(--y) * 100%))}

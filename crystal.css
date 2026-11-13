@@ -215,3 +215,13 @@
 .cq-res-tip{display:block;margin-top:6px;font-size:14px;color:var(--w-ink2)}
 @media (max-width:520px){.cq-cycle{margin-left:0;width:100%}}
 .cq-map-head h2{color:#fff!important}
+
+/* Compact word block: answers and feedback remain visible on short screens. */
+.cq-word-card .question .muted{margin:3px 0;font-size:15px}
+.cq-word-card .question h2{margin:4px 0 8px;font-size:clamp(20px,3vh,28px)}
+.cq-word-card .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0}
+.cq-word-card .option{min-height:44px;padding:7px 10px;white-space:normal;overflow-wrap:anywhere}
+.cq-word-card .feedback{margin:8px 0;padding:8px}
+.cq-word-card .cq-continue{min-height:44px}
+@media(max-height:600px){.cq-word{padding:6px}.cq-word-card{max-height:calc(100dvh - 12px);padding:8px 12px}.cq-word-head img{width:34px;height:34px}.cq-word-head{margin:0}.cq-word-card .question h2{font-size:20px}}
+@media(max-width:420px){.cq-word-card .options{grid-template-columns:1fr}.cq-word-card .option{min-height:42px;padding:5px 9px}}

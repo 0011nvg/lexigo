@@ -12,8 +12,9 @@ for(const [name,engine] of [['chromium',chromium],...(process.env.LEXIGO_WEBKIT?
   await page.locator('.cq-level[data-level="1"]').click();
   assert.equal(await page.locator('.cq-gem').count(),49);assert.equal(await page.locator('#cqMoves').innerText(),'20');
   const bottom=await page.locator('.cq-tools').boundingBox();assert.ok(bottom.y+bottom.height<=720,'board controls fit at 100% zoom');
-  const idle=()=>page.waitForFunction(()=>!LexiCrystalQuest.debug().busy);
-  const move=async pair=>{for(const i of pair)await page.locator('.cq-gem[data-i="'+i+'"]').click();await idle();};
+  const idle=()=>page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.cq-word'));
+  const words=async()=>{while(await page.locator('.cq-word').count()){await page.locator('.cq-word .question button').first().click();await page.locator('.cq-continue').click();}await idle();};
+  const move=async pair=>{for(const i of pair)await page.locator('.cq-gem[data-i="'+i+'"]').click();await idle();if(await page.locator('.cq-word').count())await words();};
   const bad=await page.evaluate(()=>{const s=LexiCrystalQuest.state(),E=LexiCrystalEngine;for(let a=0;a<s.n;a++)for(const b of [a+1,a+s.size])if(E.neighbors(s,a,b)&&!E.validSwap(s,a,b))return [a,b];});
   const before=await page.evaluate(()=>JSON.stringify(LexiCrystalQuest.state()));await move(bad);assert.equal(await page.evaluate(()=>JSON.stringify(LexiCrystalQuest.state())),before);assert.match(await page.locator('#cqMessage').innerText(),/Ход сохранён|ход сохранён/);
   await page.locator('.cq-tools button',{hasText:'Подсказка'}).click();assert.equal(await page.locator('.cq-gem.hint').count(),2);
@@ -25,7 +26,7 @@ for(const [name,engine] of [['chromium',chromium],...(process.env.LEXIGO_WEBKIT?
   await page.getByRole('button',{name:'Следующий уровень →',exact:true}).click();
   await page.evaluate(()=>{const s=LexiCrystalQuest.state();s.moves=1;s.target=1e9;});await move(await page.evaluate(()=>LexiCrystalEngine.findMove(LexiCrystalQuest.state())));
   await page.locator('.crystal-result.lost').waitFor();assert.match(await page.locator('.crystal-result').innerText(),/Ходы закончились/);
-  await page.getByRole('button',{name:'Попробовать ещё раз',exact:true}).click();assert.equal(await page.locator('#cqMoves').innerText(),'20');
+  await page.getByRole('button',{name:'Играть ещё',exact:true}).click();assert.equal(await page.locator('#cqMoves').innerText(),'20');
   // A dead board recovers without using a move.
   await page.evaluate(()=>{const s=LexiCrystalQuest.state();s.cells.forEach((p,i)=>p.c=(i%7+Math.floor(i/7))%5);});
   await page.locator('.cq-tools button',{hasText:'Подсказка'}).click();assert.equal(await page.locator('#cqMoves').innerText(),'20');assert.ok(await page.evaluate(()=>!!LexiCrystalEngine.findMove(LexiCrystalQuest.state())));

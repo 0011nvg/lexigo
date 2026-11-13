@@ -28,6 +28,7 @@ jobs:
       - run: node tests/inventory.mjs
       - run: node tests/crystal-engine.mjs
       - run: LEXIGO_WEBKIT=1 node tests/crystal-play.mjs
+      - run: node tests/crystal-words.mjs
       - run: node tests/game-layout.mjs
       - run: node tests/progress-model.mjs
       - run: node tests/dashboard.mjs

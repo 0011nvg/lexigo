@@ -38,8 +38,9 @@ async function scenario(viewport){
   const move=await page.evaluate(()=>LexiCrystalEngine.findMove(LexiCrystalQuest.state()));
   await page.locator('#cqBoard .cq-gem[data-i="'+move[0]+'"]').click();
   await page.locator('#cqBoard .cq-gem[data-i="'+move[1]+'"]').click();
-  await page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.crystal-result'),null,{timeout:10000});
+  await page.waitForFunction(()=>!LexiCrystalQuest.debug().busy||document.querySelector('.crystal-result')||document.querySelector('.cq-word'),null,{timeout:10000});
  }
+ while(await page.locator('.cq-word').count()){await page.locator('.cq-word .question button').first().click();await page.locator('.cq-continue').click();}
  assert.ok(await page.evaluate(()=>LexiCrystalQuest.state().movesUsed>=1),'moves were made');
  assert.equal(await page.evaluate(()=>LexiCrystalQuest.state().target),450);
  await page.locator('#back').click();

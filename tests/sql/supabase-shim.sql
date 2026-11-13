@@ -12,3 +12,8 @@ grant execute on function auth.uid() to anon, authenticated;
 -- Supabase grants table privileges to API roles by default; schema.sql must revoke what it does not want.
 alter default privileges in schema public grant all on tables to anon, authenticated;
 alter default privileges in schema public grant execute on functions to anon, authenticated;
+
+-- Local stand-in: push secrets remain absent in isolated SQL tests.
+create schema if not exists vault;
+create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);
+do $$ begin if not exists (select 1 from pg_roles where rolname='service_role') then create role service_role nologin; end if; end $$;

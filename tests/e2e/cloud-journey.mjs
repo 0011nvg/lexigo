@@ -89,6 +89,37 @@ try {
   assert.ok(guestWords > 0);
   ok('guest: plays without an account, gentle sign-up hint after the first round (' + guestWords + ' words kept on device)');
 
+  /* Crystal answers and their completed session reach a second signed-in device. */
+  const cctx = await device(), cp = await cctx.newPage(), crystalEmail = mail('crystal');
+  await signUp(cp, { role: 'student', name: 'Тест', email: crystalEmail });
+  await cp.goto(SITE + 'index.html#/lesson/2/3/play/crystals');
+  await cp.locator('.cq-level[data-level="1"]').click();
+  for (let i = 0; i < 3; i++) {
+    const pair = await cp.evaluate(() => LexiCrystalEngine.findMove(LexiCrystalQuest.state()));
+    for (const n of pair) await cp.locator(`.cq-gem[data-i="${n}"]`).click();
+    await cp.waitForFunction(() => !LexiCrystalQuest.debug().busy || document.querySelector('.cq-word'));
+  }
+  const wordId = await cp.evaluate(() => LexiCrystalQuest.debug().words[0].id);
+  for (let i = 0; i < 7; i++) {
+    const info = await cp.evaluate(() => { const g=LexiCrystalQuest.debug(),w=g.words[g.answers.length],q=document.querySelector('.cq-word .question'); return {en:w.en,ru:w.ru,proposed:q.querySelector('h2')?.nextElementSibling?.textContent}; });
+    const answer = i%3===0 ? (info.proposed===info.ru?'✓ Верно':'✕ Неверно') : i%3===1 ? info.ru : info.en;
+    await cp.locator('.cq-word .question').getByRole('button',{name:answer,exact:true}).click();
+    await cp.locator('.cq-continue').click();
+  }
+  await cp.waitForFunction(() => !LexiCrystalQuest.debug().busy);
+  await cp.evaluate(() => { const s=LexiCrystalQuest.state(); s.moves=1; s.target=1e9; });
+  const finalPair = await cp.evaluate(() => LexiCrystalEngine.findMove(LexiCrystalQuest.state()));
+  for (const n of finalPair) await cp.locator(`.cq-gem[data-i="${n}"]`).click();
+  await cp.locator('.crystal-result').waitFor();
+  const cuid=uidOf(crystalEmail);
+  await cp.waitForFunction(async () => { const sb=await LexigoCloud.client(); const {data}=await sb.from('sessions').select('id').eq('mode','crystals').eq('finished',true); return data?.length>0; },null,{timeout:15000});
+  assert.equal(Number(sql(`select count(*) from word_progress where user_id='${cuid}' and right_count>0`)),7);
+  const cctx2=await device({width:390,height:844}),cp2=await cctx2.newPage();
+  await signIn(cp2,crystalEmail); await cp2.goto(SITE+'index.html#/lesson/2/3');
+  await cp2.waitForFunction(id => JSON.parse(localStorage.getItem('lexigo_progress_v1')||'{}')[id]?.right>0,wordId,{timeout:15000});
+  ok('crystals: finished session and seven word results synced to a second device');
+  await cctx.close(); await cctx2.close();
+
   /* 1. Teacher registers, creates a class and a custom lesson */
   const tctx = await device();
   const t = await tctx.newPage();

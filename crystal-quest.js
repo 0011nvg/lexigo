@@ -17,8 +17,8 @@ function begin(game){end();load();sprite();G={game,st:null,busy:false,sel:null,f
 function end(){if(G){G.dead=true;G=null;}}
 function heading(text){$('gameTitle').textContent=text;$('timer').textContent='';}
 function showMap(){
- if(!G)return;G.revision++;G.st=null;G.busy=false;heading('💎 Кристалл');$('counter').textContent='Один режим · пять уровней';$('bar').style.width='0%';
- const map=el('section','cq-map');map.innerHTML='<div class="cq-map-head"><img class="cq-map-lexi" src="assets/lexi-head.webp" alt=""><div><h2>Собери три в ряд</h2><p>Меняй соседние кристаллы местами. Ряд из трёх и более одинаковых по горизонтали или вертикали взрывается: каждый кристалл даёт 10 очков. Набери цель до окончания ходов.</p></div></div>';
+ if(!G)return;if(G.st&&G.answers?.length&&!G.attemptSaved){saveLearningAttempt(G.game,false);G.attemptSaved=true;}G.revision++;G.st=null;G.busy=false;heading('💎 Кристалл');$('counter').textContent='Один режим · пять уровней';$('bar').style.width='0%';
+ const map=el('section','cq-map');map.innerHTML='<div class="cq-map-head"><img class="cq-map-lexi" src="assets/lexi-head.webp" alt=""><div><h2>Собери три в ряд</h2><p>Меняй соседние кристаллы местами. Ряд из трёх и более одинаковых по горизонтали или вертикали взрывается: каждый кристалл даёт 10 очков. Набери цель до окончания ходов. После нескольких ходов Лекси предложит задания со словами.</p></div></div>';
  const rules=el('p','cq-rules','Без ряда кристаллы возвращаются обратно, ход сохраняется. Новые кристаллы падают сверху; новые ряды взрываются автоматически. Диагонали не считаются. С уровня 3 появляются неподвижные камни.');map.append(rules);
  const list=el('div','cq-levels');
  for(const L of E.LEVELS){const unlocked=open(L.id),r=data.levels[L.id];const b=btn('', 'cq-level'+(unlocked?'':' locked'),()=>{if(unlocked)startLevel(L.id);});b.dataset.level=L.id;b.disabled=!unlocked;b.setAttribute('aria-label','Уровень '+L.id+'. '+L.name+(unlocked?'':'. Сначала пройди предыдущий уровень'));
@@ -30,7 +30,7 @@ function showMap(){
 }
 function startLevel(id){
  if(!G||!open(id))return;const L=E.level(id);if(!L)return;
- G.revision++;G.st=E.create(id,E.dailySeed(id,new Date().toLocaleDateString('sv-SE')));G.busy=false;G.sel=null;G.focus=0;heading('💎 '+L.id+'. '+L.name);
+ if(G.st&&G.answers?.length&&!G.attemptSaved)saveLearningAttempt(G.game,false);G.attemptSaved=false;G.revision++;G.st=E.create(id,E.dailySeed(id,new Date().toLocaleDateString('sv-SE')));G.words=shuffle(G.game.words.filter((w,i,a)=>a.findIndex(x=>x.id===w.id)===i)).slice(0,7);G.answers=[];G.earned=0;G.wordsDone=false;G.game.score=0;G.game.firstCorrect=0;G.game.misses=0;G.game.savedAttempt=false;if(G.game.events)G.game.events=[];window.LexigoCloudSession?.restartRound?.(G.game);G.busy=false;G.sel=null;G.focus=0;heading('💎 '+L.id+'. '+L.name);
  const play=el('section','cq-play cq-simple'+(reduced()?' calm':''));
  play.innerHTML='<div class="cq-hud"><div class="cq-moves"><b id="cqMoves"></b><small id="cqMovesLabel">ходов</small></div><div class="cq-scorebox"><b id="cqScore">0</b><small id="cqTarget"></small><div class="cq-starbar"><i id="cqStarFill"></i></div></div><img class="cq-friend" src="assets/lexi-head.webp" alt="Лекси"></div><div class="cq-stage"><div class="cq-board" id="cqBoard" role="group" tabindex="0"></div></div><p id="cqMessage" class="cq-message" role="status" aria-live="polite"></p><p class="cq-help">Перетащи кристалл к соседнему или нажми два соседних. Клавиатура: стрелки — выбор, Enter — взять, стрелка — сдвиг. Камни не двигаются.</p><div class="cq-tools"></div>';
  play.querySelector('.cq-tools').append(btn('💡 Подсказка','btn secondary',hint),btn('⏸ Пауза','btn secondary',pause),btn(data.calm?'Анимация: спокойная':'Анимация: обычная','btn secondary',()=>{data.calm=!data.calm;persist();startLevelAfterPreference();}));
@@ -68,15 +68,65 @@ async function attempt(a,b){
   if(step.t==='clear'){cleared+=step.cleared.length;step.cleared.forEach(i=>board?.querySelector('[data-i="'+i+'"]')?.classList.add('pop'));await wait(reduced()?25:170);}else {draw(step.cells);if(step.t==='shuffle')shuffled=true;await wait(reduced()?25:step.t==='fall'?180:120);}
  }
  if(!alive(g)||g.revision!==rev)return;draw(g.st.cells);hud();g.busy=false;board?.setAttribute('aria-busy','false');
+ if(!g.wordsDone&&(g.st.movesUsed>=3||g.st.finished)){await wordBlock(g);if(!alive(g)||g.revision!==rev)return;}
  if(g.st.finished){result();return;}
  message(shuffled?'Возможных рядов не было. Лекси перемешал кристаллы бесплатно — можно продолжать.':res.ok?'Отлично! +'+cleared*10+' очков.':res.reason==='rock'?'Камни неподвижны. Ход сохранён.':'Ряд не получился. Кристаллы вернулись, ход сохранён.');
 }
+
+/* Restore the word block removed in v4, while keeping the existing board and
+   the regular learning/progress pipeline. Rewards are derived, not minted. */
+async function wordBlock(g){
+ g.wordsDone=true;g.busy=true;
+ for(let i=0;i<g.words.length;i++){
+  await askWord(g,g.words[i],i);
+  if(!alive(g))return;
+ }
+ g.busy=false;
+}
+function askWord(g,w,index){return new Promise(resolve=>{
+ const box=el('div','cq-word');box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-labelledby','cqWordTitle');
+ const card=el('div','cq-word-card'),head=el('div','cq-word-head'),img=el('img');img.src='assets/lexi-head.webp';img.alt='';
+ const title=el('b',null,'Задание '+(index+1)+' из '+g.words.length);title.id='cqWordTitle';head.append(img,title);
+ const q=el('div','question');card.append(head,q);box.append(card);$('play').append(box);
+ const ownBook=DB.books.find(b=>b.sections.some(s=>s.words.some(x=>x.id===w.id)));
+ const pool=ownBook?ownBook.sections.flatMap(s=>s.words):g.game.words;
+ const alternatives=shuffle(pool.filter(x=>x.id!==w.id&&normalize(x.en)!==normalize(w.en)&&normalize(x.ru)!==normalize(w.ru))).filter((x,i,a)=>a.findIndex(y=>normalize(y.en)===normalize(x.en)&&normalize(y.ru)===normalize(x.ru))===i);
+ const kind=['truefalse','quiz','reverse'][index%3];let model,correct,choices;
+ if(!alternatives.length){model={mode:'spell',kind:'spell',instruction:'Напиши английское слово',prompt:w.ru};}
+ else if(kind==='truefalse'){
+  const truth=Math.random()<.5,proposed=truth?w.ru:alternatives[0].ru;correct=truth;
+  model={mode:'truefalse',kind:'truefalse',instruction:'Верно ли указан перевод?',prompt:w.en,proposed,choices:[{label:'✓ Верно',value:true},{label:'✕ Неверно',value:false}]};
+ }else{
+  const reverse=kind==='reverse',field=reverse?'en':'ru',distinct=[];
+  for(const x of alternatives)if(normalize(x[field])!==normalize(w[field])&&!distinct.some(y=>normalize(y[field])===normalize(x[field])))distinct.push(x);
+  choices=shuffle([w,...distinct.slice(0,3)]).map(x=>({label:x[field],value:x.id}));correct=w.id;
+  model={mode:'quiz',kind:'quiz',instruction:reverse?'Найди английское слово':'Выбери правильный перевод',prompt:reverse?w.ru:w.en,choices};
+ }
+ g.game.activeQuestionMode=kind==='reverse'?'quiz':kind;g.game.answered=false;g.game.hinted=false;g.game.retryActive=false;
+ function answer(value,label){
+  if(g.game.answered)return;g.game.answered=true;
+  const ok=kind==='truefalse'&&alternatives.length?value===correct:alternatives.length?value===correct:normalize(value)===normalize(w.en);
+  const expected=kind==='truefalse'&&alternatives.length?(correct?'✓ Верно':'✕ Неверно'):kind==='reverse'?w.en:alternatives.length?w.ru:w.en;
+  g.game.answerDetail={wordId:w.id,answer:String(label).slice(0,200),expected:String(expected).slice(0,200),answered_at:new Date().toISOString()};
+  const before=window.LexigoProgress.summarize(DB.books,progress).crystals;
+  recordLearningEvent(w,ok,false,false,g.game.activeQuestionMode);record(w,ok,alternatives.length?'recognition':'recall');
+  const after=window.LexigoProgress.summarize(DB.books,progress).crystals;g.earned+=Math.max(0,after-before);
+  if(ok)g.game.firstCorrect++;g.answers.push(ok);
+  q.querySelectorAll('button,input').forEach(b=>b.disabled=true);
+  const feedback=el('div','feedback',ok?'✓ Верно!':'Почти! Правильный ответ: '+w.en+' — '+w.ru);feedback.dataset.result=ok?'ok':'miss';feedback.setAttribute('role','status');q.append(feedback);
+  document.dispatchEvent(new CustomEvent('lexigo:answer',{detail:{word:w,correct:ok,hinted:false,skill:alternatives.length?'recognition':'recall',mode:g.game.activeQuestionMode,gameMode:'crystals',retry:false,feedback}}));sound(ok?'word':'soft');
+  const next=btn(index+1===g.words.length?'Продолжить игру':'Дальше','btn good cq-continue',()=>{box.remove();resolve();});q.append(next);next.focus({preventScroll:true});
+ }
+ const actions={answer:value=>answer(value,model.choices.find(x=>x.value===value)?.label??value),submit:(input)=>{if(input.value.trim())answer(input.value,input.value)}};
+ LexigoGameEngine.question(q,model,actions);q.querySelector('button,input')?.focus({preventScroll:true});
+});}
+
 function hint(){if(!G?.st||G.busy)return;let mv=E.findMove(G.st);if(!mv){E.shuffle(G.st);draw(G.st.cells);mv=E.findMove(G.st);message('Комбинаций не было — поле перемешано бесплатно.');}else message('Подсвеченные кристаллы можно поменять местами. Ход не потрачен.');document.querySelectorAll('.cq-gem.hint').forEach(b=>b.classList.remove('hint'));mv?.forEach(i=>$('cqBoard').querySelector('[data-i="'+i+'"]').classList.add('hint'));}
 function pause(){if(!G?.st||G.busy)return;G.busy=true;const overlay=el('div','cq-pause');const card=el('div','cq-pause-card');card.append(el('h2',null,'Пауза'),btn('Продолжить','btn',()=>{overlay.remove();G.busy=false;$('cqBoard')?.focus({preventScroll:true});}),btn('Карта уровней','btn secondary',showMap));overlay.append(card);$('play').append(overlay);card.querySelector('button').focus();}
-function result(){const st=G.st,f=st.finished;if(!f)return;sound(f.won?'win':'soft');G.busy=false;const prev=data.levels[st.level]||{};data.levels[st.level]={won:prev.won||f.won,best:Math.max(prev.best||0,f.score),stars:Math.max(prev.stars||0,f.stars)};persist();
- const card=el('section','crystal-result'+(f.won?'':' lost'));card.innerHTML='<img class="cq-result-lexi" src="assets/lexi-head.webp" alt="Лекси"><h2 tabindex="-1">'+(f.won?'Уровень пройден!':'Ходы закончились')+'</h2><p>'+(f.won?'Ты собрал кристальные сокровища!':'Нужно ещё '+Math.max(0,st.target-st.score)+' очков до цели. Попробуем ещё раз?')+'</p><p class="cq-res-stars">'+(f.won?'★'.repeat(f.stars):'☆')+'</p><p>'+st.score+' из '+st.target+' очков · использовано ходов: '+st.movesUsed+'</p><p>Рекорд на этом устройстве: '+data.levels[st.level].best+'</p>';
+function result(){const st=G.st,f=st.finished;if(!f)return;const originalWords=G.game.words;G.game.words=G.words.slice();saveLearningAttempt(G.game,true);G.attemptSaved=true;G.game.words=originalWords;sound(f.won?'win':'soft');G.busy=false;const prev=data.levels[st.level]||{};data.levels[st.level]={won:prev.won||f.won,best:Math.max(prev.best||0,f.score),stars:Math.max(prev.stars||0,f.stars)};persist();
+ const card=el('section','lesson-result crystal-result'+(f.won?'':' lost'));card.innerHTML='<img class="cq-result-lexi" src="assets/lexi-head.webp" alt="Лекси"><h2 tabindex="-1">'+(f.won?'Уровень пройден!':'Ходы закончились')+'</h2><p>'+(f.won?'Ты собрал кристальные сокровища!':'Нужно ещё '+Math.max(0,st.target-st.score)+' очков до цели. Попробуем ещё раз?')+'</p><p class="cq-res-stars">'+(f.won?'★'.repeat(f.stars):'☆')+'</p><p>'+st.score+' из '+st.target+' очков · использовано ходов: '+st.movesUsed+'</p><p>Верных ответов: <strong>'+G.answers.filter(x=>x).length+' из '+G.words.length+'</strong> · 💎 Получено кристаллов: <strong>'+G.earned+'</strong></p><p>Рекорд на этом устройстве: '+data.levels[st.level].best+'</p>';
  const actions=el('div','cq-result-actions');if(f.won&&E.level(st.level+1))actions.append(btn('Следующий уровень →','btn good',()=>startLevel(st.level+1)));if(f.won&&st.level===E.LEVELS.length)card.append(el('p',null,'Все пять уровней пройдены!'));
- actions.append(btn('Попробовать ещё раз','btn',()=>startLevel(st.level)),btn('Карта уровней','btn secondary',showMap),btn('К выбору игр','btn secondary',()=>stop()));card.append(actions);$('play').replaceChildren(card);card.querySelector('h2').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
+ actions.append(btn('Играть ещё','btn',()=>startLevel(st.level)),btn('Карта уровней','btn secondary',showMap),btn('К выбору игр','btn secondary',()=>stop()));card.append(actions);$('play').replaceChildren(card);card.querySelector('h2').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
 }
   let audio = null;
   function sound(kind, level = 1) {

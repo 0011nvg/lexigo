@@ -15,3 +15,7 @@ alter default privileges in schema public grant all on tables to anon, authentic
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 alter role supabase_auth_admin set search_path = auth;
+
+-- Local tests have no Supabase Vault; an empty stub keeps push secrets absent.
+create schema if not exists vault;
+create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);

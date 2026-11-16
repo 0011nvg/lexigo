@@ -75,7 +75,8 @@
     const tabs = h('div', { class: 'auth-tabs', role: 'tablist', 'aria-label': 'Вход или регистрация' },
       h('button', { type: 'button', role: 'tab', 'aria-selected': String(mode === 'login'), onclick: () => { mode = 'login'; render(); } }, 'Вход'),
       h('button', { type: 'button', role: 'tab', 'aria-selected': String(mode === 'signup'), onclick: () => { mode = 'signup'; render(); } }, 'Регистрация'));
-    box.replaceChildren(tabs, mode === 'login' ? loginForm() : mode === 'signup' ? signupForm() : resetForm());
+    tabs.append(h('button',{type:'button',role:'tab','aria-selected':String(mode==='student'),text:'По логину',onclick:()=>{mode='student';render();}}));
+    box.replaceChildren(tabs, mode === 'student' ? studentLoginForm() : mode === 'login' ? loginForm() : mode === 'signup' ? signupForm() : resetForm());
     if (mode === 'reset') tabs.remove();
   }
 
@@ -104,6 +105,22 @@
       }
     });
     return form;
+  }
+
+  function studentLoginForm() {
+    const msg=msgBox(), username=h('input',{class:'acc-input',autocomplete:'username',autocapitalize:'none',spellcheck:false,maxlength:32,required:true});
+    const password=h('input',{class:'acc-input',type:'password',autocomplete:'current-password',maxlength:128,required:true});
+    const btn=h('button',{class:'btn-acc',type:'submit',text:'Войти'});
+    const form=h('form',null,h('label',{class:'acc-field'},'Логин от учителя',username),h('label',{class:'acc-field'},'Пароль от учителя',password),msg,btn,h('p',{class:'acc-muted',text:'Забыли данные? Попросите учителя выдать новый пароль.'}));
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();btn.disabled=true;setMsg(msg,'Входим…','info');
+      try {
+        const response=await fetch(window.LEXIGO_CLOUD.url+'/functions/v1/student-accounts/login',{method:'POST',headers:{'Content-Type':'application/json',apikey:window.LEXIGO_CLOUD.anonKey},body:JSON.stringify({username:username.value.trim(),password:password.value})});
+        const result=await response.json(); if(!response.ok)throw new Error(result.error||'Не удалось войти.');
+        const {data,error}=await sb.auth.setSession({access_token:result.access_token,refresh_token:result.refresh_token});if(error)throw error;
+        password.value='';await finish(data.session);
+      } catch(err){setMsg(msg,err.message);btn.disabled=false;}
+    });return form;
   }
 
   function signupForm() {

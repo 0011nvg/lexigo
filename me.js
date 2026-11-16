@@ -54,7 +54,7 @@
       h('div', { class: 'acc-field' }, h('span', { text: 'Выбери своего Лекси' }), pick,
         h('p', { class: 'acc-small acc-muted', text: 'Выбранный образ сохранится в твоём аккаунте.' })),
       h('p', { class: 'acc-small acc-muted', text: 'Почта: ' + (me.email || '—') }),
-      h('p', null, h('button', { type: 'button', class: 'btn-link', text: 'Сменить пароль', onclick: async () => { try { const { error } = await sb.auth.resetPasswordForEmail(me.email, { redirectTo: base + 'auth.html?recovery=1' }); if (error) throw error; toast('Письмо со ссылкой для смены пароля отправлено.'); } catch (e) { fail(e); } } })),
+      h('p', null, h('button', { type: 'button', class: 'btn-link', text: 'Сменить пароль', onclick: async () => { if(!me.email) return toast('Новый пароль выдаёт ваш учитель.'); try { const { error } = await sb.auth.resetPasswordForEmail(me.email, { redirectTo: base + 'auth.html?recovery=1' }); if (error) throw error; toast('Письмо со ссылкой для смены пароля отправлено.'); } catch (e) { fail(e); } } })),
       h('p', null, h('button', { type: 'button', class: 'btn-link', style: { color: 'var(--w-miss)' }, text: 'Удалить аккаунт и все данные', onclick: deleteAccount }))),
       close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc', type: 'button', text: 'Сохранить', onclick: async () => {
         const n = name.value.trim().replace(/\s+/g, ' ');
@@ -316,6 +316,78 @@
     return { week: week.length, avg, last: ss[0] ? ss[0].created_at : null, xp: st.xp };
   }
 
+  async function studentAccountRequest(action, body) {
+    const { data } = await sb.auth.getSession();
+    const response = await fetch(window.LEXIGO_CLOUD.url + '/functions/v1/student-accounts/' + action, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: window.LEXIGO_CLOUD.anonKey, Authorization: 'Bearer ' + (data.session?.access_token || '') }, body: JSON.stringify(body)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Не удалось выполнить действие.');
+    return result;
+  }
+  function studentCredentialCard(result) {
+    const message = `🐱 Добро пожаловать в Lexi!\n\nТеперь ты можешь учить английские слова, играть и получать награды!\n\n🌐 Сайт: https://mylexi.ru\n👤 Твой логин: ${result.username}\n🔑 Твой пароль: ${result.password}\n\nКак начать заниматься?\n1. Открой сайт Lexi.\n2. Нажми «Войти», затем «По логину».\n3. Введи логин и пароль.\n4. Начинай учить слова и играть!\n\n💙 Удачи! Кекс ждёт тебя в Lexi!`;
+    dialog('Готово! Данные для входа', h('div', null,
+      h('img', { src: 'assets/lexi-head.webp', alt: 'Кекс', width: 90, height: 90 }),
+      h('p', { text: result.name }), result.group ? h('p', { text: 'Класс: ' + result.group }) : null,
+      h('p', null, 'Логин: ', h('strong', { text: result.username })),
+      h('p', null, 'Пароль: ', h('strong', { text: result.password })),
+      h('p', { class: 'acc-muted', text: 'Сохраните данные сейчас. Позже можно будет только выдать новый пароль.' })), close => [
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Скопировать логин', onclick: () => copy(result.username, 'Логин скопирован') }),
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Скопировать пароль', onclick: () => copy(result.password, 'Пароль скопирован') }),
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Скопировать данные', onclick: () => copy(message, 'Данные скопированы') }),
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Поделиться данными', onclick: async () => {
+        if (!navigator.share) return copy(message, 'Данные скопированы');
+        try { await navigator.share({ text: message }); } catch (e) { if (e.name !== 'AbortError') toast('Не удалось открыть отправку. Скопируйте данные.'); }
+      } }), h('button', { class: 'btn-acc', type: 'button', text: 'Готово', onclick: close })
+    ]);
+  }
+  function addManagedStudent(group) {
+    dialog('Добавить ученика', h('p', { text: 'Создайте готовый аккаунт или отправьте приглашение.' }), close => [
+      h('button', { class: 'btn-acc', type: 'button', text: 'Создать аккаунт ученика', onclick: () => { close();
+        const first = h('input', { class: 'acc-input', maxlength: 40, autocomplete: 'off', required: true, 'aria-label': 'Имя ученика' });
+        const last = h('input', { class: 'acc-input', maxlength: 40, autocomplete: 'off', 'aria-label': 'Фамилия ученика' });
+        const error = h('p', { role: 'status', class: 'acc-msg err' });
+        dialog('Новый ученик', h('div', null, h('label', { class: 'acc-field' }, 'Имя ученика', first), h('label', { class: 'acc-field' }, 'Фамилия (необязательно)', last), h('p', { text: 'Класс: ' + group.name }), error), finish => [
+          h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: finish }),
+          h('button', { class: 'btn-acc', type: 'button', text: 'Создать аккаунт', onclick: async e => {
+            if (!first.value.trim()) { error.textContent = 'Укажите имя ученика.'; return; }
+            const button=e.currentTarget; button.disabled=true; error.textContent='Создаём аккаунт…';
+            try { const result = await studentAccountRequest('create', { group_id: group.id, first_name: first.value.trim(), last_name: last.value.trim() }); finish(); await refresh(); studentCredentialCard(result); }
+            catch (err) { error.textContent=err.message; button.disabled=false; }
+          } })
+        ]);
+      } }),
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Пригласить ученика', onclick: () => { close(); copy(base + 'auth.html?join=' + group.join_code, 'Приглашение скопировано'); } }),
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Закрыть', onclick: close })
+    ]);
+  }
+  async function manageStudent(group, student) {
+    const { data, error } = await sb.from('managed_students').select('username,teacher_id').eq('student_id', student).maybeSingle();
+    if (error) return fail(error);
+    const owned = data?.teacher_id === me.id;
+    const destinations = T.groups.filter(g => g.id !== group.id);
+    const select = h('select', { class: 'acc-input', 'aria-label': 'Новый класс' }, destinations.map(g => h('option', { value: g.id, text: g.name })));
+    dialog(studentName(student), h('div', null,
+      h('p', { text: data ? 'Логин: ' + data.username : 'Ученик вошёл через обычную регистрацию.' }),
+      owned ? h('p', { text: 'Старый пароль недоступен. Для повторной отправки выдайте новый.' }) : null,
+      owned && destinations.length ? select : null), close => [
+      h('button', { class: 'btn-acc ghost', type: 'button', text: 'Учебный прогресс', onclick: () => { close(); pupilHistory(student); } }),
+      ...(data ? [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Скопировать логин', onclick: () => copy(data.username, 'Логин скопирован') })] : []),
+      ...(owned ? [h('button', { class: 'btn-acc', type: 'button', text: 'Выдать новый пароль', onclick: () => {
+        close(); dialog('Сбросить пароль?', h('p', { text: 'Старый пароль перестанет работать. Новый нужно отправить ученику.' }), done => [
+          h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: done }),
+          h('button', { class: 'btn-acc', type: 'button', text: 'Сбросить', onclick: async e => { const button=e.currentTarget; button.disabled=true; try { const r=await studentAccountRequest('reset',{student_id:student}); done(); studentCredentialCard(r); } catch(err) {toast(err.message);button.disabled=false;} } })
+        ]);
+      } })] : []),
+      ...(owned && destinations.length ? [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Переместить в выбранный класс', onclick: async e => {
+        const button=e.currentTarget; button.disabled=true;
+        const {error}=await sb.rpc('move_managed_student',{p_student:student,p_from:group.id,p_to:select.value});
+        if(error){button.disabled=false;return fail(error);}close();await refresh();toast('Ученик перемещён. Прогресс сохранён.');
+      } })] : []), h('button', { class: 'btn-acc ghost', type: 'button', text: 'Закрыть', onclick: close })
+    ]);
+  }
+
   /* ---------- groups ---------- */
   function groupsView() {
     const name = h('input', { class: 'acc-input', placeholder: 'Например: 5 «Б» или Группа по средам', maxlength: 60, 'aria-label': 'Название группы' });
@@ -332,12 +404,12 @@
         h('td', { text: r.week }),
         h('td', null, r.avg == null ? '—' : h('span', { class: 'chip ' + (r.avg >= 80 ? 'ok' : r.avg >= 60 ? 'warn' : 'miss'), text: r.avg + '%' })),
         h('td', { text: r.last ? relDay(r.last) : 'ещё не занимался' }),
-        h('td', null, h('button', { class: 'btn-link', type: 'button', text: 'Убрать', onclick: () => dialog('Убрать ученика из группы?', h('p', { text: studentName(m.student_id) + ' больше не будет получать задания этой группы, а вы перестанете видеть его результаты. Аккаунт ученика сохранится.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Убрать', onclick: async () => { const { error } = await sb.from('group_members').delete().eq('group_id', g.id).eq('student_id', m.student_id); if (error) return fail(error); close(); await refresh(); } })]) }))); });
+        h('td', null, h('button',{class:'btn-link',type:'button',text:'Аккаунт',onclick:()=>manageStudent(g,m.student_id)}), h('button', { class: 'btn-link', type: 'button', text: 'Убрать', onclick: () => dialog('Убрать ученика из группы?', h('p', { text: studentName(m.student_id) + ' больше не будет получать задания этой группы, а вы перестанете видеть его результаты. Аккаунт ученика сохранится.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Убрать', onclick: async () => { const { error } = await sb.from('group_members').delete().eq('group_id', g.id).eq('student_id', m.student_id); if (error) return fail(error); close(); await refresh(); } })]) }))); });
       const gSess = T.sessions.filter(s => ms.some(m => m.student_id === s.user_id)), week = new Set(gSess.filter(s => daysAgo(s.created_at) < 7).map(s => s.user_id)).size;
       const accs = gSess.filter(s => s.accuracy != null); const avg = accs.length ? Math.round(accs.reduce((n, s) => n + s.accuracy, 0) / accs.length) : null;
       const hardBox = h('div');
       wrap.append(h('section', { class: 'group-card' },
-        h('header', null, h('h3', { text: g.name }), h('span', { class: 'chip', text: ms.length + ' ' + plural(ms.length, 'ученик', 'ученика', 'учеников') }),
+        h('header', null, h('h3', { text: g.name }), h('button', {class:'btn-acc small',type:'button',text:'＋ Добавить ученика',onclick:()=>addManagedStudent(g)}), h('span', { class: 'chip', text: ms.length + ' ' + plural(ms.length, 'ученик', 'ученика', 'учеников') }),
           h('button', { class: 'btn-link', type: 'button', text: 'Переименовать', onclick: () => { const inp = h('input', { class: 'acc-input', value: g.name, maxlength: 60 }); dialog('Название группы', inp, close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc', type: 'button', text: 'Сохранить', onclick: async () => { const { error } = await sb.from('groups').update({ name: inp.value.trim() }).eq('id', g.id); if (error) return fail(error); close(); await refresh(); } })]); } }),
           h('button', { class: 'btn-link', type: 'button', style: { color: 'var(--w-miss)' }, text: 'Удалить', onclick: () => dialog('Удалить группу «' + g.name + '»?', h('p', { text: 'Будут удалены группа и её задания. Аккаунты и личный прогресс учеников сохранятся.' }), close => [h('button', { class: 'btn-acc ghost', type: 'button', text: 'Отмена', onclick: close }), h('button', { class: 'btn-acc danger', type: 'button', text: 'Удалить группу', onclick: async () => { const { error } = await sb.from('groups').delete().eq('id', g.id); if (error) return fail(error); close(); await refresh(); } })]) })),
         h('div', { class: 'invite' }, h('span', { text: 'Код класса:' }), h('span', { class: 'code', text: g.join_code }),

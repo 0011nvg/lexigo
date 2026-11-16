@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { hashStudentPassword, verifyStudentPassword } from '../supabase/functions/_shared/student-password.mjs';
+const password = 'M9qR7xW4tP2k';
+const first = await hashStudentPassword(password);
+const second = await hashStudentPassword(password);
+assert.notEqual(first, second, 'each hash must use a fresh salt');
+assert(!first.includes(password));
+assert.equal(await verifyStudentPassword(password, first), true);
+assert.equal(await verifyStudentPassword('wrong-password', first), false);
+assert.equal(await verifyStudentPassword(password, 'bad hash'), false);
+await assert.rejects(() => hashStudentPassword('short'));
+console.log('Student password hashing checks passed');

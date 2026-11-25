@@ -53,14 +53,30 @@ for(const [grade,count] of Object.entries(extendedCounts)){
  assert.ok(book.sections.every(s=>s.module&&s.title&&s.words.length),'Unlabeled vocabulary section');
 }
 // Spotlight 10 and the lesson-title overlay (labels only; order, words and IDs stay as they were).
-for(const path of ['vocabulary/spotlight-10.js','vocabulary/lesson-titles.js']){
+for(const path of ['vocabulary/spotlight-10.js','vocabulary/spotlight-11.js','vocabulary/lesson-titles.js']){
  assert.ok(html.includes('<script src="'+path+'"></script>'),path+' missing from HTML');
  assert.ok(html.indexOf('<script src="'+path+'"></script>')<html.indexOf('<script src="game-components.js"></script>'),path+' must load before the game controllers');
  vm.runInNewContext(fs.readFileSync(path,'utf8'),context,{timeout:5000,filename:path});
 }
 const expanded=context.window.LEXIGO_DATA.books;
-assert.deepEqual(Array.from(expanded,b=>b.grade),[2,3,4,5,6,7,8,9,10]);
+assert.deepEqual(Array.from(expanded,b=>b.grade),[2,3,4,5,6,7,8,9,10,11]);
 assert.equal(expanded.find(b=>b.grade===10).sections.flatMap(s=>s.words).length,2281,'Spotlight 10 vocabulary count mismatch');
+const eleven=expanded.find(b=>b.grade===11);
+assert.equal(eleven.sections.length,56,'Grade 11: every uploaded section must be retained');
+assert.equal(new Set(eleven.sections.map(s=>s.module)).size,8);
+assert.deepEqual(Array.from(eleven.sections,s=>s.words.length),[69,67,22,36,55,13,4,72,53,13,25,23,16,25,19,74,31,20,47,35,27,18,19,17,40,14,44,43,56,25,8,63,10,10,45,7,50,17,14,16,18,38,35,6,41,33,13,7,8,49,23,8,64,27,17,9],'Grade 11 source section boundaries and counts');
+const elevenWords=eleven.sections.flatMap(s=>s.words);
+assert.equal(elevenWords.length,1658);
+assert.equal(elevenWords[0].en,'accommodate');
+assert.equal(elevenWords.at(-1).en,'exhibition');
+for(const [en,ru] of Object.entries({actual:'фактический, действительный, настоящий',accuracy:'точность, правильность','blazing row':'бурная ссора, громкий скандал','take-off slot':'выделенное время для взлёта','hold your noise':'замолчи, перестань шуметь (устар.)',transaction:'сделка, операция (например, банковская)',virtue:'добродетель, нравственное достоинство'})){
+ assert.equal(elevenWords.find(w=>w.en===en)?.ru,ru,'Grade 11 reviewed meaning: '+en);
+}
+for(const entry of ['index.html','me.html']){
+ const markup=fs.readFileSync(entry,'utf8');
+ assert.ok(markup.indexOf('vocabulary/spotlight-11.js')>markup.indexOf('vocabulary/spotlight-10.js'));
+ assert.ok(markup.indexOf('vocabulary/spotlight-11.js')<markup.indexOf('vocabulary/lesson-titles.js'),'Grade 11 must load before lesson titles in '+entry);
+}
 for(const b of expanded.filter(b=>b.grade>=5)){
  for(const s of b.sections){ if(/^Урок /.test(s.title)) assert.match(s.title,/^Урок \d+[a-f](–\d+[a-f])? · \S/,'Lesson label format: '+b.grade+' '+s.title); }
  const lessons=b.sections.filter(s=>/^Урок /.test(s.title)).length; assert.ok(lessons>=20,'Too few lettered lessons in grade '+b.grade);
@@ -68,8 +84,8 @@ for(const b of expanded.filter(b=>b.grade>=5)){
 assert.ok(expanded.filter(b=>b.grade<=4).every(b=>b.sections.every(s=>!/^Module /.test(s.module))),'Grades 2–4 modules are shown in Russian');
 assert.ok(expanded.every(b=>b.sections.every(s=>!/^(\d+[a-f]|Unit \d)/.test(s.title))),'Every lesson has a «Урок …» label and a short name');
 const expandedWords=expanded.flatMap(b=>b.sections.flatMap(s=>s.words));
-assert.equal(expandedWords.length,11719,'Extended vocabulary total changed');
-assert.equal(new Set(expandedWords.map(w=>w.id)).size,11719,'Duplicate IDs across books');
+assert.equal(expandedWords.length,13377,'Extended vocabulary total changed');
+assert.equal(new Set(expandedWords.map(w=>w.id)).size,13377,'Duplicate IDs across books');
 assert.ok(expandedWords.every(w=>typeof w.en==='string'&&w.en.trim()&&typeof w.ru==='string'&&w.ru.trim()));
-assert.ok(html.includes('2–10 классы'),'Landing class range not updated');
-console.log('PASS: updated grade 2–3 source counts, unchanged grade 4–10, unique IDs, mirrored data and JS syntax');
+assert.ok(html.includes('2–11 классы'),'Landing class range not updated');
+console.log('PASS: updated grade 2–3 source counts, unchanged grades 4–10, reviewed grade 11, unique IDs, mirrored data and JS syntax');

@@ -8,6 +8,7 @@
   "vocabulary/spotlight-8.js",
   "vocabulary/spotlight-9.js",
   "vocabulary/spotlight-10.js",
+  "vocabulary/spotlight-11.js",
   "vocabulary/lesson-titles.js"
  ],
  "books": [
@@ -73,11 +74,18 @@
    "modules": 9,
    "words": 2281,
    "hash": "48c148b9091d345a52a3106c97864b988b20e7538ae100ae6e783f31717ccb7f"
+  },
+  {
+   "grade": 11,
+   "sections": 56,
+   "modules": 8,
+   "words": 1658,
+   "hash": "f21e4b1c5ef2861e734230d744b94a1500ee2f4abfaadf82184923d7bdc8194e"
   }
  ],
- "totalWords": 11719,
- "totalSections": 575,
- "ids": "580d12ea5d20029d1c56348c0df3b7e023252434e426caa5246c394dc4a0234b",
+ "totalWords": 13377,
+ "totalSections": 631,
+ "ids": "62d3e0505d8bc63ee0a5f17ef8b8892b015f36171ed7a52f18081f90568929da",
  "modes": [
   "cards",
   "quiz",

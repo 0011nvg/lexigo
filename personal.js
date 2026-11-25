@@ -201,7 +201,7 @@
       if (sub) sub.textContent = 'Я помогу выучить английские слова. Выбери свой учебник — и начнём!';
       const go = actions?.querySelector('.hero-go');
       /* первое действие нового ученика — к учебникам на этой же странице (без отдельного выбора класса) */
-      if (go) { go.href = '#/home'; go.innerHTML = '<span>Начать учиться</span><small>Выбери свой учебник · 2–10 классы</small>'; go.setAttribute('aria-label', 'Начать учиться: выбери свой учебник'); go.onclick = e => { e.preventDefault(); e.stopPropagation(); const t = $('homeTitle'), first = document.querySelector('#courseCards .course-card'); const smooth = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); (t || first)?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'instant' }); first?.focus({ preventScroll: true }); }; }
+      if (go) { go.href = '#/home'; go.innerHTML = '<span>Начать учиться</span><small>Выбери свой учебник · 2–11 классы</small>'; go.setAttribute('aria-label', 'Начать учиться: выбери свой учебник'); go.onclick = e => { e.preventDefault(); e.stopPropagation(); const t = $('homeTitle'), first = document.querySelector('#courseCards .course-card'); const smooth = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); (t || first)?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'instant' }); first?.focus({ preventScroll: true }); }; }
     } else {
       const go = actions?.querySelector('.hero-go'); if (go) { go.href = '#/course/' + g + '/0'; go.innerHTML = '<span>Начать</span><small></small>'; go.querySelector('small').textContent = g + ' класс' + ' · выбери урок'; }
     }

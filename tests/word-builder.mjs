@@ -64,9 +64,9 @@ for (let i = 0; i < 2000; i++) {
 }
 ok('2000 shuffles keep the exact set of letters; the order always differs when it can');
 
-// --- 5. every dictionary: Spotlight 2–10 (11698 entries) ---
+// --- 5. every dictionary: Spotlight 2–11 (13377 entries) ---
 const ctx = { window: {} }; ctx.window.window = ctx.window; vm.createContext(ctx);
-for (const f of ['data.js', 'vocabulary/spotlight-2-4-additions.js', ...[5, 6, 7, 8, 9, 10].map(g => `vocabulary/spotlight-${g}.js`), 'vocabulary/lesson-titles.js'])
+for (const f of ['data.js', 'vocabulary/spotlight-2-4-additions.js', ...[5, 6, 7, 8, 9, 10, 11].map(g => `vocabulary/spotlight-${g}.js`), 'vocabulary/lesson-titles.js'])
   vm.runInContext(readFileSync(new URL(f, ROOT), 'utf8'), ctx, { filename: f });
 const books = ctx.window.LEXIGO_DATA.books;
 let total = 0, playable = 0, withRepeats = 0, withCaps = 0;
